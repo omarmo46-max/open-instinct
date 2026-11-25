@@ -130,6 +130,7 @@ the screen at checkout instead of paying.
 | `INKBOX_CALL_ORIGINATION` | Which line `phone_call` dials from: `dedicated_number`, `shared_imessage_number` or `dedicated_imessage_number`. Unset: the identity's iMessage line | you choose it |
 | `ATOMIC_MAIL_API_KEY` | A second inbox the agent can read and send from, through Atomic Mail's hosted MCP. Needs a key from an active inbox ([ATOMICMAIL.md](ATOMICMAIL.md)) | [dashboard.atomicmail.ai](https://dashboard.atomicmail.ai) |
 | `TELEGRAM_BOT_TOKEN` | A Telegram bot people can message one to one. No public URL needed; the agent polls Telegram ([packages/telegram](../packages/telegram/README.md)) | [@BotFather](https://t.me/BotFather), `/newbot` |
+| `STT_API_KEY` (or `OPENAI_API_KEY`), `STT_BASE_URL`, `STT_MODEL`, `STT_LANGUAGE` | Speech to text for voice notes and for `POST /voice`, any OpenAI-compatible `/audio/transcriptions` endpoint ([IPHONE-SHORTCUT.md](IPHONE-SHORTCUT.md)) | your STT provider |
 | `TELEGRAM_OWNER_ID` | Your numeric Telegram user id, so messages from you count as the owner. Comma separate several | message [@userinfobot](https://t.me/userinfobot) |
 | `INSTINCT_CHAT_TOKEN` | A bearer token on the owner's HTTP surface; set it whenever the port is reachable beyond your machine | you choose it |
 | `GATEWAY_SIGNUP_SECRET` | The invite code the gateway's signup form requires | you choose it |

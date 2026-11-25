@@ -368,6 +368,29 @@ describe("http server", () => {
     Object.assign(app.config.owner, before);
   });
 
+  it("an agent with its own Telegram bot refuses what the gateway relays: no handling, no owner rewrite, the person is told", async () => {
+    const seen: Array<[string, string]> = [];
+    app.telegramOwnBot = true;
+    app.onGatewayTelegram = (kind, id) => void seen.push([kind, id]);
+    const before = { ...app.config.owner, telegramIds: ["111"] };
+    app.config.owner.telegramIds = ["111"];
+    const message = { type: "telegram.message", message: { id: "telegram:6001", conversationKey: "telegram:555", from: "telegram:555", text: "hello" } };
+    const sent = await post("/chat", { message: `@@instinct-event@@${JSON.stringify(message)}`, source: "front_door" });
+    expect(await sent.json()).toMatchObject({ acked: true, response: "", conversationKey: "telegram:555", blocked: expect.stringContaining("own Telegram bot") });
+    const link = await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.link", telegramId: "555" })}` });
+    expect(await link.json()).toMatchObject({ acked: true, blocked: expect.stringContaining("own Telegram bot") });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(app.inbound).toHaveLength(0);
+    expect(app.config.owner.telegramIds).toEqual(["111"]);
+    expect(seen).toEqual([["message", "555"], ["link", "555"]]);
+    // A forged event is still dropped quietly, and tells nobody.
+    await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.message", message: { id: "x", conversationKey: "telegram:-100", from: "telegram:555", text: "g" } })}` });
+    expect(seen).toHaveLength(2);
+    delete app.telegramOwnBot;
+    delete app.onGatewayTelegram;
+    Object.assign(app.config.owner, before);
+  });
+
   it("system task envelope: runs as a system task, never as owner chat or an Inkbox event", async () => {
     const tasks: Array<{ id: string; prompt: string; quiet?: boolean }> = [];
     app.runtime.runSystemTask = async (task) => {

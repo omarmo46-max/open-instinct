@@ -91,6 +91,38 @@ export interface BootResult {
   enrichInbound?: (message: InboundMessage) => Promise<InboundMessage>;
   /** Set with Inkbox: text the owner the outcome of a finished phone call. */
   onCallEnded?: (event: CallEndedEvent) => Promise<void>;
+  /** Set when this agent runs its own Telegram bot: the gateway's shared bot is then ignored. */
+  telegramOwnBot?: boolean;
+  /** Set when that happens while a gateway is configured too: points the person to the agent's own bot. */
+  onGatewayTelegram?: (kind: "message" | "link", telegramId: string) => void;
+}
+
+/**
+ * An agent with a bot of its own that is also linked to a gateway: someone who writes to the shared bot
+ * gets one short note saying where the agent really is, instead of silence. At most one per chat per hour,
+ * and it goes through the gateway's own agent API, so it can only reach the chat that was linked.
+ */
+export class GatewayNotices {
+  private readonly last = new Map<string, number>();
+  constructor(
+    private readonly own: { username(): string | undefined },
+    private readonly via: { send(msg: { channel: "telegram"; conversationKey: string; text: string }): Promise<void> },
+    private readonly log: (m: string) => void,
+    private readonly now: () => number = Date.now,
+    private readonly everyMs = 60 * 60_000,
+  ) {}
+
+  notify(telegramId: string): void {
+    const t = this.now();
+    const prev = this.last.get(telegramId);
+    if (prev !== undefined && t - prev < this.everyMs) return;
+    this.last.set(telegramId, t);
+    if (this.last.size > 500) this.last.delete(this.last.keys().next().value as string);
+    const bot = this.own.username();
+    const where = bot ? `@${bot}` : "its own Telegram bot";
+    const text = `This agent has its own Telegram bot and does not answer through this shared bot. Please message it there: ${where}.\nهذا الوكيل له بوت تيليجرام خاص به ولا يرد من خلال هذا البوت. تحدّث معه هناك: ${bot ? where : "بوته الخاص"}.`;
+    void this.via.send({ channel: "telegram", conversationKey: `telegram:${telegramId}`, text }).catch((err: Error) => this.log(`telegram: could not send the own-bot note through the gateway: ${err.message}`));
+  }
 }
 
 export const DEFAULT_MARITIME_MCP_URL = "https://mcp.maritime.sh";
@@ -214,6 +246,12 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     : undefined;
   if (remoteTelegram) log("telegram: through the gateway (the bot belongs to the front door)");
   const telegramOut = telegram ?? remoteTelegram;
+  // Both a bot of its own and a gateway: the own bot wins, and it is said out loud (once at boot, and to the
+  // person if they use the shared bot). Set TELEGRAM_ENABLED=0 to prefer the gateway's bot instead.
+  const gatewayConfigured = Boolean(env.TELEGRAM_GATEWAY_URL?.trim() && env.TELEGRAM_GATEWAY_TOKEN?.trim());
+  const ownBotWithGateway = Boolean(telegram) && gatewayConfigured;
+  if (ownBotWithGateway) log("telegram: TELEGRAM_BOT_TOKEN and TELEGRAM_GATEWAY_* are both set; this agent uses its own bot and ignores the gateway's shared bot (set TELEGRAM_ENABLED=0 to use the shared bot instead)");
+  const gatewayNotices = ownBotWithGateway ? new GatewayNotices(telegram!, new GatewayTelegramChannel({ gatewayUrl: env.TELEGRAM_GATEWAY_URL!.trim(), token: env.TELEGRAM_GATEWAY_TOKEN!.trim(), mediaDir: state.path("workspace", "inbound"), logger: log, ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }), log) : undefined;
   if (whatsapp || telegramOut) outbox = new ChannelRouter(outbox, { ...(whatsapp ? { whatsapp } : {}), ...(telegramOut ? { telegram: telegramOut } : {}) });
 
   const registry = new ToolRegistry();
@@ -573,6 +611,8 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     modelSpec,
     chatBuffer,
     ...(wallet ? { wallet } : {}),
+    ...(telegram ? { telegramOwnBot: true } : {}),
+    ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),
     enrichInbound: enrich,
     hydrateInbound: async (message: InboundMessage) => {
       // A file sent through the gateway is fetched now; Inkbox attachments are downloaded by their own hydrator.

@@ -55,6 +55,14 @@ export interface HttpApp {
   wallet?: WalletCallback;
   /** Report a finished phone call to the owner. Unset: call.ended events are acknowledged and dropped. */
   onCallEnded?(event: CallEndedEvent): Promise<void>;
+  /**
+   * True when this agent runs a Telegram bot of its own (TELEGRAM_BOT_TOKEN). The gateway's shared bot is
+   * then not used: Telegram events it relays are refused, because the answer would leave through the wrong
+   * bot, and a `telegram.link` must not rewrite who the owner is.
+   */
+  telegramOwnBot?: boolean;
+  /** Told when the gateway relays Telegram traffic to an agent that runs its own bot (so the person can be pointed to it). */
+  onGatewayTelegram?(kind: "message" | "link", telegramId: string): void;
 }
 
 export interface HttpServerOptions {
@@ -219,11 +227,23 @@ export async function handleChat(app: HttpApp, body: ChatRequest, now: Date = ne
     }
     // Telegram through a shared front door: a message from the owner's linked chat, or the link itself.
     const telegramMessage = telegramMessageOf(event);
+    if (telegramMessage && app.telegramOwnBot) {
+      const id = telegramMessage.from.replace(/^telegram:/, "");
+      log(`telegram: ignored a message relayed by the gateway (${id}): this agent runs its own bot`);
+      app.onGatewayTelegram?.("message", id);
+      return { response: "", acked: true, conversationKey: telegramMessage.conversationKey, blocked: OWN_BOT_BLOCKED };
+    }
     if (telegramMessage) {
       if (body.source) telegramMessage.meta = { ...telegramMessage.meta, relaySource: body.source };
       return acceptInbound(app, telegramMessage);
     }
     const telegramLink = telegramLinkOf(event);
+    if (telegramLink && app.telegramOwnBot) {
+      // Keep the owner ids this agent already trusts: its own bot is the front door here.
+      log(`telegram: ignored a link from the gateway (${telegramLink.telegramId}): this agent runs its own bot`);
+      app.onGatewayTelegram?.("link", telegramLink.telegramId);
+      return { response: "", acked: true, blocked: OWN_BOT_BLOCKED };
+    }
     if (telegramLink) {
       applyTelegramLink(app, telegramLink.telegramId, log);
       return { response: "", acked: true };
@@ -500,6 +520,9 @@ export async function listenTunnelServer(app: HttpApp, opts: HttpServerOptions =
 }
 
 /** Read the body up to `limit` bytes; undefined when it is too large. */
+/** Why a gateway Telegram event was refused by an agent that runs its own bot. */
+const OWN_BOT_BLOCKED = "this agent runs its own Telegram bot; the gateway's shared bot is not used";
+
 /** A voice note over HTTP: the same 25 MB ceiling as speech-to-text endpoints. */
 const VOICE_LIMIT_BYTES = 25 * 1024 * 1024;
 

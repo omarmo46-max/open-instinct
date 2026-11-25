@@ -18,7 +18,14 @@ same chat. It speaks the official [Bot API](https://core.telegram.org/bots/api) 
 
 4. The log prints `telegram: connected as @your_bot`. Open the bot and say hello.
 
-`TELEGRAM_ENABLED=0` turns the channel off while keeping the token. Use **one process per
+`TELEGRAM_ENABLED=0` turns the channel off while keeping the token.
+
+**A bot of your own and a gateway at once.** If `TELEGRAM_BOT_TOKEN` and `TELEGRAM_GATEWAY_URL` / `TELEGRAM_GATEWAY_TOKEN`
+are both set, the agent's own bot wins and the gateway's shared bot is not used for Telegram. The log says so at boot.
+If someone still writes through the shared bot, the agent refuses what the gateway relays (it is not answered, and a
+`telegram.link` does not change who the owner is) and sends one short note, at most once an hour per chat, through the
+gateway: it names the agent's own bot (`@username`) and asks the person to talk there. To use the shared bot instead,
+set `TELEGRAM_ENABLED=0` (or remove the token). Groups need the agent's own bot either way. Use **one process per
 bot token**: a second poller makes Telegram answer `409 Conflict`.
 
 ### No id yet? Claim the agent with a code
