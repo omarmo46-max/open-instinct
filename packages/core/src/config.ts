@@ -97,6 +97,7 @@ function withDefaults(raw: Partial<InstinctConfig>): InstinctConfig {
     computer: { ...d.computer, ...(raw.computer ?? {}) },
     apps: { ...d.apps, ...(raw.apps ?? {}), toolkits: raw.apps?.toolkits ?? d.apps.toolkits },
     features: { ...d.features, ...(raw.features ?? {}) },
+    ...(raw.triggers && typeof raw.triggers === "object" ? { triggers: { ...raw.triggers } } : {}),
     ...((raw.groups?.allow ?? []).length > 0
       ? {
           groups: {

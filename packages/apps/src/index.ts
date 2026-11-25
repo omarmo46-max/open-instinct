@@ -32,3 +32,4 @@ export { wrapMcpTool, wrapMcpTools, toolNameFor, describeCall, parametersFor, me
 
 /** Toolkits a new agent starts with. */
 export const DEFAULT_TOOLKITS: string[] = ["gmail", "googlecalendar", "googlecontacts"];
+export { ComposioTriggerSource, parseCalendarEvent, parseMailItem, CALENDAR_LIST_SLUG, MAIL_FETCH_SLUG, BIRTHDAY_CALENDAR_ID, type AppRunner } from "./triggers-source.js";

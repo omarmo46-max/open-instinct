@@ -288,7 +288,7 @@ export class AgentRuntime {
       state: deps.state,
       audit: deps.audit,
       now: this.now,
-      send: (text) => this.sendToOwner(text, this.ownerPrincipal(), "system"),
+      send: async (text) => void (await this.sendToOwner(text, this.ownerPrincipal(), "system")),
     });
   }
 
@@ -669,6 +669,19 @@ export class AgentRuntime {
   }
 
   /**
+   * Text the owner on the agent's own initiative (a proactive trigger). Returns true when a
+   * message left; false when the owner cannot be reached or the channel refused it, so the
+   * caller keeps the alert and tries again at the next scan.
+   */
+  async notifyOwner(text: string, originKey = "trigger"): Promise<boolean> {
+    try {
+      return await this.sendToOwner(text, this.ownerPrincipal(), originKey);
+    } catch {
+      return false; // safeSend already wrote the failure to the audit log
+    }
+  }
+
+  /**
    * A task the operator asked for (a `system.task` envelope): runs as the owner in
    * its own conversation. The result goes to the owner's phone unless the task is
    * quiet, in which case only its side effects (memory, schedules) remain. Like a
@@ -1033,7 +1046,7 @@ export class AgentRuntime {
    * Owner messages go to the owner's last live text thread, else to their first phone by
    * iMessage, else to their last email thread. Group threads are never used for this.
    */
-  private async sendToOwner(text: string, principal: Principal, originKey: string, opts: { approvalToken?: string } = {}): Promise<void> {
+  private async sendToOwner(text: string, principal: Principal, originKey: string, opts: { approvalToken?: string } = {}): Promise<boolean> {
     const last = this.ownerLast;
     const phone = this.deps.config.owner.phones[0];
     const telegramId = this.deps.config.owner.telegramIds?.[0];
@@ -1049,12 +1062,13 @@ export class AgentRuntime {
       out = { channel: last.channel as OutboundChannel, conversationKey: last.conversationKey, text };
     } else {
       this.deps.audit.append({ kind: "error", conversationKey: originKey, principal: principal.id, detail: { message: "No way to reach the owner: no phone and no prior conversation" } });
-      return;
+      return false;
     }
     const sent = await this.safeSend(out, principal, originKey);
-    if (!sent) return;
+    if (!sent) return false;
     if (opts.approvalToken) this.deps.approvals.markPrompted(opts.approvalToken);
     else this.deps.approvals.clearPrompted();
+    return true;
   }
 
   private async safeSend(out: OutboundMessage, principal: Principal, conversationKey: string): Promise<boolean> {

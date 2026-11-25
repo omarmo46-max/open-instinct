@@ -314,3 +314,7 @@ and `instinct invite "Sam Lee" --tier partner --handle sam-instinct`.
 - Everyone else is `stranger` until placed.
 - Stranger rate limit: 3 conversations per day, 10 messages each.
 - Spend policy: ask above $50, never book flights or hotels without asking.
+
+## Proactive triggers
+
+The trigger scan reads Gmail subjects and calendar events with the owner's own Composio connection, in code, outside the model and outside the tool policy. It is owner-only by construction: the only output is a text to the owner. It sends nothing to anyone else, opens no message body, and follows no link. Text taken from an email or event title is cleaned and quoted. It is off unless the owner or deployer turns it on. See `docs/TRIGGERS.md`.

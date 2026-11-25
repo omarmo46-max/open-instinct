@@ -19,6 +19,9 @@ import {
   Scheduler,
   StateDir,
   ToolRegistry,
+  TriggerEngine,
+  TRIGGERS_SCAN_TASK,
+  TRIGGERS_SCHEDULE_ID,
   coreTools,
   ensurePersona,
   loadConfig,
@@ -27,8 +30,11 @@ import {
   syncInstructions,
   telegramIdsFromEnv,
   loadPolicy,
+  pickLanguage,
   resolveDataDir,
   resolveModel,
+  resolveTriggers,
+  scanCron,
 } from "@open-instinct/core";
 import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@open-instinct/core";
 import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, messagingTools, sendFileTool, voiceInstructions } from "@open-instinct/inkbox";
@@ -38,7 +44,7 @@ import { GatewayTelegramChannel, TelegramChannel } from "@open-instinct/telegram
 import { WhatsAppChannel } from "@open-instinct/whatsapp";
 import { computerGuidance, detectComputer } from "@open-instinct/computer";
 import type { ComputerBackend } from "@open-instinct/computer";
-import { ComposioApps, DEFAULT_TOOLKITS, OPENAI_COMPLETIONS_TOOL_LIMIT, appsGuidance, appsTools, composioModeFor } from "@open-instinct/apps";
+import { ComposioApps, ComposioTriggerSource, DEFAULT_TOOLKITS, OPENAI_COMPLETIONS_TOOL_LIMIT, appsGuidance, appsTools, composioModeFor } from "@open-instinct/apps";
 import { ampleTools, type AmpleCredentials } from "@open-instinct/ample";
 import { AtomicMailBackend, atomicMailGuidance } from "@open-instinct/atomicmail";
 import { contextTools } from "@open-instinct/context";
@@ -546,7 +552,35 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     ...(env.INSTINCT_REPLY_BUDGET_MS ? { replyBudgetMs: Number(env.INSTINCT_REPLY_BUDGET_MS) } : {}),
   });
 
-  const stopScheduler = scheduler.start((entry) => runtime.runScheduled(entry));
+  // Proactive triggers (B1). Off unless the owner turned them on and a Composio session exists,
+  // because they read mail and calendar. The scan is a schedule entry so Maritime's GET /schedules
+  // wakes a sleeping VM; the entry runs code, not a prompt.
+  const triggersConfig = resolveTriggers(config.triggers, env);
+  let triggerEngine: TriggerEngine | undefined;
+  if (triggersConfig.enabled && apps) {
+    const composio = apps;
+    triggerEngine = new TriggerEngine({
+      source: new ComposioTriggerSource({ execute: (slug, args) => composio.execute(slug, args) }, { mail: composio.allToolkits || composio.toolkitSlugs.includes("gmail") }),
+      state,
+      audit,
+      config: triggersConfig,
+      timezone: config.owner.timezone,
+      language: () => pickLanguage(config.owner, undefined),
+      send: (text) => runtime.notifyOwner(text, "triggers"),
+    });
+    scheduler.ensureSystem({ id: TRIGGERS_SCHEDULE_ID, name: "Proactive triggers", cron: scanCron(triggersConfig.intervalMinutes), tz: config.owner.timezone, prompt: "(internal) scan mail and calendar for things to tell the owner", task: TRIGGERS_SCAN_TASK });
+    log(`triggers: on, scan every ${triggersConfig.intervalMinutes} min, quiet ${triggersConfig.quietFrom}-${triggersConfig.quietTo}`);
+  } else {
+    if (triggersConfig.enabled) log("triggers: enabled but no Composio apps connected; staying off");
+    scheduler.delete(TRIGGERS_SCHEDULE_ID);
+  }
+  const stopScheduler = scheduler.start(async (entry) => {
+    if (entry.task === TRIGGERS_SCAN_TASK) {
+      if (triggerEngine) await triggerEngine.run();
+      return;
+    }
+    await runtime.runScheduled(entry);
+  });
 
   if (whatsapp) {
     // Persisted before handling, like Inkbox webhooks, so a restart mid-reply does not lose a message.

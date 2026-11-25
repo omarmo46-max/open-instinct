@@ -439,3 +439,23 @@ describe("wantsAllToolkits", () => {
     expect(wantsAllToolkits([])).toBe(false);
   });
 });
+
+describe("ComposioApps.execute", () => {
+  it("runs a slug on the session and returns its data", async () => {
+    const calls: Array<{ slug: string; args?: Record<string, unknown> }> = [];
+    const session = fakeSession("sess_x", { execute: async (slug, args) => (calls.push({ slug, args }), { data: { ok: 1 }, successful: true }) });
+    const composio = fakeComposio({ sessions: { sess_x: session } });
+    const state = fakeState();
+    const apps = new ComposioApps({ ...base, state, adapters: { createComposio: () => ({ sessions: { create: async () => session, use: composio.client.sessions.use } }), connectMcp: fakeMcp().connectMcp } });
+    expect(await apps.execute("GMAIL_FETCH_EMAILS", { query: "x" })).toEqual({ ok: 1 });
+    expect(calls).toEqual([{ slug: "GMAIL_FETCH_EMAILS", args: { query: "x" } }]);
+  });
+  it("throws on an error result and when the session cannot execute", async () => {
+    const bad = fakeSession("sess_b", { execute: async () => ({ error: "token expired" }) });
+    const a = new ComposioApps({ ...base, state: fakeState(), adapters: { createComposio: () => ({ sessions: { create: async () => bad, use: async () => bad } }), connectMcp: fakeMcp().connectMcp } });
+    await expect(a.execute("X")).rejects.toThrow("token expired");
+    const none = fakeSession("sess_n");
+    const b = new ComposioApps({ ...base, state: fakeState(), adapters: { createComposio: () => ({ sessions: { create: async () => none, use: async () => none } }), connectMcp: fakeMcp().connectMcp } });
+    await expect(b.execute("X")).rejects.toThrow("cannot run tools directly");
+  });
+});

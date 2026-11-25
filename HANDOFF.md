@@ -58,12 +58,21 @@ Phase A is closed by the owner's decision. The two leftovers are fixed in code a
 Env added: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID`, `TELEGRAM_ENABLED`, `TELEGRAM_GROUPS`, `TELEGRAM_GATEWAY_URL`,
 `TELEGRAM_GATEWAY_TOKEN` (set by the gateway), `STT_*`, `INSTINCT_OWNER_LANGUAGE`, `INSTINCT_OWNER_LOCALE`.
 
+## Done: Phase B1 (proactive triggers)
+
+The agent scans Gmail and Google Calendar by itself and texts the owner first. Code only, no model call: `core/triggers.ts` (engine, detectors, quiet hours, dedupe), `apps/triggers-source.ts` (Composio reader), `Scheduler.ensureSystem` plus `ScheduleEntry.task` (the scan is a schedule entry so Maritime wakes the VM), `AgentRuntime.notifyOwner`, wiring in `server/boot.ts`. Details and limits: `docs/TRIGGERS.md`.
+
+- Off by default. `INSTINCT_TRIGGERS=1` (or `triggers.enabled` in config.json) and a Composio session with Gmail/Calendar connected. `INSTINCT_QUIET_HOURS=23:00-07:00`.
+- Detects: unanswered invite (72 h ahead, again under 24 h), birthday (day before and day of), flight change / cancelled / missing from the calendar, and mail whose subject looks like a flight change (English and Arabic).
+- An alert counts as sent only after the channel took it; quiet hours hold all but an urgent flight alert (departs within 12 h).
+- **Not verified live.** Tested against fakes. The slugs `GOOGLECALENDAR_EVENTS_LIST` and `GMAIL_FETCH_EMAILS` and the response field names must be confirmed once with a real Composio account.
+
 ## Not done yet (in order the user asked)
 
 | Phase | Items |
 |---|---|
 | A (closed) | Nothing open. Only carried to the live test phase: run the checklist at the end of `docs/IPHONE-SHORTCUT.md` on a real iPhone |
-| **B** proactive + memory | B1 triggers from email and calendar (flight change, unanswered invite, birthday), B2 sleep/wake scheduling by habit, B3 semantic memory search, B4 learned preferences applied to bookings, B5 location and arrival awareness (note: there is **no B6**) |
+| **B** proactive + memory (B1 done) | ~~B1 triggers~~ (done, see below), B2 sleep/wake scheduling by habit, B3 semantic memory search, B4 learned preferences applied to bookings, B5 location and arrival awareness (note: there is **no B6**) |
 | **C** security (all) | C1 content firewall for every inbound message and attachment, C2 separate action monitor (block or ask before execution), C3 hallucination / grounding checker, C4 signed tool identity and short-lived credentials, C5 end-to-end encrypted files between agents, C6 vault (logins, cards, addresses), C7 TOTP, C8 1Password broker, C9 external audit and pen test (needs outside people) |
 | **D** | D1 spending budget (autonomous within a limit; needs a payment rail and API access), D5 compensation-claim skill |
 | **E** (all) | E1 business-agent protocols (PAP / PACT style; needs partners), E2 domain connectors (health booking etc.; needs partner APIs), E3 revocable invite links and referrals, E4 group coordination of 10 to 100 people incl. non-users, E5 shareable interactive pages, E6 Concierge calls without per-call approval |
@@ -90,5 +99,5 @@ Env added: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID`, `TELEGRAM_ENABLED`, `TELEG
 
 ## Test counts at this checkpoint
 
-core 362, gateway 84, server 132, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
-apps 160, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.
+core 384, gateway 84, server 132, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
+apps 171, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.

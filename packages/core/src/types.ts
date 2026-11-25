@@ -213,6 +213,11 @@ export interface ScheduleEntry {
   nextRunAt?: string;
   /** Prompt delivered to the owner conversation when the job fires. */
   prompt: string;
+  /**
+   * A runtime-owned job that runs code instead of a prompt (for example "triggers.scan").
+   * Only the runtime sets it; the schedule tools cannot. The prompt is then a label.
+   */
+  task?: string;
   createdAt: string;
   lastRunAt?: string;
 }
@@ -279,6 +284,22 @@ export interface AllowedGroup {
   allowedAt: string;
 }
 
+/** Proactive triggers (B1): the agent watches mail and calendar and texts the owner first. Off by default. */
+export interface TriggersConfig {
+  enabled: boolean;
+  /** Minutes between scans (5 to 240). */
+  intervalMinutes: number;
+  /** Quiet hours in the owner's time zone, "HH:MM". Only urgent alerts go out inside them. */
+  quietFrom: string;
+  quietTo: string;
+  /** How far ahead an unanswered invite counts (hours). */
+  inviteHorizonHours: number;
+  /** How far ahead flights are watched (days). */
+  flightHorizonDays: number;
+  /** Most alerts sent in one scan; the rest wait for the next. */
+  maxPerRun: number;
+}
+
 export interface InstinctConfig {
   version: 1;
   owner: OwnerProfile;
@@ -288,6 +309,8 @@ export interface InstinctConfig {
   apps: { enabled: boolean; toolkits: string[] };
   /** Groups the owner allowed the agent to answer in. Anything else stays silent. */
   groups?: { allow: AllowedGroup[] };
+  /** Proactive triggers. Missing means off. See `resolveTriggers`. */
+  triggers?: Partial<TriggersConfig>;
   features: {
     typingIndicators: boolean;
     tapbacks: boolean;

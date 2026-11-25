@@ -288,6 +288,36 @@ export class Scheduler {
     return { ...entry };
   }
 
+  /**
+   * Create or refresh a runtime-owned entry with a fixed id (the triggers scan). A user
+   * edit of the entry is replaced at the next boot; `lastRunAt` and `createdAt` survive.
+   */
+  ensureSystem(input: { id: string; name: string; cron: string; tz: string; prompt: string; task: string }): ScheduleEntry {
+    if (!isValidTimeZone(input.tz)) throw new Error(`schedule: unknown time zone "${input.tz}"`);
+    const spec = parseCron(input.cron); // throws on a bad expression
+    const list = this.load();
+    const existing = list.find((e) => e.id === input.id);
+    const same = existing && existing.cron === input.cron && existing.tz === input.tz && existing.task === input.task && existing.enabled && existing.name === input.name && existing.prompt === input.prompt;
+    if (existing && same) return { ...existing };
+    const nextRunAt = nextCron(spec, this.now(), input.tz)?.toISOString();
+    const entry: ScheduleEntry = {
+      ...(existing ?? {}),
+      id: input.id,
+      name: input.name,
+      enabled: true,
+      cron: input.cron,
+      tz: input.tz,
+      prompt: input.prompt,
+      task: input.task,
+      createdAt: existing?.createdAt ?? this.now().toISOString(),
+      ...(nextRunAt ? { nextRunAt } : {}),
+    };
+    if (existing) list[list.indexOf(existing)] = entry;
+    else list.push(entry);
+    this.save(list);
+    return { ...entry };
+  }
+
   delete(id: string): boolean {
     const list = this.load();
     const next = list.filter((e) => e.id !== id);

@@ -106,6 +106,8 @@ export interface ComposioSessionLike {
   sessionId: string;
   mcp: McpEndpoint;
   authorize(toolkit: string): Promise<{ redirectUrl?: string | null }>;
+  /** Run one Composio tool by slug on this session's connected accounts. Optional so older stubs still fit. */
+  execute?(toolSlug: string, args?: Record<string, unknown>): Promise<{ data?: unknown; error?: unknown; successful?: boolean }>;
   toolkits(options?: { toolkits?: string[]; isConnected?: boolean; limit?: number; cursor?: string }): Promise<{
     items: Array<{ slug: string; isNoAuth?: boolean; connection?: { isActive: boolean } }>;
     nextCursor?: string | null;
@@ -173,6 +175,20 @@ export class ComposioApps {
 
   get sessionId(): string | undefined {
     return this.session?.sessionId;
+  }
+
+  /**
+   * Run one app action by slug without the model (the proactive triggers read mail and
+   * calendar this way). Works in direct and router mode. Throws on a refused or failed call.
+   */
+  async execute(toolSlug: string, args: Record<string, unknown> = {}): Promise<unknown> {
+    await this.connect();
+    const session = this.session;
+    if (!session?.execute) throw new Error("composio: this session cannot run tools directly");
+    const res = await session.execute(toolSlug, args);
+    if (res.error) throw new Error(`composio ${toolSlug}: ${typeof res.error === "string" ? res.error : JSON.stringify(res.error).slice(0, 300)}`);
+    if (res.successful === false) throw new Error(`composio ${toolSlug}: call was not successful`);
+    return res.data;
   }
 
   /** Reuse the stored session when it still matches; otherwise create one and save it. Then open MCP. */
