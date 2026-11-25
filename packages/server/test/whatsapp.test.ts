@@ -35,3 +35,13 @@ describe("whatsappEnabled", () => {
     expect(whatsappEnabled({})).toBe(false);
   });
 });
+
+describe("telegramEnabled", () => {
+  it("is on with a bot token unless TELEGRAM_ENABLED=0", async () => {
+    const { telegramEnabled } = await import("../src/whatsapp.js");
+    expect(telegramEnabled({ TELEGRAM_BOT_TOKEN: "1:abc" })).toBe(true);
+    expect(telegramEnabled({ TELEGRAM_BOT_TOKEN: "1:abc", TELEGRAM_ENABLED: "0" })).toBe(false);
+    expect(telegramEnabled({ TELEGRAM_BOT_TOKEN: "  " })).toBe(false);
+    expect(telegramEnabled({})).toBe(false);
+  });
+});

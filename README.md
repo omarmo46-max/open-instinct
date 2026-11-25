@@ -16,6 +16,18 @@ It writes real files, too: ask for a brief "as a PDF" and it creates one in its 
 
 <p align="center"><img src="docs/assets/brand/stack.png" alt="Who does what: you text; Inkbox is identity and messaging; Maritime hosts one microVM with a desktop per person; inside it Pi runs the loop, Claude is the model, Composio connects apps, Stripe Link pays" width="900"></p>
 
+## Telegram
+
+People can also message the agent on Telegram. Create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`), then:
+
+```bash
+export TELEGRAM_BOT_TOKEN=123456789:AA...   # from @BotFather
+export TELEGRAM_OWNER_ID=123456789          # your numeric Telegram id (ask @userinfobot)
+pnpm instinct dev
+```
+
+Open your bot in Telegram and send a message. No public URL is needed: the agent polls Telegram. Private chats only. Your id makes you the owner; everyone else is a stranger until you add them to `contacts.json` with `"telegramIds"`. Details: [packages/telegram](packages/telegram/README.md).
+
 ## Who gets which key
 
 <p align="center"><img src="docs/assets/brand/trust.png" alt="Rings of trust: owner, staff, partner, family, friend, contact, stranger" width="820"></p>
@@ -73,6 +85,8 @@ For many people, run the [gateway](packages/gateway/README.md): a signup page th
 ```
 packages/core       Pi agent loop, policy engine, memory, scheduler, approvals, audit
 packages/inkbox     iMessage, SMS, email, webhooks, agent-to-agent transport
+packages/telegram   Telegram bot channel (Bot API, long polling)
+packages/whatsapp   WhatsApp channel (the agent's own account as a linked device)
 packages/computer   the desktop (Maritime desktopd in the VM, or hosted Computers MCP)
 packages/apps       Composio Tool Router
 packages/network    contacts, tiers, grants, invitations, agent-to-agent tools

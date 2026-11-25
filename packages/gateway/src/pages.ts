@@ -193,7 +193,13 @@ function statusPill(u: UserRecord): string {
   return `<span class="pill warn"><i></i>Setting up</span>`;
 }
 
-export function renderConnect(user: UserRecord, router: ConnectRouter | undefined): string {
+export interface ConnectTelegram {
+  /** The t.me link that opens the bot with this person's one-time code. Unset until the bot is up. */
+  url?: string | undefined;
+  linked: boolean;
+}
+
+export function renderConnect(user: UserRecord, router: ConnectRouter | undefined, telegram?: ConnectTelegram): string {
   const command = connectCommandFor(user.handle);
   const smsHref = router ? safeUrl(smsHrefFor(router.number, user.handle)) : "";
   const qr = router ? safeUrl(router.qrPngDataUrl, true) : "";
@@ -215,6 +221,13 @@ ${smsHref ? `<a class="btn" href="${smsHref}">Open Messages with it filled in</a
 ${qr ? `<p class="hint" style="text-align:center;margin-top:22px">Or scan from another device</p><img class="qr" alt="QR code that opens Messages with the connect command" src="${qr}">` : ""}`
     : `<div class="error">The router number could not be loaded right now. Reload in a minute.</div>`;
 
+  const telegramUrl = telegram?.url ? safeUrl(telegram.url) : "";
+  const telegramBlock = telegram
+    ? telegram.linked
+      ? `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><b>Telegram</b><span class="pill ok"><i></i>Connected</span></div><p class="hint">Your agent is on Telegram. Open the bot and say hello. To link a different Telegram account, use the button below.</p>${telegramUrl ? `<a class="btn" href="${telegramUrl}">Link another Telegram account</a>` : ""}</div>`
+      : `<div class="card"><b>Telegram</b><p class="hint">Prefer Telegram? Link your account and talk to your agent there. The link works once and expires in 30 minutes.</p>${telegramUrl ? `<a class="btn" href="${telegramUrl}">Connect Telegram</a>` : `<p class="hint">The Telegram bot is starting. Reload in a minute.</p>`}</div>`
+    : "";
+
   return layout(
     `Connect @${user.handle}`,
     `<h1>Hi ${escapeHtml(user.name)}.</h1>
@@ -224,6 +237,7 @@ ${qr ? `<p class="hint" style="text-align:center;margin-top:22px">Or scan from a
   ${statusBlock}
   ${routerBlock}
 </div>
+${telegramBlock}
 <h2>What happens next</h2>
 <ol class="steps">
   <li><b>Inkbox links your phone</b> to @${escapeHtml(user.handle)} and the agent gets a message from you.</li>

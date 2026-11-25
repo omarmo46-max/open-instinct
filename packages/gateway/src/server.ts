@@ -10,6 +10,7 @@ import { type LinkPassthrough, type MaritimeProvisionOptions, newUserId, provisi
 import { EventDeduper, type HeaderMap, relayVerifiedEvent, relayGatewayEvent, verifyForUser } from "./relay.js";
 import { type UserRecord, type UserStore, publicUser } from "./store.js";
 import { validateSignup } from "./validate.js";
+import type { TelegramHub } from "./telegram-hub.js";
 
 export interface GatewayOptions {
   store: UserStore;
@@ -64,6 +65,8 @@ export interface GatewayOptions {
   onInbound?: (user: UserRecord, event: Record<string, unknown>) => void | Promise<void>;
   /** Ask Maritime for the agent's state before every relay (true), never (false), or only for agents under 15 minutes old (default). */
   checkAgentStatus?: boolean;
+  /** The shared Telegram bot. With it, agents reach Telegram through this gateway and the connect page offers "Connect Telegram". */
+  telegram?: TelegramHub;
 }
 
 export interface GatewayServer extends Server {
@@ -218,6 +221,7 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
       composioApiKey: opts.composioApiKey,
       composioToolkits: opts.composioToolkits,
       link: opts.link,
+      telegramGateway: Boolean(opts.telegram),
       fetchImpl: opts.fetchImpl,
       logger: log,
       userId: user.id,
@@ -411,6 +415,7 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
     if (parts[0] === "health" && parts.length === 1) {
       return json(res, 200, { ok: true, users: opts.store.all().length, signup: Boolean(opts.inkbox), github: GITHUB_URL, inbox: inbox.summary() });
     }
+    if (opts.telegram && (await opts.telegram.handleHttp(req, res, parts, url))) return;
     if (parts[0] === "api" && parts[1] === "signup" && parts.length === 2) {
       if (method !== "POST") throw new HttpError(405, "method not allowed");
       return handleSignup(req, res);
@@ -426,7 +431,8 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
       const user = opts.store.get(decodeURIComponent(parts[1] ?? ""));
       if (!user) return html(res, 404, renderMessage("Not found", "No Instinct with that id. Check the link you were given.", "error"));
       const [shared, perUser] = await Promise.all([routerInfo(), routerInfoForUser(user)]);
-      return html(res, 200, renderConnect(user, connectRouterFor(user.handle, shared, perUser)));
+      const telegram = opts.telegram ? { url: opts.telegram.linkUrlFor(user), linked: Boolean(user.telegramId) } : undefined;
+      return html(res, 200, renderConnect(user, connectRouterFor(user.handle, shared, perUser), telegram));
     }
     if (parts[0] === "webhooks" && parts[1] === "inkbox" && parts.length === 3) {
       if (method !== "POST") throw new HttpError(405, "method not allowed");

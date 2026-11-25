@@ -109,6 +109,17 @@ describe("provisionUser", () => {
     expect(env.some((e) => e.value === "whsec_maria")).toBe(false);
   });
 
+  it("gives an agent the gateway's Telegram URL and its own token only when the gateway runs the bot", () => {
+    const user = readyUser({ agentToken: "tok-abc" });
+    const on = agentEnvFor(user, { maritime: { apiKey: "k", agentImage: "img" }, publicUrl: "https://gw.example", telegramGateway: true });
+    const byKey = Object.fromEntries(on.map((e) => [e.key, e]));
+    expect(byKey["TELEGRAM_GATEWAY_URL"]).toMatchObject({ value: "https://gw.example", isSecret: false });
+    expect(byKey["TELEGRAM_GATEWAY_TOKEN"]).toMatchObject({ value: "tok-abc", isSecret: true });
+    const off = agentEnvFor(user, { maritime: { apiKey: "k", agentImage: "img" }, publicUrl: "https://gw.example" });
+    expect(off.map((e) => e.key)).not.toContain("TELEGRAM_GATEWAY_TOKEN");
+    expect(agentEnvFor(readyUser(), { maritime: { apiKey: "k", agentImage: "img" }, publicUrl: "https://gw.example", telegramGateway: true }).map((e) => e.key)).not.toContain("TELEGRAM_GATEWAY_TOKEN");
+  });
+
   it("omits optional env when not configured", () => {
     const env = agentEnvFor(readyUser({ email: undefined }), { maritime: { apiKey: "k", agentImage: "img" } });
     const keys = env.map((e) => e.key);

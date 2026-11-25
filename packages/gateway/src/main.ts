@@ -1,12 +1,16 @@
 import { InkboxProvisioner } from "@open-instinct/inkbox";
 import { consoleLogger } from "./logger.js";
 import type { LinkPassthrough } from "./provision.js";
+import { relayGatewayEvent } from "./relay.js";
 import { type GatewayServer, createGateway } from "./server.js";
+import { TelegramHub } from "./telegram-hub.js";
 import { UserStore } from "./store.js";
 
 export const DEFAULT_AGENT_IMAGE = "ghcr.io/mariagorskikh/open-instinct-agent:latest";
 
 export interface GatewayEnv {
+  /** TELEGRAM_BOT_TOKEN: one Telegram bot for every agent this gateway runs. Unset: no Telegram front door. */
+  telegramBotToken?: string;
   port: number;
   publicUrl: string;
   dataDir: string;
@@ -62,6 +66,7 @@ export function readEnv(env: NodeJS.ProcessEnv): GatewayEnv {
     port,
     publicUrl,
     dataDir: env["GATEWAY_DATA_DIR"] ?? "./.instinct-gateway",
+    telegramBotToken: env["TELEGRAM_BOT_TOKEN"]?.trim() || undefined,
     inkboxAdminApiKey: env["INKBOX_ADMIN_API_KEY"] || undefined,
     inkboxBaseUrl: env["INKBOX_BASE_URL"] || undefined,
     maritimeApiKey,
@@ -138,7 +143,20 @@ export function startGateway(cfg: GatewayEnv): GatewayServer {
     });
   }
 
+  // One bot for everyone: the hub routes each Telegram user to their own agent and carries the agent's replies back.
+  const telegram = cfg.telegramBotToken
+    ? new TelegramHub({
+        store,
+        token: cfg.telegramBotToken,
+        dataDir: cfg.dataDir,
+        logger: log,
+        relay: (user, event, conversationId) =>
+          relayGatewayEvent(user, event, conversationId, { maritime: { apiKey: cfg.maritimeApiKey, baseUrl: cfg.maritimeBaseUrl }, logger: log }),
+      })
+    : undefined;
+
   const server = createGateway({
+    ...(telegram ? { telegram } : {}),
     store,
     publicUrl: cfg.publicUrl,
     inkbox,
@@ -165,6 +183,7 @@ export function startGateway(cfg: GatewayEnv): GatewayServer {
   server.listen(cfg.port, "0.0.0.0", () => {
     log.info("gateway.listening", { port: cfg.port, publicUrl: cfg.publicUrl, users: store.all().length, signup: Boolean(inkbox), link: Boolean(cfg.link) });
     server.resumePending();
+    if (telegram) void telegram.start().catch((err: unknown) => log.error("telegram.hub.start_failed", { error: err instanceof Error ? err.message : String(err) }));
     // Older subscriptions were made before call.ended existed; each boot tops them up.
     void server.backfillWebhookEvents();
   });
@@ -174,7 +193,7 @@ export function startGateway(cfg: GatewayEnv): GatewayServer {
     stopping = true;
     const deadline = setTimeout(() => process.exit(0), 10_000);
     deadline.unref();
-    server.close(() => { void server.drainWebhooks().finally(() => process.exit(0)); });
+    server.close(() => { void Promise.all([server.drainWebhooks(), telegram?.stop()]).finally(() => process.exit(0)); });
   };
   process.once("SIGTERM", stop);
   process.once("SIGINT", stop);

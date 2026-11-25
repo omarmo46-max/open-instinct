@@ -411,6 +411,118 @@ describe("AgentRuntime.handleInbound", () => {
     expect(h.deps.audit.read({ kinds: ["inbound"] })).toHaveLength(1);
   });
 
+  describe("fresh conversations and language", () => {
+    const ownerText = (text: string, extra: Partial<InboundMessage> = {}) =>
+      inbound({ channel: "telegram", from: "telegram:777", conversationKey: "telegram:777", text, meta: { isGroup: false, conversationScopeKnown: true }, ...extra });
+    const tgHarness = (owner: Parameters<typeof testConfig>[0] = {}) => {
+      const config = testConfig({ phones: [], telegramIds: ["777"], ...owner });
+      const h = harness({ deps: { config } });
+      h.faux.setResponses(Array.from({ length: 10 }, () => textTurn("ok")));
+      return h;
+    };
+
+    it("/new forgets the thread without calling the model, and says so", async () => {
+      const h = tgHarness();
+      await h.runtime.handleInbound(ownerText("my locker code is 42"));
+      const key = "telegram:777";
+      expect(userTexts(h.runtime.conversation(key, h.runtime.ownerPrincipal()).agent.state.messages).join(" ")).toContain("locker");
+      const calls = h.faux.state.callCount;
+      const r = await h.runtime.handleInbound(ownerText("/new"));
+      expect(r.reply).toContain("Fresh start");
+      expect(h.faux.state.callCount).toBe(calls);
+      expect(h.sent.at(-1)?.msg).toMatchObject({ channel: "telegram", conversationKey: key, text: expect.stringContaining("Fresh start") });
+      expect(userTexts(h.runtime.conversation(key, h.runtime.ownerPrincipal()).agent.state.messages)).toEqual([]);
+      expect(h.deps.audit.read({ limit: 50 }).some((e) => e.kind === "policy" && e.detail["reset"] === "new conversation requested")).toBe(true);
+    });
+
+    it("answers /new in Arabic for an Arabic-pinned owner and for an Arabic phrase", async () => {
+      const h = tgHarness({ language: "ar" });
+      const r = await h.runtime.handleInbound(ownerText("/new"));
+      expect(r.reply).toContain("بدأنا من جديد");
+      const plain = tgHarness();
+      const r2 = await plain.runtime.handleInbound(ownerText("محادثة جديدة"));
+      expect(r2.reply).toContain("بدأنا من جديد");
+    });
+
+    it("a stranger's /new resets only their own thread and reveals nothing about the owner", async () => {
+      const h = tgHarness();
+      const r = await h.runtime.handleInbound(ownerText("/new", { from: "telegram:999", conversationKey: "telegram:999" }));
+      expect(r.principal.kind).toBe("stranger");
+      expect(r.reply).toBe("Fresh start.");
+    });
+
+    it("a slow reply is acknowledged in the owner's language", async () => {
+      const h = tgHarness({ language: "ar" });
+      h.faux.setResponses([]);
+      const msg = ownerText("ابحثلي عن فندق");
+      // Force the slow path: no response is queued, so the run outlives a zero budget.
+      const slow = harness({ deps: { config: testConfig({ phones: [], telegramIds: ["777"], language: "ar" }), replyBudgetMs: 0 } });
+      slow.faux.setResponses([textTurn("تمام")]);
+      const r = await slow.runtime.handleInbound(msg);
+      expect(r.reply === undefined || /[\u0600-\u06FF]/.test(r.reply)).toBe(true);
+    });
+  });
+
+  describe("telegram groups", () => {
+    const KEY = "telegram:-100123";
+    const groupMsg = (text: string, over: Partial<InboundMessage> = {}, from = "telegram:900") =>
+      inbound({ channel: "telegram", from, conversationKey: KEY, text, meta: { isGroup: true, groupTitle: "Trip crew", pushName: "Maria", conversationScopeKnown: true, participants: [from] }, ...over });
+    const setup = () => {
+      const config = testConfig({ phones: [], telegramIds: ["777"], city: "Alexandria" });
+      const h = harness({ deps: { config } });
+      h.faux.setResponses(Array.from({ length: 40 }, () => textTurn("ok")));
+      return { h, config };
+    };
+
+    it("stays silent until the owner allows the group, tells the owner once, and never calls the model", async () => {
+      const { h } = setup();
+      const r = await h.runtime.handleInbound(groupMsg("hello bot"));
+      expect(r.blocked).toBe("group not allowed");
+      expect(r.principal).toMatchObject({ kind: "group", id: `group:${KEY}` });
+      await h.runtime.handleInbound(groupMsg("anyone?", {}, "telegram:901"));
+      expect(h.faux.state.callCount).toBe(0);
+      const notices = h.sent.filter((x) => x.msg.channel === "telegram" && x.msg.to === "777");
+      expect(notices).toHaveLength(1);
+      expect(notices[0]!.msg.text).toContain("Trip crew");
+      expect(h.sent.some((x) => x.msg.conversationKey === KEY)).toBe(false);
+    });
+
+    it("answers in an allowed group as a group principal, even to the owner, and labels the speaker", async () => {
+      const { h, config } = setup();
+      config.groups = { allow: [{ key: KEY, title: "Trip crew", allowedAt: new Date().toISOString() }] };
+      const r = await h.runtime.handleInbound(groupMsg("what is the capital of Peru?"));
+      expect(r.principal.kind).toBe("group");
+      expect(h.sent.at(-1)?.msg).toMatchObject({ channel: "telegram", conversationKey: KEY, text: "ok" });
+      const asOwner = await h.runtime.handleInbound(groupMsg("show my calendar", {}, "telegram:777"));
+      expect(asOwner.principal.kind).toBe("group");
+      const conv = h.runtime.conversation(runtimeKey(groupMsg("x"), r.principal), r.principal);
+      expect(userTexts(conv.agent.state.messages).join("\n")).toContain("[Maria] what is the capital of Peru?");
+    });
+
+    it("gives the group none of the owner's private context in its prompt", async () => {
+      const { h, config } = setup();
+      config.groups = { allow: [{ key: KEY, allowedAt: new Date().toISOString() }] };
+      const r = await h.runtime.handleInbound(groupMsg("hi"));
+      const conv = h.runtime.conversation(runtimeKey(groupMsg("x"), r.principal), r.principal);
+      const prompt = conv.agent.state.systemPrompt;
+      expect(prompt).toContain("You are in a group chat");
+      expect(prompt).not.toContain("Alexandria");
+      expect(prompt).not.toContain("# Memory");
+      // The tools themselves are filtered by the group's permission set (see groups.test.ts and policy tests).
+      expect(prompt).toContain("You have no access to anyone's private accounts");
+    });
+
+    it("rate limits a busy group without touching the owner's own chat", async () => {
+      const { h, config } = setup();
+      config.groups = { allow: [{ key: KEY, allowedAt: new Date().toISOString() }] };
+      const results = [];
+      for (let i = 0; i < 22; i++) results.push(await h.runtime.handleInbound(groupMsg(`question ${i}`, { id: `g-${i}` })));
+      expect(results.filter((x) => x.blocked === "group rate limit")).toHaveLength(2);
+      const own = await h.runtime.handleInbound(inbound({ channel: "telegram", from: "telegram:777", conversationKey: "telegram:777", text: "hi", meta: { isGroup: false, conversationScopeKnown: true } }));
+      expect(own.principal.kind).toBe("owner");
+    });
+  });
+
   describe("owner claim on first contact", () => {
     const CODE = "K7P2-QX9M-4HTB-W8ZD";
     const CLAIMER = "+16175550177";
@@ -494,6 +606,34 @@ describe("AgentRuntime.handleInbound", () => {
       const seen = userTexts(conv.agent.state.messages).join("\n");
       expect(seen).toContain("one-time sign-up code");
       expect(seen.toUpperCase()).not.toContain("K7P2");
+    });
+
+    it("claims by Telegram: /start with the code makes that Telegram user id the owner, and replies go back on Telegram", async () => {
+      const config = claimConfig();
+      const h = claimHarness(config);
+      const tg = (from: string, text: string) =>
+        inbound({ channel: "telegram", from, conversationKey: "telegram:777", text, meta: { isGroup: false, conversationScopeKnown: true } });
+      // A wrong code, and a username-looking sender, never claim.
+      expect((await h.runtime.handleInbound(tg("telegram:777", "hello"))).principal.kind).toBe("stranger");
+      expect((await h.runtime.handleInbound(tg("@maria", CODE))).principal.kind).toBe("stranger");
+      expect(config.owner.telegramIds ?? []).toEqual([]);
+      const r = await h.runtime.handleInbound(tg("telegram:777", CODE));
+      expect(r.principal.kind).toBe("owner");
+      expect(config.owner.telegramIds).toEqual(["777"]);
+      expect(config.owner.phones).toEqual([]);
+      expect(config.owner.claimOnFirstContact).toBe(false);
+      expect(savedOwner(h)["telegramIds"]).toEqual(["777"]);
+      expect(h.sent.at(-1)?.msg).toMatchObject({ channel: "telegram", conversationKey: "telegram:777" });
+      // Spent: another Telegram user with the same code stays a stranger.
+      const again = await h.runtime.handleInbound(inbound({ channel: "telegram", from: "telegram:888", conversationKey: "telegram:888", text: CODE, meta: { isGroup: false, conversationScopeKnown: true } }));
+      expect(again.principal.kind).toBe("stranger");
+    });
+
+    it("a Telegram-only owner is reachable for owner notices without having written first", async () => {
+      const config = testConfig({ phones: [], telegramIds: ["777"] });
+      const h = harness({ deps: { config } });
+      expect(await h.runtime.relayToOwner("call finished", "system:test")).toBe(true);
+      expect(h.sent.at(-1)?.msg).toMatchObject({ channel: "telegram", to: "777", text: "call finished" });
     });
 
     it("never claims from a group thread, an unresolved scope, a reaction, an email, A2A or when phones are already set", async () => {

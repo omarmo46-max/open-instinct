@@ -1,4 +1,4 @@
-export { WhatsAppChannel, WHATSAPP_MEDIA_MAX_BYTES, type WhatsAppChannelOptions, type WhatsAppState } from "./channel.js";
+export { WhatsAppChannel, WHATSAPP_UPLOAD_MAX_BYTES, WHATSAPP_MEDIA_MAX_BYTES, type WhatsAppChannelOptions, type WhatsAppState } from "./channel.js";
 export {
   CONVERSATION_PREFIX,
   conversationKeyFor,

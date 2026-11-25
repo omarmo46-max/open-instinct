@@ -166,3 +166,32 @@ describe("ApprovalStore", () => {
     expect(again.get(a.token)?.summary).toBe(base.summary);
   });
 });
+
+describe("Arabic verdicts", () => {
+  it("reads plain Arabic yes and no, with or without diacritics and alef variants", () => {
+    for (const yes of ["نعم", "أيوه", "ايوة", "آه", "موافق", "وافق", "نفذ", "أكد", "احجز", "نعم من فضلك", "موافق شكرا"]) expect(parseYesNo(yes, { strict: true }), yes).toBe(true);
+    for (const no of ["لا", "لأ", "لاء", "ارفض", "مرفوض", "مش موافق", "لا شكرا", "لا لو سمحت"]) expect(parseYesNo(no, { strict: true }), no).toBe(false);
+  });
+
+  it("does not take casual or unrelated Arabic for a verdict without a token", () => {
+    for (const text of ["تمام", "ماشي", "ايه ده", "عايز احجز فندق", "الغي"]) expect(parseYesNo(text, { strict: true }), text).toBeUndefined();
+    // Casual words count next to a token (the non-strict reading).
+    expect(parseYesNo("تمام", {})).toBe(true);
+    expect(parseYesNo("الغي", {})).toBe(false);
+  });
+
+  it("an Arabic verdict can carry a token and a leftover request", () => {
+    const store = new ApprovalStore(tempState());
+    const a = store.create({ conversationKey: "telegram:1", requestedBy: "owner", summary: "Book table", capability: "plans.commit" });
+    const m = store.matchReply(`موافق ${a.token} وابعتلي التفاصيل`);
+    expect(m?.approved).toBe(true);
+    expect(m?.approval.token).toBe(a.token);
+    expect(m?.remainder).toBe("وابعتلي التفاصيل");
+  });
+
+  it("hasExplicitVerb sees Arabic approval verbs", () => {
+    expect(hasExplicitVerb("موافق")).toBe(true);
+    expect(hasExplicitVerb("ارفض")).toBe(true);
+    expect(hasExplicitVerb("تمام")).toBe(false);
+  });
+});

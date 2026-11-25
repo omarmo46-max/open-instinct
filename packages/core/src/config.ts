@@ -3,7 +3,7 @@
  * over the environment after first boot; env only seeds it. The one exception is
  * INSTINCT_MODEL, which operators use to swap models without editing state.
  */
-import { normalizeEmail, normalizeHandle, normalizePhone } from "./principal.js";
+import { normalizeEmail, normalizeHandle, normalizePhone, normalizeTelegramId } from "./principal.js";
 import type { StateDir } from "./state.js";
 import type { InstinctConfig } from "./types.js";
 
@@ -42,6 +42,11 @@ function splitList(value: string | undefined): string[] {
     .filter((s) => s.length > 0);
 }
 
+/** TELEGRAM_OWNER_ID: one or more numeric Telegram user ids, comma separated. Anything else is ignored. */
+export function telegramIdsFromEnv(env: NodeJS.ProcessEnv): string[] {
+  return [...new Set(splitList(env.TELEGRAM_OWNER_ID).map((s) => normalizeTelegramId(s) ?? "").filter(Boolean))];
+}
+
 const COMPUTER_MODES = new Set<InstinctConfig["computer"]["mode"]>(["auto", "desktopd", "maritime", "none"]);
 
 /** Build a fresh config from the environment. Used only when config.json is missing. */
@@ -50,10 +55,14 @@ export function configFromEnv(env: NodeJS.ProcessEnv): InstinctConfig {
   if (env.INSTINCT_OWNER_NAME?.trim()) cfg.owner.name = env.INSTINCT_OWNER_NAME.trim();
   cfg.owner.phones = splitList(env.INSTINCT_OWNER_PHONE).map(normalizePhone).filter(Boolean);
   cfg.owner.emails = splitList(env.INSTINCT_OWNER_EMAIL).map(normalizeEmail).filter(Boolean);
+  const telegramIds = telegramIdsFromEnv(env);
+  if (telegramIds.length > 0) cfg.owner.telegramIds = telegramIds;
   if (/^(1|true|yes)$/i.test((env.INSTINCT_CLAIM_OWNER_ON_FIRST_CONTACT ?? "").trim())) cfg.owner.claimOnFirstContact = true;
   // The claim only works with a one-time code; see owner-claim.ts.
   if (env.INSTINCT_OWNER_CLAIM_CODE?.trim()) cfg.owner.claimCode = env.INSTINCT_OWNER_CLAIM_CODE.trim();
   if (env.INSTINCT_OWNER_CLAIM_EXPIRES_AT?.trim()) cfg.owner.claimExpiresAt = env.INSTINCT_OWNER_CLAIM_EXPIRES_AT.trim();
+  if (env.INSTINCT_OWNER_LANGUAGE?.trim()) cfg.owner.language = env.INSTINCT_OWNER_LANGUAGE.trim().toLowerCase();
+  if (env.INSTINCT_OWNER_LOCALE?.trim()) cfg.owner.locale = env.INSTINCT_OWNER_LOCALE.trim();
   // INSTINCT_TIMEZONE is the name older .env.example files used; keep honouring it.
   const timezone = env.INSTINCT_OWNER_TIMEZONE?.trim() || env.INSTINCT_TIMEZONE?.trim();
   if (timezone) cfg.owner.timezone = timezone;
@@ -81,12 +90,22 @@ function withDefaults(raw: Partial<InstinctConfig>): InstinctConfig {
       ...(raw.owner ?? {}),
       phones: (raw.owner?.phones ?? []).map(normalizePhone).filter(Boolean),
       emails: (raw.owner?.emails ?? []).map(normalizeEmail).filter(Boolean),
+      ...((raw.owner?.telegramIds ?? []).length > 0 ? { telegramIds: [...new Set((raw.owner?.telegramIds ?? []).map((t) => normalizeTelegramId(String(t)) ?? "").filter(Boolean))] } : {}),
     },
     agent: { ...d.agent, ...(raw.agent ?? {}) },
     model: { ...d.model, ...(raw.model ?? {}) },
     computer: { ...d.computer, ...(raw.computer ?? {}) },
     apps: { ...d.apps, ...(raw.apps ?? {}), toolkits: raw.apps?.toolkits ?? d.apps.toolkits },
     features: { ...d.features, ...(raw.features ?? {}) },
+    ...((raw.groups?.allow ?? []).length > 0
+      ? {
+          groups: {
+            allow: (raw.groups?.allow ?? [])
+              .filter((g) => g && typeof g.key === "string" && /^telegram:-\d{1,20}$/.test(g.key))
+              .map((g) => ({ key: g.key, ...(typeof g.title === "string" && g.title ? { title: g.title.slice(0, 120) } : {}), allowedAt: typeof g.allowedAt === "string" ? g.allowedAt : new Date(0).toISOString() })),
+          },
+        }
+      : {}),
   };
 }
 

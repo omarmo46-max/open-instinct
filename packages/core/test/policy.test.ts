@@ -25,7 +25,7 @@ describe("DEFAULT_TIER_TABLE", () => {
         expect(DEFAULT_TIER_TABLE[tier][cap], `${tier}/${cap}`).toBeDefined();
       }
     }
-    expect(ALL_CAPABILITIES.length).toBe(27);
+    expect(ALL_CAPABILITIES.length).toBe(28);
   });
 
   it("matches docs/PERMISSIONS.md on the rows that have special values", () => {

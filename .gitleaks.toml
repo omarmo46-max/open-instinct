@@ -29,6 +29,11 @@ id = "link-token"
 description = "Stripe Link agent wallet token"
 regex = '''liwl(token|refresh)_[A-Za-z0-9_-]{10,}'''
 
+[[rules]]
+id = "telegram-bot-token"
+description = "Telegram bot token"
+regex = '''\b[0-9]{8,10}:[A-Za-z0-9_-]{35}\b'''
+
 [allowlist]
 description = "Test fixtures and documentation placeholders"
 paths = [

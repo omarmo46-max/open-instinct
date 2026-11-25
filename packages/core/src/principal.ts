@@ -34,6 +34,21 @@ export function normalizeHandle(s: string): string {
   return (s ?? "").trim().replace(/^@+/, "").toLowerCase();
 }
 
+/** Prefix of the `from` address a Telegram update carries: `telegram:<numeric user id>`. */
+export const TELEGRAM_ADDRESS_PREFIX = "telegram:";
+
+/** `telegram:123`, `tg:123` or `123` to `123`; undefined when it is not a Telegram user id. */
+export function normalizeTelegramId(s: string): string | undefined {
+  const t = (s ?? "").trim().replace(/^(telegram|tg):/i, "");
+  return /^\d{1,15}$/.test(t) ? String(Number(t)) : undefined;
+}
+
+/** The shared audience of one allowed group: id `group:<conversation key>`, and a stranger-level tier for code that only looks at tiers. */
+export function groupPrincipal(msg: InboundMessage): Principal {
+  const title = typeof msg.meta?.groupTitle === "string" ? msg.meta.groupTitle.replace(/[\r\n]+/g, " ").trim().slice(0, 80) : "";
+  return { kind: "group", id: `group:${msg.conversationKey}`, tier: "stranger", displayName: title || "this group" };
+}
+
 export function normalizeEmail(s: string): string {
   return (s ?? "").trim().toLowerCase();
 }
@@ -72,7 +87,8 @@ export function capTier(p: Principal, max: Tier): Principal {
 
 /** Channels where a message from the owner's address really is the owner. */
 // WhatsApp binds an account to a phone number by SMS and signs every message, like the carrier does for SMS.
-export const OWNER_VERIFIED_CHANNELS: ReadonlySet<InboundMessage["channel"]> = new Set(["imessage", "sms", "whatsapp", "chat", "scheduled", "system"]);
+// Telegram authenticates every update with the sender's numeric user id (never the mutable @username), so the same holds.
+export const OWNER_VERIFIED_CHANNELS: ReadonlySet<InboundMessage["channel"]> = new Set(["imessage", "sms", "whatsapp", "telegram", "chat", "scheduled", "system"]);
 
 /** Handles that must never be registered or honoured as an agent handle. */
 export const RESERVED_HANDLES: ReadonlySet<string> = new Set(["owner"]);
@@ -141,6 +157,7 @@ function strangerPrincipal(msg: InboundMessage, address: string): Principal {
     displayName: address,
   };
   if (msg.channel === "a2a") p.agentHandle = address;
+  else if (address.startsWith(TELEGRAM_ADDRESS_PREFIX)) p.displayName = `Telegram user ${address.slice(TELEGRAM_ADDRESS_PREFIX.length)}`;
   else if (looksLikeEmail(address)) p.email = address;
   else if (looksLikePhone(address)) p.phone = address;
   return p;
@@ -172,6 +189,22 @@ function resolveUncapped(msg: InboundMessage, config: InstinctConfig, contacts: 
     const contact = isReservedHandle(handle) ? undefined : contacts.findByHandle(handle);
     if (contact) return agentPrincipal(contact, handle);
     return strangerPrincipal(msg, handle);
+  }
+
+  if (msg.channel === "telegram" && msg.meta?.isGroup === true) {
+    // A Telegram group is a shared audience whatever the speaker is: even the owner speaks here as one
+    // voice among people the agent cannot list. The group gets its own small permission set.
+    return groupPrincipal(msg);
+  }
+
+  if (msg.channel === "telegram") {
+    // The id comes from Telegram's own update, not from anything the sender typed.
+    const id = from.startsWith(TELEGRAM_ADDRESS_PREFIX) ? normalizeTelegramId(from) : undefined;
+    if (!id) return strangerPrincipal(msg, from || "unknown");
+    if ((config.owner.telegramIds ?? []).some((o) => normalizeTelegramId(o) === id)) return ownerPrincipalOf(config);
+    const contact = contacts.findByTelegram(id);
+    if (contact) return contactPrincipal(contact);
+    return strangerPrincipal(msg, `${TELEGRAM_ADDRESS_PREFIX}${id}`);
   }
 
   if (looksLikeEmail(from)) {

@@ -12,8 +12,10 @@
  * built with `tunnelOnly: true`, which serves /health and /webhooks/inkbox only.
  */
 import http from "node:http";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID, timingSafeEqual } from "node:crypto";
-import { decodeEvent, systemTaskOf } from "@open-instinct/core";
+import { decodeEvent, saveConfig, systemTaskOf, telegramLinkOf, telegramMessageOf } from "@open-instinct/core";
 import type { AgentRuntime, HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry, Scheduler, StateDir } from "@open-instinct/core";
 import { DurableInbox, parseCallEnded, parseInkboxEvent, verifyInkboxSignature } from "@open-instinct/inkbox";
 import type { CallEndedEvent } from "@open-instinct/inkbox";
@@ -38,6 +40,8 @@ export interface WalletCallback {
 export interface HttpApp {
   state?: StateDir;
   hydrateInbound?(msg: InboundMessage): Promise<InboundMessage>;
+  /** Voice notes to text and documents to readable text. Used by POST /voice, which has no channel to hydrate it. */
+  enrichInbound?(msg: InboundMessage): Promise<InboundMessage>;
   runtime: Pick<AgentRuntime, "handleInbound" | "stats"> & Partial<Pick<AgentRuntime, "runScheduled" | "runSystemTask">>;
   scheduler: Pick<Scheduler, "toMaritimeSchedules"> & Partial<Pick<Scheduler, "list" | "markRan">>;
   config: InstinctConfig;
@@ -213,6 +217,17 @@ export async function handleChat(app: HttpApp, body: ChatRequest, now: Date = ne
       void app.runtime.runSystemTask(task).catch(() => undefined);
       return { response: "", acked: true, conversationKey: `system:${task.id}` };
     }
+    // Telegram through a shared front door: a message from the owner's linked chat, or the link itself.
+    const telegramMessage = telegramMessageOf(event);
+    if (telegramMessage) {
+      if (body.source) telegramMessage.meta = { ...telegramMessage.meta, relaySource: body.source };
+      return acceptInbound(app, telegramMessage);
+    }
+    const telegramLink = telegramLinkOf(event);
+    if (telegramLink) {
+      applyTelegramLink(app, telegramLink.telegramId, log);
+      return { response: "", acked: true };
+    }
     const inbound = parseInkboxEvent(event);
     if (!inbound) return { response: "", acked: true };
     if (body.source) {
@@ -229,6 +244,17 @@ export async function handleChat(app: HttpApp, body: ChatRequest, now: Date = ne
   const pending = app.chatBuffer?.take(msg.conversationKey).map((m) => m.text).filter((t) => t.length > 0);
   if (pending && pending.length > 0) out.pending = pending;
   return out;
+}
+
+/**
+ * The gateway linked a Telegram account to this agent's owner. From now on that Telegram id is the
+ * owner (replacing an earlier one), and the one-time owner claim is closed.
+ */
+function applyTelegramLink(app: HttpApp, telegramId: string, log: (m: string) => void): void {
+  app.config.owner.telegramIds = [telegramId];
+  app.config.owner.claimOnFirstContact = false;
+  if (app.state) saveConfig(app.state, app.config);
+  log(`owner Telegram account linked by the gateway (${telegramId})`);
 }
 
 /**
@@ -374,6 +400,9 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
       return sendJson(res, 200, { connected: app.wallet.isConnected() });
     }
 
+    // A spoken message from the owner (the iPhone Action Button Shortcut): audio in, the agent's answer out.
+    if (method === "POST" && path === "/voice") return handleVoice(req, res);
+
     if (method === "POST" && path === "/chat") {
       const raw = await readBody(req, limit);
       if (raw === undefined) return sendJson(res, 413, { error: "body too large" });
@@ -391,6 +420,37 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     sendJson(res, 404, { error: "not found" });
+  }
+
+  async function handleVoice(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    const type = String(req.headers["content-type"] ?? "").split(";")[0]!.trim().toLowerCase();
+    if (!type.startsWith("audio/") && type !== "application/octet-stream" && type !== "video/mp4") {
+      return sendJson(res, 415, { error: "send the recording as the request body with an audio/* content type" });
+    }
+    if (!app.state || !app.enrichInbound) return sendJson(res, 501, { error: "voice is not available on this agent" });
+    const audio = await readBody(req, VOICE_LIMIT_BYTES);
+    if (audio === undefined) return sendJson(res, 413, { error: "recording too large (25 MB limit)" });
+    if (audio.length === 0) return sendJson(res, 400, { error: "the recording is empty" });
+    const inboundDir = app.state.path("workspace", "inbound");
+    mkdirSync(inboundDir, { recursive: true, mode: 0o700 });
+    const file = join(inboundDir, `voice-${randomUUID()}${voiceExtension(type)}`);
+    writeFileSync(file, audio, { mode: 0o600 });
+    const id = `voice:${randomUUID()}`;
+    const raw: InboundMessage = { id, channel: "chat", conversationKey: "chat:voice", from: "owner", text: "[voice note]", replyRef: {}, receivedAt: now().toISOString(), source: "voice", attachments: [{ path: file, mimeType: type === "application/octet-stream" ? "audio/mp4" : type }] };
+    try {
+      const heard = await app.enrichInbound(raw);
+      const transcript = /^\[voice note\] ([\s\S]+)$/.exec(heard.text)?.[1]?.trim();
+      if (!transcript) return sendJson(res, 422, { error: heard.text.replace(/^\[voice note\]\s*/, "").slice(0, 300) || "the recording could not be transcribed" });
+      const result = await app.runtime.handleInbound({ ...heard, text: transcript });
+      const out = summarize(result, false);
+      const pending = app.chatBuffer?.take(heard.conversationKey).map((m) => m.text).filter((t) => t.length > 0);
+      return sendJson(res, 200, { ...out, transcript, ...(pending && pending.length > 0 ? { pending } : {}) });
+    } catch (err) {
+      log(`voice failed: ${(err as Error).message}`);
+      return sendJson(res, 500, { error: "agent error", response: "" });
+    } finally {
+      rmSync(file, { force: true });
+    }
   }
 
   async function linkCallback(url: URL, res: http.ServerResponse): Promise<void> {
@@ -440,6 +500,17 @@ export async function listenTunnelServer(app: HttpApp, opts: HttpServerOptions =
 }
 
 /** Read the body up to `limit` bytes; undefined when it is too large. */
+/** A voice note over HTTP: the same 25 MB ceiling as speech-to-text endpoints. */
+const VOICE_LIMIT_BYTES = 25 * 1024 * 1024;
+
+function voiceExtension(type: string): string {
+  if (type.includes("mpeg")) return ".mp3";
+  if (type.includes("ogg") || type.includes("opus")) return ".ogg";
+  if (type.includes("wav")) return ".wav";
+  if (type.includes("webm")) return ".webm";
+  return ".m4a";
+}
+
 export function readBody(req: http.IncomingMessage, limit: number): Promise<Buffer | undefined> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];

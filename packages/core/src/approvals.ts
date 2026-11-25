@@ -24,14 +24,19 @@ const TOKEN_LENGTH = 4;
 const BARE_MAX_WORDS = 3;
 
 /** Words that mean yes or no on their own. Safe to accept without a token. */
-const STRICT_YES = ["yes", "y", "yep", "approve", "approved", "confirm", "confirmed", "go ahead", "do it", "book it"];
-const STRICT_NO = ["no", "n", "nope", "nah", "deny", "denied", "decline", "declined", "reject", "rejected", "don't", "dont"];
+const STRICT_YES = ["yes", "y", "yep", "approve", "approved", "confirm", "confirmed", "go ahead", "do it", "book it",
+  // Arabic (written after normalize(): no diacritics, alef variants folded to bare alef). "ايه" is left out: it means "what".
+  "نعم", "ايوه", "ايوا", "ايوة", "اه", "موافق", "وافق", "اوافق", "نفذ", "احجز", "اكد", "تاكيد", "اكيد جدا"];
+const STRICT_NO = ["no", "n", "nope", "nah", "deny", "denied", "decline", "declined", "reject", "rejected", "don't", "dont",
+  "لا", "لاء", "لا لا", "ارفض", "رفض", "مرفوض", "مش موافق", "لا اوافق", "متنفذش", "ماتنفذش"];
 /** Casual words that often answer something else. Accepted only next to a token. */
-const CASUAL_YES = ["yeah", "yea", "ok", "okay", "sure", "go"];
-const CASUAL_NO = ["cancel", "stop"];
+const CASUAL_YES = ["yeah", "yea", "ok", "okay", "sure", "go", "تمام", "ماشي", "اوكي", "اوك", "اكيد", "يلا", "حاضر"];
+const CASUAL_NO = ["cancel", "stop", "الغي", "الغاء", "وقف", "كفاية"];
 /** Verbs that can only be about an approval. */
-const EXPLICIT_VERBS = new Set(["approve", "approved", "confirm", "confirmed", "deny", "denied", "decline", "declined", "reject", "rejected"]);
-const FILLER = new Set(["please", "pls", "thanks", "thank", "you", "ty", "thx", "that", "it", "is", "fine", "ok", "okay", "sure", "do", "go", "ahead", "book"]);
+const EXPLICIT_VERBS = new Set(["approve", "approved", "confirm", "confirmed", "deny", "denied", "decline", "declined", "reject", "rejected",
+  "موافق", "وافق", "اوافق", "ارفض", "رفض", "مرفوض", "اكد", "نفذ"]);
+const FILLER = new Set(["please", "pls", "thanks", "thank", "you", "ty", "thx", "that", "it", "is", "fine", "ok", "okay", "sure", "do", "go", "ahead", "book",
+  "من", "فضلك", "لو", "سمحت", "شكرا", "يا", "باشا", "جدا", "الله", "يخليك", "ده", "دي", "كده"]);
 
 const YES_WORDS = [...STRICT_YES, ...CASUAL_YES];
 const NO_WORDS = [...STRICT_NO, ...CASUAL_NO];
@@ -49,10 +54,13 @@ function newToken(): string {
   return t;
 }
 
+/** Lower case, Arabic diacritics and tatweel dropped, alef variants folded, then anything but letters and apostrophes becomes a space. */
 function normalize(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z' ]+/g, " ")
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[\u0622\u0623\u0625]/g, "\u0627")
+    .replace(/[^a-z\u0621-\u064A' ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

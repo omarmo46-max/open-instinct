@@ -9,7 +9,7 @@
  * stranger in the group never sees what the owner's turns put in context.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { Agent, type AgentMessage, type AgentTool, type BeforeToolCallResult, type StreamFn } from "@earendil-works/pi-agent-core";
 import { createInitialSystemMessage, toToolDeclaration, type ImageContent, type Model } from "@earendil-works/pi-ai";
@@ -20,7 +20,10 @@ import type { ContactStore } from "./contacts.js";
 import type { MemoryStore } from "./memory.js";
 import { OwnerNotifier } from "./notifier.js";
 import { DEFAULT_TIER_TABLE, SPEND_CAPABILITIES, type PolicyEngine } from "./policy.js";
-import { looksLikePhone, normalizePhone, resolvePrincipal } from "./principal.js";
+import { isNewConversationCommand, pickLanguage, t as tr, type Lang } from "./i18n.js";
+import { loadImageAttachments } from "./attachments.js";
+import { GroupRegistry } from "./groups.js";
+import { TELEGRAM_ADDRESS_PREFIX, looksLikePhone, normalizePhone, normalizeTelegramId, resolvePrincipal } from "./principal.js";
 import { saveConfig } from "./config.js";
 import { CLAIM_WELCOME_TEXT, MAX_CLAIM_ATTEMPTS, matchClaimCode, ownerClaimStatus } from "./owner-claim.js";
 import { readAgentsInstructions, readPersona } from "./persona.js";
@@ -106,12 +109,12 @@ const STRANGERS_FILE = "strangers.json";
 const CONVERSATIONS_FILE = "conversations.json";
 const APPROVED_FILE = "approved.json";
 const PENDING_REPLIES_FILE = "pending-replies.json";
-const DELIVERABLE: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "email", "a2a"]);
+const DELIVERABLE: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "telegram", "email", "a2a"]);
 /** Channels where the sender's identity is bound to the carrier or the process, so an owner reply can settle an approval. */
-const APPROVAL_CHANNELS: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "chat"]);
+const APPROVAL_CHANNELS: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "telegram", "chat"]);
 /** Phone text threads: where owner notices go when the owner last wrote from one. */
-const TEXT_THREADS: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp"]);
-const CHANNELS: ReadonlySet<string> = new Set(["imessage", "sms", "whatsapp", "email", "a2a", "chat", "scheduled", "system"]);
+const TEXT_THREADS: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "telegram"]);
+const CHANNELS: ReadonlySet<string> = new Set(["imessage", "sms", "whatsapp", "telegram", "email", "a2a", "chat", "scheduled", "system"]);
 const REPLY_TOOL = "reply_instinct";
 const PROCESSING_FILE = "processing-events.json";
 const CLAIM_ATTEMPTS_FILE = "owner-claim-attempts.json";
@@ -267,10 +270,13 @@ export class AgentRuntime {
   private readonly a2aAdmissions = new Map<string, Promise<unknown>>();
   private readonly backgroundReplies = new Set<string>();
   private ownerLast?: { conversationKey: string; channel: Channel };
+  private readonly groups: GroupRegistry;
+  private readonly groupHits = new Map<string, number[]>();
 
   constructor(deps: RuntimeDeps) {
     this.deps = deps;
     this.now = deps.now ?? (() => new Date());
+    this.groups = new GroupRegistry(deps.state, deps.config, this.now);
     this.sessionsDir = deps.sessionsDir ?? deps.state.path("sessions");
     deps.state.ensure();
     this.a2aStore = deps.a2aStore ?? new A2AStore(deps.state);
@@ -404,7 +410,7 @@ export class AgentRuntime {
     if (outcome.state !== "done") {
       this.backgroundReplies.add(msg.id);
       // A carrier thread gets its texted "on it" from runInbound (ackSlowReplies), on every path.
-      return { ...base, reply: ackText(msg.channel) };
+      return { ...base, reply: ackText(msg.channel, pickLanguage(this.deps.config.owner, msg.text)) };
     }
     if ("error" in outcome.value) throw outcome.value.error;
     return outcome.value.result;
@@ -423,13 +429,16 @@ export class AgentRuntime {
   private maybeClaimOwner(msg: InboundMessage): InboundMessage | undefined {
     const { config, state, audit } = this.deps;
     const owner = config.owner;
-    if (!owner.claimOnFirstContact || owner.phones.length > 0) return undefined;
-    if (msg.channel !== "imessage" && msg.channel !== "sms") return undefined;
+    if (!owner.claimOnFirstContact || owner.phones.length > 0 || (owner.telegramIds?.length ?? 0) > 0) return undefined;
+    if (msg.channel !== "imessage" && msg.channel !== "sms" && msg.channel !== "telegram") return undefined;
     if (msg.meta?.conversationScopeKnown !== true || isGroup(msg)) return undefined;
     if (msg.meta?.reaction !== undefined) return undefined;
     const from = (msg.from ?? "").trim();
-    if (!looksLikePhone(from)) return undefined;
-    const phone = normalizePhone(from);
+    // Telegram identifies people by numeric user id, the carrier channels by phone.
+    const onTelegram = msg.channel === "telegram";
+    const telegramId = onTelegram && from.startsWith(TELEGRAM_ADDRESS_PREFIX) ? normalizeTelegramId(from) : undefined;
+    if (onTelegram ? !telegramId : !looksLikePhone(from)) return undefined;
+    const phone = onTelegram ? `${TELEGRAM_ADDRESS_PREFIX}${telegramId}` : normalizePhone(from);
     if (!phone) return undefined;
     const status = ownerClaimStatus(config, this.now());
     if (!status.enabled) return undefined;
@@ -444,7 +453,8 @@ export class AgentRuntime {
       }
       return undefined;
     }
-    owner.phones = [phone];
+    if (telegramId) owner.telegramIds = [telegramId];
+    else owner.phones = [phone];
     owner.claimOnFirstContact = false;
     delete owner.claimCode;
     delete owner.claimExpiresAt;
@@ -512,7 +522,8 @@ export class AgentRuntime {
         principal.cappedFrom ??= latestPrincipal.cappedFrom;
       }
     }
-    if (group) principal = this.capForGroup(principal, msg);
+    // A group audience (an allowed Telegram group) already has its own permission set; tier capping is for threads with known members.
+    if (group && principal.kind !== "group") principal = this.capForGroup(principal, msg);
     const base = { principal, conversationKey: msg.conversationKey };
 
     audit.append({
@@ -522,6 +533,11 @@ export class AgentRuntime {
       detail: { id: msg.id, channel: msg.channel, from: msg.from, chars: msg.text.length, source: msg.source, ...(group ? { group: true, tier: principal.tier } : {}) },
     });
 
+    if (principal.kind === "group") {
+      const blocked = await this.gateGroup(msg, principal);
+      if (blocked) return { ...base, acked: true, blocked };
+    }
+
     if (principal.kind === "stranger") {
       const limit = this.strangerLimit(msg.conversationKey, policy.toJSON().strangerLimits);
       if (limit) {
@@ -530,7 +546,14 @@ export class AgentRuntime {
       }
     }
 
+    // "/new" starts a fresh conversation. Durable memory and the journal are untouched.
+    if (msg.channel !== "a2a" && !msg.meta?.delegatedResult && isNewConversationCommand(msg.text)) {
+      return this.startFresh(msg, principal, routedKey, base);
+    }
+
     let text = msg.text;
+    // In a group the agent sees one thread with many voices, so each line says who is speaking.
+    if (principal.kind === "group") text = `[${speakerName(msg)}] ${text}`;
     let approvalNote: string | undefined;
     if (principal.kind === "owner" && !group && !msg.meta?.delegatedResult) {
       if (DELIVERABLE.has(msg.channel) && msg.channel !== "a2a") {
@@ -569,7 +592,9 @@ export class AgentRuntime {
     // Only a run the owner started with their own words may settle an approval through a tool.
     conv.ownerTurn = principal.kind === "owner" && !group && !msg.meta?.delegatedResult && APPROVAL_CHANNELS.has(msg.channel);
     const ack = this.startSlowReplyAck(msg, principal, group || arrival.queued || Boolean(msg.meta?.delegatedResult));
-    const run = conv.run(prompt).finally(() => {
+    // Pictures go to the model itself when it can see and the sender is someone the owner knows.
+    const images = principal.kind !== "stranger" && principal.kind !== "group" && this.deps.model.input?.includes("image") ? loadImageAttachments(msg, this.deps.state.path("workspace", "inbound")) : [];
+    const run = conv.run(prompt, images.length > 0 ? images : undefined).finally(() => {
       conv.ownerTurn = false;
     }).then(
       (reply) => ({ ok: true as const, reply }),
@@ -584,6 +609,46 @@ export class AgentRuntime {
       await this.deliver(conv, reply, { keepPrompt: approvals.promptedToken() !== promptedBefore, arrivedSeq: arrival.arrivedSeq, failure: !outcome.ok });
     }
     return { ...base, acked: true, reply: joinReply(reply) };
+  }
+
+  /** Admit a message from a group: only groups the owner allowed, and never faster than a person could read the answers. */
+  private async gateGroup(msg: InboundMessage, principal: Principal): Promise<string | undefined> {
+    const key = msg.conversationKey;
+    if (!this.groups.isAllowed(key)) {
+      const title = typeof msg.meta?.groupTitle === "string" ? msg.meta.groupTitle.replace(/[\r\n]+/g, " ").trim().slice(0, 80) : undefined;
+      const first = this.groups.notePending(key, title);
+      this.deps.audit.append({ kind: "policy", conversationKey: key, principal: principal.id, detail: { blocked: "group not allowed", ...(first ? { firstTime: true } : {}) } });
+      if (first) {
+        const lang = pickLanguage(this.deps.config.owner, undefined);
+        await this.relayToOwner(tr(lang, "groupPending").replace(/\{title\}/g, title || key).replace(/\{key\}/g, key), "system:groups").catch(() => false);
+      }
+      return "group not allowed";
+    }
+    const t = this.now().getTime();
+    const hits = (this.groupHits.get(key) ?? []).filter((at) => at > t - 60 * 60_000);
+    if (hits.length >= GROUP_MESSAGES_PER_HOUR || hits.filter((at) => at > t - 10 * 60_000).length >= GROUP_MESSAGES_PER_10_MIN) {
+      this.groupHits.set(key, hits);
+      this.deps.audit.append({ kind: "policy", conversationKey: key, principal: principal.id, detail: { blocked: "group rate limit" } });
+      return "group rate limit";
+    }
+    hits.push(t);
+    this.groupHits.set(key, hits);
+    return undefined;
+  }
+
+  /** Forget this thread's transcript and say so. The owner's durable memory and journal stay. */
+  private async startFresh(msg: InboundMessage, principal: Principal, routedKey: string | undefined, base: { principal: Principal; conversationKey: string }): Promise<HandleResult> {
+    const key = routedKey ?? runtimeKey(msg, principal);
+    this.conversations.delete(key);
+    rmSync(join(this.sessionsDir, `${encodeURIComponent(key)}.jsonl`), { force: true });
+    this.deps.audit.append({ kind: "policy", conversationKey: msg.conversationKey, principal: principal.id, detail: { reset: "new conversation requested", key } });
+    // The command carries no language of its own ("/new"), so an Arabic phrase wins, then the owner's preference.
+    const lang = /[\u0600-\u06FF]/.test(msg.text) ? "ar" : pickLanguage(this.deps.config.owner, undefined);
+    const reply = tr(lang, principal.kind === "owner" ? "newConversation" : "newConversationStranger");
+    if (DELIVERABLE.has(msg.channel)) {
+      await this.safeSend({ channel: msg.channel as OutboundChannel, conversationKey: msg.conversationKey, text: reply, replyRef: msg.replyRef }, principal, msg.conversationKey);
+    }
+    return { ...base, acked: true, reply };
   }
 
   /** Scheduled jobs run as the owner in their own conversation; results go to the owner's phone. */
@@ -739,7 +804,7 @@ export class AgentRuntime {
     if (!meta) return undefined;
     const principal = conv.principal;
 
-    if (principal.kind === "stranger" && meta.capabilities.includes("owner.relay")) {
+    if ((principal.kind === "stranger" || principal.kind === "group") && meta.capabilities.includes("owner.relay")) {
       const limit = this.strangerRelayLimit(policy.toJSON().strangerLimits);
       if (limit) return { block: true, reason: limit };
     }
@@ -941,7 +1006,7 @@ export class AgentRuntime {
     let timer: ReturnType<typeof setTimeout> | undefined = setTimeout(() => {
       timer = undefined;
       if ((this.lastDelivered.get(thread)?.seq ?? -1) > startSeq) return;
-      sending = this.safeSend({ channel: msg.channel as OutboundChannel, conversationKey: thread, text: ackText(msg.channel), replyRef: msg.replyRef }, principal, thread).catch(() => undefined);
+      sending = this.safeSend({ channel: msg.channel as OutboundChannel, conversationKey: thread, text: ackText(msg.channel, pickLanguage(this.deps.config.owner, msg.text)), replyRef: msg.replyRef }, principal, thread).catch(() => undefined);
     }, this.deps.replyBudgetMs ?? DEFAULT_REPLY_BUDGET_MS);
     return {
       stop: async () => {
@@ -958,7 +1023,7 @@ export class AgentRuntime {
    */
   async relayToOwner(text: string, originKey: string, opts: { approvalToken?: string } = {}): Promise<boolean> {
     const last = this.ownerLast;
-    const reachable = Boolean(this.deps.config.owner.phones[0]) || Boolean(last && DELIVERABLE.has(last.channel) && last.channel !== "a2a");
+    const reachable = Boolean(this.deps.config.owner.phones[0]) || Boolean(this.deps.config.owner.telegramIds?.[0]) || Boolean(last && DELIVERABLE.has(last.channel) && last.channel !== "a2a");
     if (!reachable) return false;
     await this.sendToOwner(text, this.ownerPrincipal(), originKey, opts);
     return true;
@@ -971,11 +1036,15 @@ export class AgentRuntime {
   private async sendToOwner(text: string, principal: Principal, originKey: string, opts: { approvalToken?: string } = {}): Promise<void> {
     const last = this.ownerLast;
     const phone = this.deps.config.owner.phones[0];
+    const telegramId = this.deps.config.owner.telegramIds?.[0];
     let out: OutboundMessage;
     if (last && TEXT_THREADS.has(last.channel)) {
       out = { channel: last.channel as OutboundChannel, conversationKey: last.conversationKey, text };
     } else if (phone) {
       out = { channel: "imessage", to: phone, text };
+    } else if (telegramId && !(last && DELIVERABLE.has(last.channel) && last.channel !== "a2a")) {
+      // A Telegram-only owner who has not written yet this run: a private chat id is the user id.
+      out = { channel: "telegram", to: telegramId, text };
     } else if (last && DELIVERABLE.has(last.channel) && last.channel !== "a2a") {
       out = { channel: last.channel as OutboundChannel, conversationKey: last.conversationKey, text };
     } else {
@@ -1028,7 +1097,13 @@ export class AgentRuntime {
       for (const c of meta.capabilities) if (policy.canEver(principal, c)) capabilities.add(c);
     }
     const pending = approvals.pending().filter((a) => (principal.kind === "owner" && principal.tier === "owner") || a.conversationKey === conv.key);
-    const extra = this.deps.promptExtra?.(principal, conv.channel) ?? [];
+    const extra = [...(this.deps.promptExtra?.(principal, conv.channel) ?? [])];
+    // A group sees none of the owner's private setup: no standing instructions, skills or setup summary. It gets its own notes.
+    const inGroup = principal.kind === "group";
+    if (inGroup && conv.deliveryKey) {
+      const notes = this.groups.readNotes(conv.deliveryKey).trim();
+      extra.push(`# This group's notes\n${notes ? notes.slice(-4000) : "(none yet; use group_notes to keep things the group asks you to remember)"}`);
+    }
     return buildSystemPrompt({
       config,
       principal,
@@ -1039,10 +1114,10 @@ export class AgentRuntime {
       memoryDigest: this.memoryDigestFor(principal),
       // Read fresh each time so `instinct persona set` applies on the next message.
       persona: readPersona(state),
-      instructions: readAgentsInstructions(state),
-      skillsPrompt: typeof skillsPrompt === "function" ? skillsPrompt(principal) : skillsPrompt,
-      pendingApprovals: pending,
-      setup: this.deps.setupSummary?.(),
+      instructions: inGroup ? undefined : readAgentsInstructions(state),
+      skillsPrompt: inGroup ? undefined : typeof skillsPrompt === "function" ? skillsPrompt(principal) : skillsPrompt,
+      pendingApprovals: inGroup ? [] : pending,
+      setup: inGroup ? undefined : this.deps.setupSummary?.(),
       extra,
     });
   }
@@ -1534,17 +1609,27 @@ function withData(text: string, msg: InboundMessage, describe: RuntimeDeps["desc
   return `${text}\n\n${parts.join("\n")}`.trim();
 }
 
-function ackText(channel: Channel): string {
+function ackText(channel: Channel, lang: Lang = "en"): string {
   switch (channel) {
     case "email":
-      return "Got it. I am on it and will reply by email when done.";
+      return tr(lang, "ackEmail");
     case "chat":
-      return "On it. This is taking a moment; send another message in a bit and I will have the answer here.";
+      return tr(lang, "ackChat");
     case "a2a":
-      return "Working on it.";
+      return tr(lang, "ackA2a");
     default:
-      return "On it. I will text you when it is done.";
+      return tr(lang, "ackDefault");
   }
+}
+
+/** How fast one allowed group may use the agent: enough for a lively chat, a ceiling on what a noisy one can cost. */
+const GROUP_MESSAGES_PER_HOUR = 60;
+const GROUP_MESSAGES_PER_10_MIN = 20;
+
+/** Who is speaking in a group, as a short label safe to put in brackets. */
+function speakerName(msg: InboundMessage): string {
+  const raw = (typeof msg.meta?.pushName === "string" && msg.meta.pushName) || (typeof msg.meta?.username === "string" && msg.meta.username ? `@${msg.meta.username}` : "") || "someone";
+  return raw.replace(/[\r\n\[\]]+/g, " ").trim().slice(0, 40) || "someone";
 }
 
 function isGroup(msg: InboundMessage): boolean {

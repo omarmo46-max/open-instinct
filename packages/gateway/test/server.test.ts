@@ -487,3 +487,22 @@ describe("gateway http", () => {
     expect(await connect.text()).toContain("No Instinct with that id");
   });
 });
+
+describe("connect page with the Telegram front door", () => {
+  it("offers a one-time Connect Telegram link only when the gateway runs the bot", async () => {
+    const { renderConnect } = await import("../src/pages.js");
+    const user = readyUser();
+    expect(renderConnect(user, undefined)).not.toContain("Telegram");
+    const off = renderConnect(user, undefined, { linked: false });
+    expect(off).toContain("Reload in a minute");
+    const on = renderConnect(user, undefined, { url: "https://t.me/hub_bot?start=ABCDEFGHIJKLMNOP", linked: false });
+    expect(on).toContain('href="https://t.me/hub_bot?start=ABCDEFGHIJKLMNOP"');
+    expect(on).toContain("Connect Telegram");
+    expect(on).toContain("expires in 30 minutes");
+    const linked = renderConnect(user, undefined, { url: "https://t.me/hub_bot?start=ABCDEFGHIJKLMNOP", linked: true });
+    expect(linked).toContain("Connected");
+    expect(linked).toContain("Link another Telegram account");
+    // A hostile url never becomes a link.
+    expect(renderConnect(user, undefined, { url: "javascript:alert(1)", linked: false })).not.toContain("javascript:");
+  });
+});

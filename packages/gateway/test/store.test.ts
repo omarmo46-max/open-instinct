@@ -52,3 +52,32 @@ describe("UserStore", () => {
     expect(maskPhone("+14155550123")).toBe("+1••••••0123");
   });
 });
+
+describe("Telegram lookups", () => {
+  const user = (over: Record<string, unknown> = {}) => ({
+    id: "usr_t1", name: "T", phone: "+15555550100", handle: "t1", identityId: "i", identityApiKey: "k", signingKey: "s",
+    createdAt: new Date().toISOString(), status: "ready" as const, ...over,
+  });
+
+  it("finds a person by Telegram id, agent token and unexpired link code, and nothing else", () => {
+    const dir = tempDir();
+    const store = new UserStore(dir);
+    store.save(user({ telegramId: "555", agentToken: "tok-1", telegramLink: { code: "CODE-ABCDEFGHIJKLM", expiresAt: new Date(Date.now() + 60_000).toISOString() } }));
+    expect(store.byTelegramId("555")?.id).toBe("usr_t1");
+    expect(store.byTelegramId("556")).toBeUndefined();
+    expect(store.byTelegramId("")).toBeUndefined();
+    expect(store.byAgentToken("tok-1")?.id).toBe("usr_t1");
+    expect(store.byAgentToken("tok-2")).toBeUndefined();
+    expect(store.byAgentToken("")).toBeUndefined();
+    expect(store.byTelegramLinkCode("CODE-ABCDEFGHIJKLM")?.id).toBe("usr_t1");
+    expect(store.byTelegramLinkCode("CODE-ABCDEFGHIJKLX")).toBeUndefined();
+    expect(store.byTelegramLinkCode("CODE-ABCDEFGHIJKLM", Date.now() + 120_000)).toBeUndefined();
+  });
+
+  it("never shows the agent token, link code or Telegram id in the public record", () => {
+    const pub = JSON.stringify(publicUser(user({ telegramId: "555", agentToken: "tok-1", telegramLink: { code: "X", expiresAt: "2030-01-01T00:00:00Z" } }) as never));
+    expect(pub).not.toContain("tok-1");
+    expect(pub).not.toContain("555");
+    expect(pub).not.toContain("telegramLink");
+  });
+});

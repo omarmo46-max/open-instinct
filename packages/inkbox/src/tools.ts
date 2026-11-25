@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Type } from "typebox";
 import { defineTool, normalizeHandle, normalizePhone, textResult } from "@open-instinct/core";
-import type { Contact, ContactStore, InstinctConfig, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@open-instinct/core";
+import type { Contact, ContactStore, FileOutbox, InstinctConfig, OutboundFile, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@open-instinct/core";
 import type { CallOrigination, FileSend, InkboxChannel } from "./channel.js";
 import { CALL_ORIGINATIONS, parseConversationKey } from "./channel.js";
 
@@ -25,6 +25,12 @@ export interface SendFileDeps {
    * send_file refuses every path.
    */
   dataDir?: string;
+  /**
+   * Channels that take uploads without Inkbox. A file sent in a `telegram:` or `whatsapp:`
+   * conversation goes out on that channel; `to: "owner"` falls back to them when the owner
+   * has no phone or email Inkbox could use. Filled in after those channels start.
+   */
+  fileChannels?: { telegram?: FileOutbox; whatsapp?: FileOutbox };
 }
 
 export interface MessagingDeps extends SendFileDeps {
@@ -402,6 +408,16 @@ export function sendFileTool(deps: SendFileDeps): RegisteredTool {
       const content = () => fs.readFileSync(file.path);
       const base = (): Omit<FileSend, "channel"> => ({ filename: file.name, contentType: file.mime, content: content(), ...(caption ? { caption } : {}) });
 
+      const outbound = (): OutboundFile => ({ filename: file.name, contentType: file.mime, content: content(), ...(caption ? { caption } : {}) });
+      const sideChannel = ctx.conversationKey?.startsWith("telegram:") ? "telegram" : ctx.conversationKey?.startsWith("whatsapp:") ? "whatsapp" : undefined;
+
+      if (!args.to && sideChannel) {
+        const out = deps.fileChannels?.[sideChannel];
+        if (!out) throw new Error(`${sideChannel === "telegram" ? "Telegram" : "WhatsApp"} is not connected here, so the file cannot be attached.`);
+        await out.sendFile({ ...outbound(), conversationKey: ctx.conversationKey });
+        return textResult(`Sent ${file.name} in the current ${sideChannel} conversation.`);
+      }
+
       if (!args.to) {
         const key = parseConversationKey(ctx.conversationKey);
         if (key.channel === "chat") {
@@ -422,6 +438,20 @@ export function sendFileTool(deps: SendFileDeps): RegisteredTool {
       const wantsOwner = args.to.trim().toLowerCase() === "owner";
       if (!isOwner(ctx) && !wantsOwner) {
         throw new Error(`${ctx.principal.displayName} may only send files here or to the owner (to: "owner").`);
+      }
+      // An owner Inkbox cannot reach (no phone or email, or no Inkbox at all) still gets the file where they do write.
+      if (wantsOwner && !args.channel) {
+        const o = deps.config.owner;
+        const telegramId = o.telegramIds?.[0];
+        const inkboxCanReach = Boolean(deps.channel) && Boolean(o.phones[0] || o.emails[0]);
+        if (!inkboxCanReach && telegramId && deps.fileChannels?.telegram) {
+          await deps.fileChannels.telegram.sendFile({ ...outbound(), to: telegramId, ...(!isOwner(ctx) ? { caption: `From ${ctx.principal.displayName}: ${caption ?? file.name}` } : {}) });
+          return textResult(`Sent ${file.name} to ${o.name} via telegram.`);
+        }
+        if (!deps.channel && o.phones[0] && deps.fileChannels?.whatsapp) {
+          await deps.fileChannels.whatsapp.sendFile({ ...outbound(), to: o.phones[0], ...(!isOwner(ctx) ? { caption: `From ${ctx.principal.displayName}: ${caption ?? file.name}` } : {}) });
+          return textResult(`Sent ${file.name} to ${o.name} via whatsapp.`);
+        }
       }
       const target = resolveTarget(args.to, deps, args.channel);
       const send: FileSend = { ...base(), channel: target.channel, to: target.to };

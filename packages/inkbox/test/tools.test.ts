@@ -267,6 +267,39 @@ describe("send_file", () => {
     expect(sentFiles).toHaveLength(0);
   });
 
+  it("attaches files on Telegram and WhatsApp conversations through their own channel, without Inkbox", async () => {
+    const sent: Array<{ via: string; file: Record<string, unknown> }> = [];
+    const fileChannels = {
+      telegram: { sendFile: vi.fn(async (f: Record<string, unknown>) => { sent.push({ via: "telegram", file: f }); }) },
+      whatsapp: { sendFile: vi.fn(async (f: Record<string, unknown>) => { sent.push({ via: "whatsapp", file: f }); }) },
+    };
+    const alone = sendFileTool({ contacts, config, dataDir, fileChannels }).spec;
+    const a = await alone.execute({ path: "research/brief.pdf", caption: "Here" }, ctxFor(owner, "telegram:777"));
+    expect(text(a)).toContain("current telegram conversation");
+    await alone.execute({ path: "research/brief.pdf" }, ctxFor(friend, "whatsapp:201000000000@s.whatsapp.net"));
+    expect(sent.map((x) => x.via)).toEqual(["telegram", "whatsapp"]);
+    expect(sent[0]!.file).toMatchObject({ conversationKey: "telegram:777", filename: "brief.pdf", contentType: "application/pdf", caption: "Here" });
+    expect(sentFiles).toHaveLength(0);
+    // A channel that is not connected says so instead of falling through to Inkbox.
+    const none = sendFileTool({ contacts, config, dataDir, fileChannels: {} }).spec;
+    await expect(none.execute({ path: "research/brief.pdf" }, ctxFor(owner, "telegram:777"))).rejects.toThrow(/Telegram is not connected/);
+  });
+
+  it("sends to a Telegram-only owner on Telegram, and labels it when someone else sends", async () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const fileChannels = { telegram: { sendFile: vi.fn(async (f: Record<string, unknown>) => { sent.push(f); }) } };
+    const telegramOnly = { ...config, owner: { ...config.owner, phones: [], emails: [], telegramIds: ["777"] } };
+    const alone = sendFileTool({ contacts, config: telegramOnly, dataDir, fileChannels }).spec;
+    await alone.execute({ path: "research/brief.pdf", to: "owner" }, ctxFor(owner, "chat:default"));
+    expect(sent[0]).toMatchObject({ to: "777", filename: "brief.pdf" });
+    await alone.execute({ path: "research/brief.pdf", to: "owner", caption: "fyi" }, ctxFor(friend, "telegram:900"));
+    expect(String(sent[1]!.caption)).toContain("fyi");
+    expect(String(sent[1]!.caption)).toMatch(/^From /);
+    // Without a Telegram id for the owner the old refusal stands.
+    const noId = sendFileTool({ contacts, config, dataDir, fileChannels }).spec;
+    await expect(noId.execute({ path: "research/brief.pdf", to: "owner" }, ctxFor(owner, "chat:default"))).rejects.toThrow(/Inkbox is not configured|no phone/);
+  });
+
   it("refuses to send on a2a or unknown threads without `to`", async () => {
     const t = fileTool();
     await expect(t.execute({ path: "research/brief.pdf" }, ctxFor(friend, "a2a:ctx_1"))).rejects.toThrow(/agent-to-agent/);

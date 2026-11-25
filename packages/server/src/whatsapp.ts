@@ -9,6 +9,11 @@ export function whatsappEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.WHATSAPP_ENABLED?.trim() === "1" || Boolean(env.WHATSAPP_PHONE?.trim());
 }
 
+/** On when TELEGRAM_BOT_TOKEN is set and TELEGRAM_ENABLED is not 0. */
+export function telegramEnabled(env: NodeJS.ProcessEnv): boolean {
+  return Boolean(env.TELEGRAM_BOT_TOKEN?.trim()) && env.TELEGRAM_ENABLED?.trim() !== "0";
+}
+
 /**
  * Sends each message through the transport that owns its channel, and everything else
  * through the default one. Typing indicators follow the conversation key's prefix.

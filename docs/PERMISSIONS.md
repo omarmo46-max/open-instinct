@@ -37,6 +37,25 @@ Delegated results retain the original audience cap and later reductions observed
 requester's trust tier or local conversation. Membership is not fetched again solely for
 delivery of the remote result.
 
+## Groups
+
+A group chat is a shared audience: everyone reads every reply, and the owner cannot list who is in it.
+So a group is not a tier. On Telegram the agent stays silent in a group until the owner allows it
+(it tells the owner the first time it is addressed; the owner says "allow group <title>"). An allowed group
+becomes one principal (`group:<chat>`) with a small fixed permission set, whoever speaks in it, including the owner:
+
+| Capability | Allowed group |
+|---|---|
+| `converse` | yes |
+| `web.read` (public web search and fetch) | yes |
+| `owner.relay` (leave the owner a message; 3 a day like a stranger) | yes |
+| `group.notes` (the group's own notebook) | yes |
+| everything else (calendar, mail, contacts, files, memory, computer, apps, money, people, schedules) | no |
+
+The group's prompt carries the owner's name only: no memory, standing instructions, skills, setup summary,
+city or contact details. Each group is rate limited (20 messages per 10 minutes, 60 per hour). The permission set
+is `GROUP_ROW` in `packages/core/src/policy.ts`; no grant to a tier changes it.
+
 ## Capabilities
 
 Each tool call is tagged with the capabilities it needs. The guard allows a call when the
@@ -71,6 +90,7 @@ spend or scope limit.
 | `web.read` (web_search, web_fetch; public hosts only) | yes | yes | yes | yes | yes | no | no |
 | `apps.use` (call a connected app tool) | yes | yes | yes | yes | yes | no | no |
 | `phone.call` (place a Voice AI call) | ask | ask | no | no | no | no | no |
+| `group.notes` (a group's own notebook; only inside an allowed group) | no | no | no | no | no | no | no |
 
 Legend: `yes` allowed · `ask` allowed after the owner approves by text · `limit` allowed within the owner's
 spend policy, otherwise ask · `no` denied.

@@ -8,7 +8,8 @@
 // ---------------------------------------------------------------------------
 
 /** Who is talking to the agent. Resolved before the model sees a message. */
-export type PrincipalKind = "owner" | "contact" | "agent" | "stranger";
+/** `group` is a shared audience (a Telegram group the owner allowed): siloed, with its own small permission set instead of a tier. */
+export type PrincipalKind = "owner" | "contact" | "agent" | "stranger" | "group";
 
 /** Trust tiers, highest first. See docs/PERMISSIONS.md. */
 export type Tier = "owner" | "staff" | "partner" | "family" | "friend" | "contact" | "stranger";
@@ -65,7 +66,8 @@ export type Capability =
   | "schedule.manage"
   | "web.read"
   | "apps.use"
-  | "phone.call";
+  | "phone.call"
+  | "group.notes";
 
 /** What a tier gets for a capability by default. */
 export type Permission = "yes" | "ask" | "limit" | "no" | "intro" | "partial";
@@ -120,6 +122,8 @@ export interface Contact {
   tier: Tier;
   phones: string[];
   emails: string[];
+  /** Telegram user ids (numeric strings) of this person. A contact reached on Telegram is capped at partner, like phone and email. */
+  telegramIds?: string[];
   /** Inkbox handle of this person's agent, if they have one. */
   agentHandle?: string;
   notes?: string;
@@ -131,7 +135,24 @@ export interface Contact {
 // Channels and events
 // ---------------------------------------------------------------------------
 
-export type Channel = "imessage" | "sms" | "whatsapp" | "email" | "a2a" | "chat" | "scheduled" | "system";
+/** A file to deliver as an attachment on a channel that takes uploads (Telegram, WhatsApp). */
+export interface OutboundFile {
+  /** Reply in this thread when set (`telegram:<chat id>`, `whatsapp:<jid>`). */
+  conversationKey?: string;
+  /** Otherwise: a Telegram user id or a phone number, whichever the channel addresses by. */
+  to?: string;
+  filename: string;
+  contentType: string;
+  content: Buffer;
+  /** Text shown with the file. */
+  caption?: string;
+}
+
+export interface FileOutbox {
+  sendFile(file: OutboundFile): Promise<void>;
+}
+
+export type Channel = "imessage" | "sms" | "whatsapp" | "telegram" | "email" | "a2a" | "chat" | "scheduled" | "system";
 
 /** A normalized inbound event, whatever the source. */
 export interface InboundMessage {
@@ -227,7 +248,13 @@ export interface OwnerProfile {
   name: string;
   phones: string[];
   emails: string[];
+  /** Telegram user ids (numeric strings). Telegram signs every message with the sender's id, so an id here is the owner. */
+  telegramIds?: string[];
   timezone: string;
+  /** "auto" (default), "ar" or "en": the language for text the agent starts itself and for runtime messages. Replies mirror the person's own language either way. */
+  language?: string;
+  /** A locale such as "ar-EG" (Egyptian), "ar-SA" (Gulf), "ar-LB" (Levantine) or "ar-MA" (Maghrebi): the default Arabic dialect. */
+  locale?: string;
   city?: string;
   /** Free-form facts the owner wants the agent to know, shown to the owner only. */
   about?: string;
@@ -245,6 +272,13 @@ export interface OwnerProfile {
   claimExpiresAt?: string;
 }
 
+export interface AllowedGroup {
+  /** `telegram:<chat id>` (group ids are negative). */
+  key: string;
+  title?: string;
+  allowedAt: string;
+}
+
 export interface InstinctConfig {
   version: 1;
   owner: OwnerProfile;
@@ -252,6 +286,8 @@ export interface InstinctConfig {
   model: { primary: string; fallback?: string; cheap?: string; thinking?: "off" | "minimal" | "low" | "medium" | "high" };
   computer: { mode: "auto" | "desktopd" | "maritime" | "none"; desktopdUrl?: string; maritimeMcpUrl?: string };
   apps: { enabled: boolean; toolkits: string[] };
+  /** Groups the owner allowed the agent to answer in. Anything else stays silent. */
+  groups?: { allow: AllowedGroup[] };
   features: {
     typingIndicators: boolean;
     tapbacks: boolean;

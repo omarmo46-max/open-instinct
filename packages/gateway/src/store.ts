@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -16,6 +17,12 @@ export interface UserRecord {
   webhookSubscriptionId?: string;
   maritimeAgentId?: string;
   maritimeProjectId?: string;
+  /** Telegram user id linked to this person (a private chat id is the same number). */
+  telegramId?: string;
+  /** The agent's own credential for the gateway's Telegram API. Secret; never leaves the gateway except into that agent's environment. */
+  agentToken?: string;
+  /** A one-time code that links a Telegram account when sent to the bot as `/start <code>`. */
+  telegramLink?: { code: string; expiresAt: string };
   createdAt: string;
   updatedAt?: string;
   status: "provisioning" | "ready" | "error";
@@ -62,6 +69,30 @@ export class UserStore {
     return undefined;
   }
 
+  byTelegramId(telegramId: string): UserRecord | undefined {
+    if (!telegramId) return undefined;
+    for (const u of this.load().values()) if (u.telegramId === telegramId) return clone(u);
+    return undefined;
+  }
+
+  /** The user whose unexpired link code this is. Codes are compared in constant time. */
+  byTelegramLinkCode(code: string, now = Date.now()): UserRecord | undefined {
+    if (!code) return undefined;
+    for (const u of this.load().values()) {
+      const l = u.telegramLink;
+      if (l && Date.parse(l.expiresAt) > now && sameSecret(l.code, code)) return clone(u);
+    }
+    return undefined;
+  }
+
+  /** The user an agent token belongs to, compared in constant time. */
+  byAgentToken(token: string): UserRecord | undefined {
+    if (!token) return undefined;
+    let found: UserRecord | undefined;
+    for (const u of this.load().values()) if (u.agentToken && sameSecret(u.agentToken, token)) found = u;
+    return found ? clone(found) : undefined;
+  }
+
   /** A record whose phone is not known yet (`""`) is never matched. */
   byPhone(phone: string): UserRecord | undefined {
     if (!phone) return undefined;
@@ -103,6 +134,11 @@ export class UserStore {
     // rename keeps the temp file's mode, but an older file may have been created more loosely.
     chmodSync(this.file, 0o600);
   }
+}
+
+/** Equal secrets, without leaking where they differ: both sides are hashed to one length first. */
+function sameSecret(a: string, b: string): boolean {
+  return timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
 }
 
 function clone<T>(v: T): T {

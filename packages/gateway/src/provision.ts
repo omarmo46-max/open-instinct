@@ -59,6 +59,8 @@ export interface ProvisionDeps {
   /** Comma-separated Composio toolkit slugs. Only sent with composioApiKey. Default DEFAULT_COMPOSIO_TOOLKITS. */
   composioToolkits?: string;
   link?: LinkPassthrough;
+  /** True when this gateway runs the shared Telegram bot: every agent gets its gateway URL and token. */
+  telegramGateway?: boolean;
   fetchImpl?: typeof fetch;
   logger?: Logger;
   /** Resume a record the server already created. Otherwise the record is found by handle or created. */
@@ -66,7 +68,7 @@ export interface ProvisionDeps {
 }
 
 /** What agentEnvFor and maritimeCreateBody need from the deps. */
-export type AgentEnvDeps = Pick<ProvisionDeps, "anthropicApiKey" | "composioApiKey" | "composioToolkits" | "maritime" | "link" | "inkboxBaseUrl"> & {
+export type AgentEnvDeps = Pick<ProvisionDeps, "anthropicApiKey" | "composioApiKey" | "composioToolkits" | "maritime" | "link" | "inkboxBaseUrl" | "telegramGateway"> & {
   publicUrl?: string;
 };
 
@@ -116,6 +118,10 @@ export function agentEnvFor(user: UserRecord, deps: AgentEnvDeps): EnvVarInput[]
     { key: "INSTINCT_OWNER_PHONE", value: user.phone, isSecret: false },
   ];
   if (deps.inkboxBaseUrl) env.push({ key: "INKBOX_BASE_URL", value: deps.inkboxBaseUrl, isSecret: false });
+  if (deps.telegramGateway && deps.publicUrl && user.agentToken) {
+    env.push({ key: "TELEGRAM_GATEWAY_URL", value: deps.publicUrl, isSecret: false });
+    env.push({ key: "TELEGRAM_GATEWAY_TOKEN", value: user.agentToken, isSecret: true });
+  }
   if (user.email) env.push({ key: "INSTINCT_OWNER_EMAIL", value: user.email, isSecret: false });
   if (deps.anthropicApiKey) env.push({ key: "ANTHROPIC_API_KEY", value: deps.anthropicApiKey, isSecret: true });
   if (deps.composioApiKey) {
@@ -241,6 +247,7 @@ function blankRecord(input: ProvisionInput, id: string): UserRecord {
     identityId: "",
     identityApiKey: "",
     signingKey: "",
+    agentToken: randomBytes(24).toString("hex"),
     createdAt: new Date().toISOString(),
     status: "provisioning",
   };

@@ -4,8 +4,9 @@
  * A front door that asks only for a name sets `owner.claimOnFirstContact` and a
  * one-time `owner.claimCode` that it shows to the person who signed up, and to
  * nobody else. The first 1:1 iMessage or SMS whose text contains that code makes
- * the sender's number the owner. Texting first is not enough: without a valid
- * code configured, claiming is off.
+ * the sender's number the owner. On Telegram the first private message that carries the
+ * code (for example `/start <code>`) makes the sender's Telegram user id the owner.
+ * Texting first is not enough: without a valid code configured, claiming is off.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { InstinctConfig } from "./types.js";
@@ -30,7 +31,7 @@ export type ClaimStatus = { enabled: true; code: string } | { enabled: false; re
 export function ownerClaimStatus(config: InstinctConfig, now: Date = new Date()): ClaimStatus {
   const owner = config.owner;
   if (!owner.claimOnFirstContact) return { enabled: false, reason: "claimOnFirstContact is not set" };
-  if (owner.phones.length > 0) return { enabled: false, reason: "the owner already has a phone" };
+  if (owner.phones.length > 0 || (owner.telegramIds?.length ?? 0) > 0) return { enabled: false, reason: "the owner already has a phone or Telegram account" };
   const code = normalizeClaimCode(owner.claimCode ?? "");
   if (!code) return { enabled: false, reason: "no claim code is configured (INSTINCT_OWNER_CLAIM_CODE)" };
   if (code.length < MIN_CLAIM_CODE_LENGTH) return { enabled: false, reason: `the claim code is shorter than ${MIN_CLAIM_CODE_LENGTH} letters and digits` };

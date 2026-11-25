@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { StateDir } from "./state.js";
-import { isReservedHandle, normalizeEmail, normalizeHandle, normalizePhone } from "./principal.js";
+import { isReservedHandle, normalizeEmail, normalizeHandle, normalizePhone, normalizeTelegramId } from "./principal.js";
 import { TIER_ORDER } from "./types.js";
 import type { Contact, Tier } from "./types.js";
 
@@ -76,6 +76,8 @@ function sanitize(raw: unknown): Contact | undefined {
     createdAt: typeof r.createdAt === "string" ? r.createdAt : now,
     updatedAt: typeof r.updatedAt === "string" ? r.updatedAt : now,
   };
+  const telegramIds = uniq(stringList(r.telegramIds).map((t) => normalizeTelegramId(t) ?? ""));
+  if (telegramIds.length > 0) c.telegramIds = telegramIds;
   if (typeof r.agentHandle === "string" && normalizeHandle(r.agentHandle) && !isReservedHandle(r.agentHandle)) c.agentHandle = r.agentHandle;
   if (typeof r.notes === "string") c.notes = r.notes;
   return c;
@@ -192,6 +194,13 @@ export class ContactStore {
     const n = normalizeEmail(email);
     if (!n) return undefined;
     const found = this.load().find((c) => c.emails.some((e) => normalizeEmail(e) === n));
+    return found ? copy(found) : undefined;
+  }
+
+  findByTelegram(id: string): Contact | undefined {
+    const n = normalizeTelegramId(id);
+    if (!n) return undefined;
+    const found = this.load().find((c) => (c.telegramIds ?? []).some((t) => normalizeTelegramId(t) === n));
     return found ? copy(found) : undefined;
   }
 

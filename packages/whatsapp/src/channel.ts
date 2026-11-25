@@ -24,7 +24,7 @@ import {
   type WAMessage,
   type WASocket,
 } from "@whiskeysockets/baileys";
-import type { InboundMessage, Outbox, OutboundMessage } from "@open-instinct/core";
+import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@open-instinct/core";
 import { conversationKeyFor, extensionFor, isDirectChat, jidFromConversationKey, jidFromPhone, mediaInfo, messageText, phoneFromJid } from "./parse.js";
 
 export const WHATSAPP_MEDIA_MAX_BYTES = 16 * 1024 * 1024;
@@ -52,7 +52,10 @@ export interface WhatsAppChannelOptions {
   maxMediaBytes?: number;
 }
 
-export class WhatsAppChannel implements Outbox {
+/** WhatsApp accepts documents up to 100 MB; this stays well under so uploads do not stall the linked device. */
+export const WHATSAPP_UPLOAD_MAX_BYTES = 64 * 1024 * 1024;
+
+export class WhatsAppChannel implements Outbox, FileOutbox {
   private sock?: WASocket;
   private state: WhatsAppState = "idle";
   private stopped = false;
@@ -92,6 +95,23 @@ export class WhatsAppChannel implements Outbox {
     const text = msg.text.trim();
     if (text) await sock.sendMessage(jid, { text });
     for (const url of msg.mediaUrls ?? []) await sock.sendMessage(jid, { text: url });
+    await sock.sendPresenceUpdate("paused", jid).catch(() => undefined);
+  }
+
+  /** Send a file into a chat: pictures inline, everything else as a document. */
+  async sendFile(file: OutboundFile): Promise<void> {
+    const jid = jidFromConversationKey(file.conversationKey) ?? (typeof file.to === "string" ? jidFromPhone(file.to) : undefined);
+    if (!jid) throw new Error("WhatsApp send needs a whatsapp: conversation or a phone number");
+    if (file.content.length === 0) throw new Error("the file is empty");
+    if (file.content.length > WHATSAPP_UPLOAD_MAX_BYTES) throw new Error("the file is too large for WhatsApp here (64 MB limit)");
+    const mimetype = file.contentType.split(";")[0]!.trim() || "application/octet-stream";
+    const caption = file.caption?.trim();
+    const sock = await this.openSocket();
+    if (mimetype === "image/jpeg" || mimetype === "image/png") {
+      await sock.sendMessage(jid, { image: file.content, mimetype, ...(caption ? { caption } : {}) });
+    } else {
+      await sock.sendMessage(jid, { document: file.content, mimetype, fileName: file.filename, ...(caption ? { caption } : {}) });
+    }
     await sock.sendPresenceUpdate("paused", jid).catch(() => undefined);
   }
 

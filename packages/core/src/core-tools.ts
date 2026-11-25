@@ -7,6 +7,9 @@ import path from "node:path";
 import { Type } from "typebox";
 import type { ApprovalStore } from "./approvals.js";
 import type { AuditLog } from "./audit.js";
+import { GroupRegistry } from "./groups.js";
+import { groupTools } from "./group-tools.js";
+import type { StateDir } from "./state.js";
 import type { MemoryStore } from "./memory.js";
 import { checkPublicTarget, type Lookup } from "./net-guard.js";
 import { pdfPageCount, renderMarkdownToPdf } from "./pdf.js";
@@ -34,6 +37,8 @@ export interface CoreToolDeps {
   workspaceDir?: string;
   /** Called after approval_settle resolves an approval, so the runtime can wake the conversation that was waiting. */
   onApprovalSettled?: (approval: Approval, approved: boolean) => Promise<void> | void;
+  /** The agent's state directory. With it the group tools are registered. */
+  state?: StateDir;
   /** An OpenAI-compatible images endpoint (`POST {baseUrl}/images/generations`). Without it image_generate explains what to set. */
   images?: { apiKey: string; baseUrl?: string; model?: string };
 }
@@ -60,6 +65,7 @@ export function coreTools(deps: CoreToolDeps): RegisteredTool[] {
     webSearchTool(deps),
     createPdfTool(deps),
     imageGenerateTool(deps),
+    ...(deps.state ? groupTools({ registry: new GroupRegistry(deps.state, deps.config), audit: deps.audit }) : []),
   ];
 }
 

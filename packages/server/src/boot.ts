@@ -23,7 +23,9 @@ import {
   ensurePersona,
   loadConfig,
   ownerClaimStatus,
+  saveConfig,
   syncInstructions,
+  telegramIdsFromEnv,
   loadPolicy,
   resolveDataDir,
   resolveModel,
@@ -31,6 +33,8 @@ import {
 import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@open-instinct/core";
 import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, messagingTools, sendFileTool, voiceInstructions } from "@open-instinct/inkbox";
 import type { CallEndedEvent, CallOrigination } from "@open-instinct/inkbox";
+import { enrichInbound, transcriberFromEnv } from "@open-instinct/media";
+import { GatewayTelegramChannel, TelegramChannel } from "@open-instinct/telegram";
 import { WhatsAppChannel } from "@open-instinct/whatsapp";
 import { computerGuidance, detectComputer } from "@open-instinct/computer";
 import type { ComputerBackend } from "@open-instinct/computer";
@@ -50,7 +54,7 @@ import { createSkillCatalog, formatSkillsIndex, loadSkillTool, ownerSkillsDir, r
 
 /** How often the skill folders are re-read; an owner-installed skill shows up within this. */
 const SKILLS_REFRESH_MS = 30_000;
-import { ChannelRouter, whatsappEnabled } from "./whatsapp.js";
+import { ChannelRouter, telegramEnabled, whatsappEnabled } from "./whatsapp.js";
 
 export interface BootOptions {
   streamFn?: StreamFn;
@@ -83,6 +87,8 @@ export interface BootResult {
   wallet?: LinkWalletLike;
   /** Complete compact Inkbox events before handing them to the runtime. */
   hydrateInbound?: (message: InboundMessage) => Promise<InboundMessage>;
+  /** Voice notes to text and documents to readable text (used by POST /voice). */
+  enrichInbound?: (message: InboundMessage) => Promise<InboundMessage>;
   /** Set with Inkbox: text the owner the outcome of a finished phone call. */
   onCallEnded?: (event: CallEndedEvent) => Promise<void>;
 }
@@ -96,10 +102,18 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   const state = new StateDir(resolveDataDir(env));
   state.ensure();
   const config = loadConfig(state, env);
-  if (config.owner.claimOnFirstContact && config.owner.phones.length === 0) {
+  // config.json wins over the environment, so an existing agent only learns its owner's Telegram
+  // id from TELEGRAM_OWNER_ID while it has none. Changing owners later means editing config.json.
+  const seededTelegramIds = telegramIdsFromEnv(env);
+  if (seededTelegramIds.length > 0 && (config.owner.telegramIds ?? []).length === 0) {
+    config.owner.telegramIds = seededTelegramIds;
+    saveConfig(state, config);
+    log(`owner Telegram id set from TELEGRAM_OWNER_ID (${seededTelegramIds.length})`);
+  }
+  if (config.owner.claimOnFirstContact && config.owner.phones.length === 0 && (config.owner.telegramIds ?? []).length === 0) {
     const claim = ownerClaimStatus(config);
     log(claim.enabled
-      ? `owner claim open: the first 1:1 iMessage/SMS carrying the one-time code becomes the owner${config.owner.claimExpiresAt ? ` (until ${config.owner.claimExpiresAt})` : ""}`
+      ? `owner claim open: the first 1:1 iMessage/SMS (or Telegram /start <code>) carrying the one-time code becomes the owner${config.owner.claimExpiresAt ? ` (until ${config.owner.claimExpiresAt})` : ""}`
       : `WARNING: owner claim is disabled: ${claim.reason}. Nobody can claim this agent until a valid code is set`);
   }
   // PERSONA.md is the owner's file; INSTINCT_PERSONA seeds it on first boot only.
@@ -172,13 +186,42 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
         logger: log,
       })
     : undefined;
-  if (whatsapp) outbox = new ChannelRouter(outbox, { whatsapp });
+
+  // Telegram: a bot (TELEGRAM_BOT_TOKEN from @BotFather), long polling, private chats only.
+  let telegramInbox: DurableInbox<InboundMessage> | undefined;
+  const telegram = telegramEnabled(env)
+    ? new TelegramChannel({
+        token: (env.TELEGRAM_BOT_TOKEN as string).trim(),
+        mediaDir: state.path("workspace", "inbound"),
+        offsetFile: state.path("secrets", "telegram", "offset.json"),
+        groups: env.TELEGRAM_GROUPS?.trim() === "1",
+        onInbound: (message) => {
+          if (!telegramInbox) throw new Error("Telegram inbox is not ready");
+          telegramInbox.enqueue(message.id, message);
+        },
+        logger: log,
+      })
+    : undefined;
+  // Behind a shared front door the gateway owns the bot; this agent reaches Telegram through it.
+  const remoteTelegram = !telegram && env.TELEGRAM_GATEWAY_URL?.trim() && env.TELEGRAM_GATEWAY_TOKEN?.trim()
+    ? new GatewayTelegramChannel({
+        gatewayUrl: env.TELEGRAM_GATEWAY_URL.trim(),
+        token: env.TELEGRAM_GATEWAY_TOKEN.trim(),
+        mediaDir: state.path("workspace", "inbound"),
+        logger: log,
+        ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+      })
+    : undefined;
+  if (remoteTelegram) log("telegram: through the gateway (the bot belongs to the front door)");
+  const telegramOut = telegram ?? remoteTelegram;
+  if (whatsapp || telegramOut) outbox = new ChannelRouter(outbox, { ...(whatsapp ? { whatsapp } : {}), ...(telegramOut ? { telegram: telegramOut } : {}) });
 
   const registry = new ToolRegistry();
   const promptSections: string[] = [];
 
   registry.registerMany(
     coreTools({
+      state,
       memory,
       scheduler,
       approvals,
@@ -228,8 +271,10 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   // Messaging needs Inkbox. send_file does not: without a wire it still hands files
   // to the dashboard chat, which is how `instinct chat` and the smoke test get them.
   const callOrigination = callOriginationFrom(env);
-  if (channel) registry.registerMany(messagingTools({ channel, contacts, config, dataDir: state.root, ...(callOrigination ? { callOrigination } : {}) }));
-  else registry.register(sendFileTool({ contacts, config, dataDir: state.root }));
+  // send_file attaches files on Telegram and WhatsApp conversations through these.
+  const fileChannels: NonNullable<Parameters<typeof sendFileTool>[0]["fileChannels"]> = { ...(telegramOut ? { telegram: telegramOut } : {}), ...(whatsapp ? { whatsapp } : {}) };
+  if (channel) registry.registerMany(messagingTools({ channel, contacts, config, dataDir: state.root, fileChannels, ...(callOrigination ? { callOrigination } : {}) }));
+  else registry.register(sendFileTool({ contacts, config, dataDir: state.root, fileChannels }));
   // Voice AI speaks as the owner's assistant. Only a chosen voice (INKBOX_VOICE or config.json agent.voice)
   // triggers the write: the config is a full replace on Inkbox, and an unset voice keeps the org default.
   const voice = env.INKBOX_VOICE?.trim() || config.agent.voice?.trim();
@@ -241,6 +286,11 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     });
     if (set) log(`phone voice: ${voice}`);
   }
+  // Voice notes become text and documents become readable, whatever channel they came in on.
+  const transcriber = transcriberFromEnv(env, opts.fetchImpl);
+  const enrich = (message: InboundMessage): Promise<InboundMessage> =>
+    enrichInbound(message, { inboundDir: state.path("workspace", "inbound"), ...(transcriber ? { transcriber } : {}), logger: log }).catch(() => message);
+  log(transcriber ? "speech-to-text: on (voice notes are transcribed)" : "speech-to-text: off (set STT_API_KEY or OPENAI_API_KEY to read voice notes)");
   const hydrator = channel ? new InkboxInboundHydrator({
     channel,
     mediaDir: state.path("workspace", "inbound"),
@@ -465,7 +515,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     whatsappInbox = new DurableInbox<InboundMessage>({
       file: state.path("whatsapp-inbox.json"),
       handle: async (message) => {
-        await runtime.handleInbound(message, { waitForCompletion: true });
+        await runtime.handleInbound(await enrich(message), { waitForCompletion: true });
       },
       onError: (id, status) => log(`WhatsApp message ${id}: ${status}`),
     });
@@ -473,6 +523,18 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     // Starting it also picks up messages saved before a restart.
     whatsappInbox.start();
     await safely(log, "whatsapp", () => whatsapp.start());
+  }
+
+  if (telegram) {
+    telegramInbox = new DurableInbox<InboundMessage>({
+      file: state.path("telegram-inbox.json"),
+      handle: async (message) => {
+        await runtime.handleInbound(await enrich(message), { waitForCompletion: true });
+      },
+      onError: (id, status) => log(`Telegram message ${id}: ${status}`),
+    });
+    telegramInbox.start();
+    await safely(log, "telegram", () => telegram.start());
   }
 
   let sync: ScheduleSync | undefined;
@@ -511,13 +573,22 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     modelSpec,
     chatBuffer,
     ...(wallet ? { wallet } : {}),
-    ...(hydrator ? { hydrateInbound: (message: InboundMessage) => hydrator.hydrate(message) } : {}),
+    enrichInbound: enrich,
+    hydrateInbound: async (message: InboundMessage) => {
+      // A file sent through the gateway is fetched now; Inkbox attachments are downloaded by their own hydrator.
+      const hydrated = message.channel === "telegram" && remoteTelegram ? await remoteTelegram.hydrate(message) : hydrator ? await hydrator.hydrate(message) : message;
+      return enrich(hydrated);
+    },
     ...(channel ? { onCallEnded: callReporter(channel, (text, key) => runtime.relayToOwner(text, key), log) } : {}),
     async close() {
       stopScheduler();
       await safely(log, "whatsapp close", async () => {
         await whatsapp?.stop();
         await whatsappInbox?.close();
+      });
+      await safely(log, "telegram close", async () => {
+        await telegram?.stop();
+        await telegramInbox?.close();
       });
       sync?.stop();
       await safely(log, "computer close", () => computer?.close());

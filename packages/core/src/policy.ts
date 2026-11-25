@@ -71,6 +71,22 @@ const ROWS: Record<Capability, Row> = {
   // brief) with their own plain yes; staff asks the owner; partners and below are denied unless a
   // grant names phone.call.
   "phone.call": ["ask", "ask", "no", "no", "no", "no", "no"],
+  // group.notes: the shared notes of one group the owner allowed. Only a group principal gets it (see GROUP_ROW);
+  // the owner's own memory is never reachable from a group.
+  "group.notes": ["no", "no", "no", "no", "no", "no", "no"],
+};
+
+/**
+ * What a group audience may do. A group is many people the owner has not placed in tiers, so it gets a
+ * small fixed set instead of a tier: talk, search the public web, keep the group's own notes, and
+ * leave the owner a message. Everything that touches the owner's accounts, files, memory, people or
+ * money is `no`, and no grant of a tier changes that. Listed in docs/PERMISSIONS.md.
+ */
+export const GROUP_ROW: Partial<Record<Capability, Permission>> = {
+  "converse": "yes",
+  "owner.relay": "yes",
+  "web.read": "yes",
+  "group.notes": "yes",
 };
 
 /** Capabilities that move money. The owner gets them under the spend policy; a grant never skips it. */
@@ -217,6 +233,12 @@ export class PolicyEngine {
   }
 
   /** Tier default after overrides. Every tier has every capability, so this never misses. */
+  /** The permission for a principal: a group audience uses the fixed group set, everyone else their tier's row. */
+  permissionOf(principal: Principal, capability: Capability): Permission {
+    if (principal.kind === "group") return GROUP_ROW[capability] ?? "no";
+    return this.permissionFor(principal.tier, capability);
+  }
+
   permissionFor(tier: Tier, capability: Capability): Permission {
     return this.policy.tiers[tier]?.[capability] ?? DEFAULT_TIER_TABLE[tier][capability];
   }
@@ -281,7 +303,7 @@ export class PolicyEngine {
   }
 
   private evaluateOne(principal: Principal, capability: Capability, meta: ToolMeta, args: unknown, at: Date): CapOutcome {
-    const permission = this.permissionFor(principal.tier, capability);
+    const permission = this.permissionOf(principal, capability);
     const amount = meta.amountUsd?.(args);
     const label = meta.describe?.(args) ?? `${principal.displayName} wants ${capability}`;
     // The owner's own asks (phone.call) carry no "<name> asks:" prefix: the owner is the one reading it.
@@ -370,7 +392,7 @@ export class PolicyEngine {
 
   /** Used to hide tools: false only when the tier default is "no" and no active grant covers it. */
   canEver(principal: Principal, capability: Capability): boolean {
-    if (this.permissionFor(principal.tier, capability) !== "no") return true;
+    if (this.permissionOf(principal, capability) !== "no") return true;
     return this.grantsFor(principal, this.now()).some((g) => g.capabilities.includes(capability));
   }
 

@@ -129,6 +129,8 @@ the screen at checkout instead of paying.
 | `INKBOX_VOICE` | The Voice AI voice `phone_call` speaks with (a voice id from the Inkbox console's voice list). Unset: the organization's default voice ([INKBOX.md](INKBOX.md#phone-calls)) | Inkbox console |
 | `INKBOX_CALL_ORIGINATION` | Which line `phone_call` dials from: `dedicated_number`, `shared_imessage_number` or `dedicated_imessage_number`. Unset: the identity's iMessage line | you choose it |
 | `ATOMIC_MAIL_API_KEY` | A second inbox the agent can read and send from, through Atomic Mail's hosted MCP. Needs a key from an active inbox ([ATOMICMAIL.md](ATOMICMAIL.md)) | [dashboard.atomicmail.ai](https://dashboard.atomicmail.ai) |
+| `TELEGRAM_BOT_TOKEN` | A Telegram bot people can message one to one. No public URL needed; the agent polls Telegram ([packages/telegram](../packages/telegram/README.md)) | [@BotFather](https://t.me/BotFather), `/newbot` |
+| `TELEGRAM_OWNER_ID` | Your numeric Telegram user id, so messages from you count as the owner. Comma separate several | message [@userinfobot](https://t.me/userinfobot) |
 | `INSTINCT_CHAT_TOKEN` | A bearer token on the owner's HTTP surface; set it whenever the port is reachable beyond your machine | you choose it |
 | `GATEWAY_SIGNUP_SECRET` | The invite code the gateway's signup form requires | you choose it |
 
@@ -152,7 +154,7 @@ rewrite:
 | Want to replace | Implement | Example |
 |---|---|---|
 | The model | nothing; pick any Pi provider with `INSTINCT_MODEL` | `openai/gpt-5`, `google/gemini-3-pro` |
-| iMessage, SMS or email | `Outbox` plus a `parse<Channel>Event()` in a new package | Twilio, WhatsApp Cloud API, Telegram |
+| iMessage, SMS or email | `Outbox` plus a `parse<Channel>Event()` in a new package | Twilio, WhatsApp Cloud API, Signal (Telegram and WhatsApp already ship as `packages/telegram` and `packages/whatsapp`) |
 | The computer | a `ComputerBackend` (any MCP server works) | Browserbase, Kernel, a local Playwright |
 | Apps | any MCP server; map tools to capabilities like `packages/apps` does | Zapier MCP, your own servers |
 | Hosting | any host that runs the container and calls `/chat` | Fly, Railway, a Raspberry Pi |
