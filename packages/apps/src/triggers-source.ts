@@ -73,6 +73,7 @@ export function parseCalendarEvent(raw: unknown, calendarId: string): CalendarEv
   const end = str(rec(e.end).dateTime) || str(rec(e.end).date);
   if (end) out.end = end;
   if (str(e.eventType)) out.eventType = str(e.eventType);
+  if (str(e.location)) out.location = str(e.location).slice(0, 200);
   if (RESPONSES.has(response)) out.selfResponse = response as CalendarEvent["selfResponse"];
   if (rec(e.organizer).self === true) out.organizerSelf = true;
   return out;

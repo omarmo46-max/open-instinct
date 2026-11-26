@@ -25,6 +25,8 @@ import {
   PlaceStore,
   PreferenceStore,
   TriggerEngine,
+  TriggerPrefs,
+  triggerTools,
   TRIGGERS_SCAN_TASK,
   TRIGGERS_SCHEDULE_ID,
   coreTools,
@@ -185,6 +187,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     const learned = habits.sleepWindow();
     return learned.confident ? { from: learned.from, to: learned.to } : { from: triggersConfig.quietFrom, to: triggersConfig.quietTo };
   };
+  const triggerPrefs = new TriggerPrefs(state);
   const embedKey = env.EMBED_API_KEY || env.OPENAI_API_KEY;
   // Meaning search sends memory text to the embeddings service, so it needs an explicit opt-in.
   const embedder = env.INSTINCT_SEMANTIC_MEMORY === "1" && embedKey ? openAIEmbedder({ apiKey: embedKey, ...(env.EMBED_BASE_URL ? { baseUrl: env.EMBED_BASE_URL } : {}), ...(env.EMBED_MODEL ? { model: env.EMBED_MODEL } : {}), ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }) : undefined;
@@ -311,6 +314,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       ...(env.YDC_API_KEY || env.YOU_SEARCH === "1" ? { youSearch: env.YDC_API_KEY ? { apiKey: env.YDC_API_KEY } : {} } : {}),
     }),
   );
+  if (triggersConfig.enabled) registry.registerMany(triggerTools(triggerPrefs));
   registry.registerMany(proactiveTools({ search: new MemorySearch(state, memory, embedder), prefs: new PreferenceStore(state), ...(places ? { places } : {}) }));
   const locationService = places ? new LocationService(places, (text) => runtime.notifyOwner(text, "location")) : undefined;
 
@@ -588,6 +592,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       config: triggersConfig,
       timezone: config.owner.timezone,
       language: () => pickLanguage(config.owner, undefined),
+      prefs: triggerPrefs,
       quiet: quietWindow,
       send: (text) => runtime.notifyOwner(text, "triggers"),
     });

@@ -65,6 +65,7 @@ The agent scans Gmail and Google Calendar by itself and texts the owner first. C
 - Off by default. `INSTINCT_TRIGGERS=1` (or `triggers.enabled` in config.json) and a Composio session with Gmail/Calendar connected. `INSTINCT_QUIET_HOURS=23:00-07:00`.
 - Detects: unanswered invite (72 h ahead, again under 24 h), birthday (day before and day of), flight change / cancelled / missing from the calendar, and mail whose subject looks like a flight change (English and Arabic).
 - An alert counts as sent only after the channel took it; quiet hours hold all but an urgent flight alert (departs within 12 h).
+- **B1 hardening (second pass):** broader trip detection using title, airport place and `fromGmail` event type, with look-alike exclusions and owner corrections (`trigger_feedback`); mail alerts say they rest on the subject only; a vanished plan is checked against a 90+ day read before it is called missing; moves under `flightChangeMinutes` ignored; extra birthday shapes plus owner marking; mute or pause by chat (`trigger_mute`, `trigger_unmute`, `trigger_status`); ordinary alerts grouped into one message; one-time welcome; `inviteSoonHours` and `urgentFlightHours` configurable; audit kind `trigger`.
 - **Not verified live.** Tested against fakes. The slugs `GOOGLECALENDAR_EVENTS_LIST` and `GMAIL_FETCH_EMAILS` and the response field names must be confirmed once with a real Composio account.
 
 ## Done: Phase B2 to B5
@@ -110,5 +111,5 @@ Details and limits in `docs/PROACTIVE.md`.
 
 ## Test counts at this checkpoint
 
-core 400, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
-apps 171, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.
+core 416, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
+apps 172, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.

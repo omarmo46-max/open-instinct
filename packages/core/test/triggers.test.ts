@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AuditLog } from "../src/audit.js";
+import { TriggerPrefs } from "../src/trigger-prefs.js";
 import { Scheduler } from "../src/scheduler.js";
 import {
   DEFAULT_TRIGGERS,
@@ -24,21 +25,26 @@ function ev(p: Partial<CalendarEvent> & { id: string; summary: string; start: st
   return { allDay: false, status: "confirmed", ...p };
 }
 
-function setup(opts: { events?: CalendarEvent[]; complete?: boolean; mail?: MailItem[]; now?: Date; cfg?: Partial<TriggersConfig>; sendOk?: boolean; lang?: "en" | "ar" } = {}) {
+function setup(opts: { events?: CalendarEvent[]; complete?: boolean; mail?: MailItem[]; now?: Date; cfg?: Partial<TriggersConfig>; sendOk?: boolean; lang?: "en" | "ar"; welcomed?: boolean; wide?: CalendarEvent[] } = {}) {
   const state = tempState();
+  if (opts.welcomed !== false) state.writeJson("trigger-state.json", { version: 1, fired: {}, flights: {}, welcomed: true });
+  const prefs = new TriggerPrefs(state);
   const audit = new AuditLog(state);
-  const box = { now: opts.now ?? NOON, events: opts.events ?? [], complete: opts.complete ?? true, mail: opts.mail ?? [], sendOk: opts.sendOk ?? true, calendarThrows: false };
+  const box = { wide: opts.wide as CalendarEvent[] | undefined, now: opts.now ?? NOON, events: opts.events ?? [], complete: opts.complete ?? true, mail: opts.mail ?? [], sendOk: opts.sendOk ?? true, calendarThrows: false };
   const sent: string[] = [];
   const engine = new TriggerEngine({
     source: {
-      calendar: async (): Promise<CalendarRead> => {
+      calendar: async (range): Promise<CalendarRead> => {
         if (box.calendarThrows) throw new Error("composio down");
+        const days = (range.to.getTime() - range.from.getTime()) / 86_400_000;
+        if (days > 60 && box.wide) return { events: box.wide, complete: true }; // the wide read for a vanished flight
         return { events: box.events, complete: box.complete };
       },
       mail: async () => box.mail,
     },
     state,
     audit,
+    prefs,
     config: { ...DEFAULT_TRIGGERS, enabled: true, ...(opts.cfg ?? {}) },
     timezone: TZ,
     language: () => opts.lang ?? "en",
@@ -49,7 +55,7 @@ function setup(opts: { events?: CalendarEvent[]; complete?: boolean; mail?: Mail
     },
     now: () => box.now,
   });
-  return { engine, box, sent, audit };
+  return { engine, box, sent, audit, prefs, state };
 }
 
 describe("config", () => {
@@ -79,12 +85,23 @@ describe("quiet hours", () => {
 });
 
 describe("heuristics and text hygiene", () => {
-  it("spots flights and travel mail", () => {
-    expect(looksLikeFlight(ev({ id: "1", summary: "CAI → DXB", start: "2026-12-01T08:00:00Z" }))).toBe(true);
-    expect(looksLikeFlight(ev({ id: "1", summary: "Flight MS985", start: "2026-12-01T08:00:00Z" }))).toBe(true);
-    expect(looksLikeFlight(ev({ id: "1", summary: "رحلة طيران للأقصر", start: "2026-12-01T08:00:00Z" }))).toBe(true);
-    expect(looksLikeFlight(ev({ id: "1", summary: "Flight", start: "2026-12-01", allDay: true }))).toBe(false);
-    expect(looksLikeFlight(ev({ id: "1", summary: "Team lunch", start: "2026-12-01T08:00:00Z" }))).toBe(false);
+  const timed = (summary: string, extra: Partial<CalendarEvent> = {}) => ev({ id: "1", summary, start: "2026-12-01T08:00:00Z", ...extra });
+  it("spots flights and trips from title, place and calendar type", () => {
+    expect(looksLikeFlight(timed("CAI → DXB"))).toBe(true);
+    expect(looksLikeFlight(timed("Flight MS985"))).toBe(true);
+    expect(looksLikeFlight(timed("رحلة طيران للأقصر"))).toBe(true);
+    expect(looksLikeFlight(timed("Trip to Dubai"))).toBe(true);
+    expect(looksLikeFlight(timed("Pick up Sara", { location: "Cairo International Airport (CAI)" }))).toBe(true);
+    expect(looksLikeFlight(timed("MS 985", { eventType: "fromGmail", location: "Cairo Airport" }))).toBe(true);
+    expect(looksLikeFlight(ev({ id: "t", summary: "Trip to Alexandria", start: "2026-12-01", allDay: true }))).toBe(true);
+  });
+  it("rejects look-alikes", () => {
+    expect(looksLikeFlight(timed("Flight club meeting"))).toBe(false);
+    expect(looksLikeFlight(timed("Flight school class"))).toBe(false);
+    expect(looksLikeFlight(timed("Team lunch"))).toBe(false);
+    expect(looksLikeFlight(timed("اجتماع نادي الطيران"))).toBe(false);
+  });
+  it("spots travel mail by subject", () => {
     expect(looksLikeTravelChange("Your flight has been cancelled")).toBe(true);
     expect(looksLikeTravelChange("Schedule change for booking X1")).toBe(true);
     expect(looksLikeTravelChange("تم تأجيل رحلتك")).toBe(true);
@@ -139,6 +156,21 @@ describe("birthdays", () => {
     await engine.run();
     expect(sent[1]).toContain("Today");
   });
+  it("catches a timed birthday event and one with only the word in the title", async () => {
+    const { engine, sent } = setup({ events: [ev({ id: "b3", summary: "عيد ميلاد ماما", start: "2026-11-26T15:00:00Z" })] });
+    await engine.run();
+    expect(sent[0]).toContain("Tomorrow");
+  });
+  it("lets the owner mark an event as a birthday, or say it is not", async () => {
+    const odd = ev({ id: "b4", summary: "Mona 30", start: "2026-11-26", allDay: true });
+    const a = setup({ events: [odd] });
+    expect((await a.engine.run()).detected).toBe(0);
+    a.prefs.correct("birthday", "mona 30", true);
+    expect((await a.engine.run()).sent).toBe(1);
+    const b = setup({ events: [ev({ id: "b5", summary: "Birthday party planning", start: "2026-11-26", allDay: true })] });
+    b.prefs.correct("birthday", "Birthday party planning", false);
+    expect((await b.engine.run()).detected).toBe(0);
+  });
   it("ignores a birthday a week away", async () => {
     const { engine } = setup({ events: [ev({ id: "b2", summary: "Ali birthday", start: "2026-12-03", allDay: true })] });
     expect((await engine.run()).detected).toBe(0);
@@ -147,13 +179,33 @@ describe("birthdays", () => {
 
 describe("flights", () => {
   const flight = ev({ id: "f1", summary: "Flight MS985 CAI → DXB", start: "2026-12-02T08:00:00Z" });
-  it("takes a baseline first, then alerts on a time change, once", async () => {
+  it("takes a baseline first, then alerts on a real time change, once, with the size of the move", async () => {
     const { engine, box, sent } = setup({ events: [flight] });
     expect((await engine.run()).detected).toBe(0); // baseline
     box.events = [{ ...flight, start: "2026-12-02T11:30:00Z" }];
     expect((await engine.run()).sent).toBe(1);
-    expect(sent[0]).toContain("changed");
-    expect((await engine.run()).detected).toBe(0); // new baseline, nothing repeats
+    expect(sent[0]).toContain("moved");
+    expect(sent[0]).toContain("3 h 30 min later");
+    expect((await engine.run()).detected).toBe(0);
+  });
+  it("ignores a small shift and the same instant written in another zone, but lets drift add up", async () => {
+    const { engine, box, sent } = setup({ events: [flight], cfg: { flightChangeMinutes: 30 } });
+    await engine.run();
+    box.events = [{ ...flight, start: "2026-12-02T10:00:00+02:00" }]; // the same instant as 08:00Z
+    expect((await engine.run()).detected).toBe(0);
+    box.events = [{ ...flight, start: "2026-12-02T08:10:00Z" }];
+    expect((await engine.run()).detected).toBe(0);
+    box.events = [{ ...flight, start: "2026-12-02T08:35:00Z" }]; // 35 min from the original baseline
+    await engine.run();
+    expect(sent[0]).toContain("35 min later");
+  });
+  it("watches an all-day trip by date", async () => {
+    const trip = ev({ id: "t1", summary: "Trip to Dubai", start: "2026-12-05", allDay: true });
+    const { engine, box, sent } = setup({ events: [trip] });
+    await engine.run();
+    box.events = [{ ...trip, start: "2026-12-07" }];
+    await engine.run();
+    expect(sent[0]).toContain("2 days later");
   });
   it("alerts when the event is cancelled", async () => {
     const { engine, box, sent } = setup({ events: [flight] });
@@ -162,34 +214,61 @@ describe("flights", () => {
     await engine.run();
     expect(sent[0]).toContain("cancelled");
   });
-  it("claims a missing flight only after a complete read", async () => {
+  it("says it moved when a vanished plan is found later in the wide read", async () => {
     const { engine, box, sent } = setup({ events: [flight] });
     await engine.run();
     box.events = [];
+    box.wide = [{ ...flight, start: "2026-12-20T08:00:00Z" }];
+    await engine.run();
+    expect(sent[0]).toContain("moved");
+    expect(sent[0]).not.toContain("could not find");
+  });
+  it("says it could not find it only after a complete wide read, and never claims more", async () => {
+    const { engine, box, sent } = setup({ events: [flight] });
+    await engine.run();
+    box.events = [];
+    box.wide = [];
     box.complete = false;
-    expect((await engine.run()).detected).toBe(0);
+    expect((await engine.run()).detected).toBe(0); // the normal read was partial
     box.complete = true;
     await engine.run();
-    expect(sent[0]).toContain("can no longer find");
+    expect(sent[0]).toContain("could not find");
+    expect(sent[0]).toContain("worth a look");
   });
   it("keeps a held change until quiet hours end, even though the baseline moved", async () => {
     const { engine, box, sent } = setup({ events: [flight], now: new Date("2026-11-25T10:00:00Z") });
     await engine.run();
     box.events = [{ ...flight, start: "2026-12-02T11:30:00Z" }];
     box.now = new Date("2026-11-25T22:00:00Z"); // 00:00 Cairo, quiet, flight far away
-    const held = await engine.run();
-    expect(held).toMatchObject({ sent: 0, held: 1 });
+    expect(await engine.run()).toMatchObject({ sent: 0, held: 1 });
     box.now = new Date("2026-11-26T06:00:00Z"); // 08:00 Cairo
     expect((await engine.run()).sent).toBe(1);
-    expect(sent[0]).toContain("changed");
+    expect(sent[0]).toContain("moved");
   });
-  it("sends an urgent flight alert inside quiet hours", async () => {
+  it("sends an urgent alert inside quiet hours, and the urgency window is configurable", async () => {
     const soon = ev({ id: "f2", summary: "Flight XY1", start: "2026-11-26T02:00:00Z" });
-    const { engine, box, sent } = setup({ events: [soon], now: new Date("2026-11-25T22:00:00Z") });
-    await engine.run();
-    box.events = [{ ...soon, start: "2026-11-26T05:00:00Z" }];
-    expect((await engine.run()).sent).toBe(1);
-    expect(sent).toHaveLength(1);
+    const a = setup({ events: [soon], now: new Date("2026-11-25T22:00:00Z") });
+    await a.engine.run();
+    a.box.events = [{ ...soon, start: "2026-11-26T05:00:00Z" }];
+    expect((await a.engine.run()).sent).toBe(1);
+    const b = setup({ events: [soon], now: new Date("2026-11-25T22:00:00Z"), cfg: { urgentFlightHours: 2 } });
+    await b.engine.run();
+    b.box.events = [{ ...soon, start: "2026-11-26T05:00:00Z" }];
+    expect(await b.engine.run()).toMatchObject({ sent: 0, held: 1 });
+  });
+  it("respects the owner's correction that an event is not a trip, and one that is", async () => {
+    const odd = ev({ id: "f3", summary: "Flight night", start: "2026-12-02T18:00:00Z" });
+    const a = setup({ events: [odd] });
+    await a.engine.run();
+    a.prefs.correct("flight", "flight night", false);
+    a.box.events = [{ ...odd, start: "2026-12-02T20:00:00Z" }];
+    expect((await a.engine.run()).detected).toBe(0);
+    const plain = ev({ id: "f4", summary: "Cairo → home", start: "2026-12-02T18:00:00Z" });
+    const b = setup({ events: [plain] });
+    b.prefs.correct("flight", "cairo home", true);
+    await b.engine.run();
+    b.box.events = [{ ...plain, start: "2026-12-02T21:00:00Z" }];
+    expect((await b.engine.run()).sent).toBe(1);
   });
 });
 
@@ -200,7 +279,8 @@ describe("travel mail", () => {
     await engine.run();
     expect(sent).toHaveLength(1);
     expect(sent[0]).not.toContain("\u202E");
-    expect(sent[0]).toContain("did not open it");
+    expect(sent[0]).toContain("only saw the subject");
+    expect(sent[0]).toContain("not a confirmation");
   });
 });
 
@@ -212,12 +292,23 @@ describe("delivery", () => {
     expect((await engine.run()).sent).toBe(1);
     expect(sent).toHaveLength(1);
   });
-  it("caps one scan and sends the rest next time", async () => {
+  it("groups several ordinary alerts into one message", async () => {
+    const events = [1, 2, 3].map((i) => ev({ id: `i${i}`, summary: `Meeting ${i}`, start: "2026-11-27T10:00:00Z", selfResponse: "needsAction" }));
+    const { engine, sent, audit } = setup({ events });
+    expect(await engine.run()).toMatchObject({ sent: 3, held: 0 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain("3 things worth a look");
+    expect(sent[0]).toContain("Meeting 1");
+    expect(sent[0]).toContain("Meeting 3");
+    expect(audit.read({ kinds: ["trigger"] }).filter((e) => e.detail.digest === true)).toHaveLength(3);
+  });
+  it("caps one digest and sends the rest next time; urgent ones go on their own", async () => {
     const events = [1, 2, 3, 4].map((i) => ev({ id: `i${i}`, summary: `M${i}`, start: "2026-11-27T10:00:00Z", selfResponse: "needsAction" }));
     const { engine, sent } = setup({ events, cfg: { maxPerRun: 3 } });
     expect(await engine.run()).toMatchObject({ sent: 3, held: 1 });
     await engine.run();
-    expect(sent).toHaveLength(4);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]).toBe(sent[1]!.includes("M4") ? sent[1] : "M4");
   });
   it("survives a failing source and says so in the audit log", async () => {
     const { engine, box, audit } = setup();
@@ -229,6 +320,55 @@ describe("delivery", () => {
     const { engine } = setup();
     const [a, b] = await Promise.all([engine.run(), engine.run()]);
     expect([a.skipped, b.skipped].filter(Boolean)).toEqual(["busy"]);
+  });
+});
+
+describe("owner control", () => {
+  const invite = ev({ id: "m1", summary: "Friday standup", start: "2026-11-27T10:00:00Z", selfResponse: "needsAction" });
+  it("sends a welcome once, first, and never when the calendar cannot be read", async () => {
+    const a = setup({ events: [invite], welcomed: false });
+    expect(await a.engine.run()).toMatchObject({ welcome: true, sent: 1 });
+    expect(a.sent).toHaveLength(2);
+    expect(a.sent[0]).toContain("proactive alerts are on");
+    await a.engine.run();
+    expect(a.sent).toHaveLength(2);
+    const b = setup({ welcomed: false });
+    b.box.calendarThrows = true;
+    expect((await b.engine.run()).welcome).toBeUndefined();
+    expect(b.sent).toEqual([]);
+  });
+  it("holds the welcome during quiet hours and keeps trying after", async () => {
+    const { engine, box, sent } = setup({ welcomed: false, now: new Date("2026-11-25T22:00:00Z") });
+    expect((await engine.run()).welcome).toBeUndefined();
+    box.now = new Date("2026-11-26T06:00:00Z");
+    expect((await engine.run()).welcome).toBe(true);
+    expect(sent).toHaveLength(1);
+  });
+  it("mutes a kind, one item, or everything, and resumes", async () => {
+    const { engine, prefs, sent } = setup({ events: [invite, { ...invite, id: "m2", summary: "Design review" }] });
+    prefs.mute("invite", "friday standup");
+    await engine.run();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain("Design review");
+    prefs.unmute("invite", "Friday Standup");
+    await engine.run();
+    expect(sent.at(-1)).toContain("Friday standup");
+    prefs.setPaused(true);
+    expect((await engine.run()).skipped).toBe("paused");
+    prefs.setPaused(false);
+    prefs.mute("invite");
+    expect((await engine.run()).detected).toBe(0);
+  });
+  it("the soon-reminder window follows the setting", async () => {
+    const { engine, sent } = setup({ events: [invite], cfg: { inviteSoonHours: 48 } });
+    await engine.run();
+    expect(sent[0]).toContain("Reminder"); // 24 h away is inside a 48 h window
+  });
+  it("records alerts under their own audit kind", async () => {
+    const { engine, audit } = setup({ events: [invite] });
+    await engine.run();
+    expect(audit.read({ kinds: ["trigger"] })[0]?.detail).toMatchObject({ trigger: "invite" });
+    expect(audit.read({ kinds: ["schedule"] })).toHaveLength(0);
   });
 });
 

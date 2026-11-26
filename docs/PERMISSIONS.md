@@ -317,4 +317,4 @@ and `instinct invite "Sam Lee" --tier partner --handle sam-instinct`.
 
 ## Proactive triggers
 
-The trigger scan reads Gmail subjects and calendar events with the owner's own Composio connection, in code, outside the model and outside the tool policy. It is owner-only by construction: the only output is a text to the owner. It sends nothing to anyone else, opens no message body, and follows no link. Text taken from an email or event title is cleaned and quoted. It is off unless the owner or deployer turns it on. See `docs/TRIGGERS.md`.
+The trigger scan reads Gmail subjects and calendar events with the owner's own Composio connection, in code, outside the model and outside the tool policy. It is owner-only by construction: the only output is a text to the owner. It sends nothing to anyone else, opens no message body, and follows no link. Text taken from an email or event title is cleaned and quoted. It is off unless the owner or deployer turns it on. The owner can mute or pause it by chat (`trigger_mute`), and alerts are logged under audit kind `trigger`. See `docs/TRIGGERS.md`.

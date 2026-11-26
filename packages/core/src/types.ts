@@ -237,6 +237,7 @@ export type AuditKind =
   | "approval"
   | "spend"
   | "schedule"
+  | "trigger"
   | "error";
 
 export interface AuditEntry {
@@ -298,6 +299,12 @@ export interface TriggersConfig {
   inviteHorizonHours: number;
   /** How far ahead flights are watched (days). */
   flightHorizonDays: number;
+  /** An unanswered invite gets a second, closer reminder this many hours before it starts. */
+  inviteSoonHours: number;
+  /** A travel alert is urgent, and goes out even in quiet hours, when departure is within this many hours. */
+  urgentFlightHours: number;
+  /** A travel time change smaller than this many minutes is ignored (all-day trips: any date change counts). */
+  flightChangeMinutes: number;
   /** Most alerts sent in one scan; the rest wait for the next. */
   maxPerRun: number;
 }

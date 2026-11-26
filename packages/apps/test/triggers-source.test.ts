@@ -27,6 +27,9 @@ describe("parseCalendarEvent", () => {
     const e = parseCalendarEvent({ id: "b1", summary: "Mona", eventType: "birthday", start: { date: "2026-11-26" } }, BIRTHDAY_CALENDAR_ID);
     expect(e).toMatchObject({ allDay: true, start: "2026-11-26", eventType: "birthday", id: `${BIRTHDAY_CALENDAR_ID}:b1` });
   });
+  it("keeps the place and the calendar event type", () => {
+    expect(parseCalendarEvent({ id: "g1", summary: "MS985", eventType: "fromGmail", location: "Cairo International Airport (CAI)", start: { dateTime: "2026-12-02T08:00:00Z" } }, "primary")).toMatchObject({ eventType: "fromGmail", location: "Cairo International Airport (CAI)" });
+  });
   it("marks owner-organized and cancelled events, drops junk", () => {
     expect(parseCalendarEvent({ id: "e2", status: "cancelled", start: { dateTime: "2026-11-27T10:00:00Z" }, organizer: { self: true } }, "primary")).toMatchObject({ status: "cancelled", organizerSelf: true });
     expect(parseCalendarEvent({ summary: "no id", start: { date: "2026-11-26" } }, "primary")).toBeUndefined();

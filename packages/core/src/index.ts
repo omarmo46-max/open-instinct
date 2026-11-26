@@ -29,3 +29,5 @@ export * from "./memory-search.js";
 export * from "./preferences.js";
 export * from "./places.js";
 export * from "./proactive-tools.js";
+export * from "./trigger-prefs.js";
+export * from "./trigger-tools.js";

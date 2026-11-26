@@ -18,6 +18,7 @@ import type { AuditLog } from "./audit.js";
 import type { Lang } from "./i18n.js";
 import { localParts } from "./scheduler.js";
 import type { StateDir } from "./state.js";
+import { TriggerPrefs, titleKey } from "./trigger-prefs.js";
 import type { TriggersConfig } from "./types.js";
 
 const STATE_FILE = "trigger-state.json";
@@ -27,8 +28,8 @@ export const TRIGGERS_SCHEDULE_ID = "s_triggers";
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 const FIRED_KEEP_MS = 60 * DAY;
-const URGENT_FLIGHT_MS = 12 * HOUR;
-const SOON_INVITE_MS = 24 * HOUR;
+const WIDE_DAYS_MIN = 90;
+const DIGEST_MAX_CHARS = 3500;
 const MAIL_LOOKBACK_MS = 2 * DAY;
 const TITLE_MAX = 120;
 
@@ -43,6 +44,9 @@ export const DEFAULT_TRIGGERS: TriggersConfig = {
   quietTo: "07:00",
   inviteHorizonHours: 72,
   flightHorizonDays: 14,
+  inviteSoonHours: 24,
+  urgentFlightHours: 12,
+  flightChangeMinutes: 20,
   maxPerRun: 5,
 };
 
@@ -75,6 +79,9 @@ export function resolveTriggers(file: Partial<TriggersConfig> | undefined, env: 
     quietTo,
     inviteHorizonHours: clampInt(file?.inviteHorizonHours, 1, 24 * 14, d.inviteHorizonHours),
     flightHorizonDays: clampInt(file?.flightHorizonDays, 1, 60, d.flightHorizonDays),
+    inviteSoonHours: clampInt(file?.inviteSoonHours, 1, 72, d.inviteSoonHours),
+    urgentFlightHours: clampInt(file?.urgentFlightHours, 1, 72, d.urgentFlightHours),
+    flightChangeMinutes: clampInt(file?.flightChangeMinutes, 0, 360, d.flightChangeMinutes),
     maxPerRun: clampInt(file?.maxPerRun, 1, 20, d.maxPerRun),
   };
 }
@@ -106,6 +113,8 @@ export interface CalendarEvent {
   selfResponse?: "needsAction" | "accepted" | "declined" | "tentative";
   /** True when the owner organizes the event, so there is nobody to answer. */
   organizerSelf?: boolean;
+  /** The event's place, when it has one (an airport is a strong flight signal). */
+  location?: string;
 }
 
 export interface MailItem {
@@ -138,18 +147,23 @@ export interface TriggerAlert {
   kind: TriggerKind;
   urgent: boolean;
   text: string;
+  /** `titleKey` of the event or subject, so the owner can mute this one item. */
+  title?: string;
 }
 
 interface FlightSnapshot {
   start: string;
   summary: string;
   seenAt: string;
+  allDay?: boolean;
 }
 
 interface TriggerState {
   version: 1;
   fired: Record<string, string>;
   flights: Record<string, FlightSnapshot>;
+  /** True once the owner got the one-time explanation of what the agent watches. */
+  welcomed?: boolean;
 }
 
 interface PendingAlert extends TriggerAlert {
@@ -162,7 +176,9 @@ export interface TriggerRunResult {
   sent: number;
   held: number;
   failed: boolean;
-  skipped?: "busy";
+  /** True when this scan sent the one-time welcome message. */
+  welcome?: boolean;
+  skipped?: "busy" | "paused";
 }
 
 export interface TriggerEngineDeps {
@@ -173,6 +189,8 @@ export interface TriggerEngineDeps {
   timezone: string;
   /** Language for the alert text; read at every run so a changed owner preference applies. */
   language: () => Lang;
+  /** The owner's mutes and corrections. Built from `state` when not given. */
+  prefs?: TriggerPrefs;
   /** The quiet window to use right now (learned from habits, B2). Defaults to the configured one. */
   quiet?: () => { from: string; to: string };
   /** Deliver to the owner. True when the message left. */
@@ -190,20 +208,30 @@ const TEXT = {
     inviteSoon: "Reminder: you have not replied to “{title}” yet. It starts {when}.",
     birthdayToday: "Today is a birthday: {title}.",
     birthdayTomorrow: "Tomorrow is a birthday: {title}.",
-    flightChanged: "Your flight “{title}” changed on the calendar. Before: {old}. Now: {now}.",
-    flightCancelled: "Your flight “{title}” ({when}) is cancelled on the calendar.",
-    flightMissing: "I can no longer find your flight “{title}” ({when}) in the next {days} days on your calendar. It may have been moved or cancelled.",
-    travelMail: "An email that looks like a flight change: “{subject}”, from {from}. I did not open it or act on it.",
+    flightChanged: "Travel plan “{title}” moved on your calendar ({shift}). Before: {old}. Now: {now}.",
+    flightCancelled: "Travel plan “{title}” ({when}) is cancelled on your calendar.",
+    flightMissing: "I could not find “{title}” ({when}) on your calendar over the next {days} days. It may have been moved or removed, so it is worth a look.",
+    travelMail: "An email whose subject looks like a travel change: “{subject}”, from {from}. I only saw the subject, not the message, so this is a hint and not a confirmation. Please check it.",
+    digestHeader: "{n} things worth a look:",
+    welcome:
+      "Heads up: proactive alerts are on. I will message you first about invites you have not answered, birthdays, changes to flights or trips on your calendar, and emails whose subject looks like a travel change (I only read subjects). I stay quiet at night unless a flight is about to leave. Tell me to mute a type or one item (for example \"stop alerts about the Friday meeting\"), correct me (\"that is not a flight\"), or say \"pause alerts\" to stop them all.",
+    later: "{d} later",
+    earlier: "{d} earlier",
   },
   ar: {
     inviteEarly: "عندك دعوة مستنية ردك: «{title}»، {when}.",
     inviteSoon: "تذكير: لسه ماردّتش على «{title}». بتبدأ {when}.",
     birthdayToday: "النهاردة عيد ميلاد: {title}.",
     birthdayTomorrow: "بكرة عيد ميلاد: {title}.",
-    flightChanged: "رحلتك «{title}» اتغيرت في التقويم. كانت: {old}. بقت: {now}.",
-    flightCancelled: "رحلتك «{title}» ({when}) اتلغت في التقويم.",
-    flightMissing: "مش لاقي رحلتك «{title}» ({when}) في التقويم خلال الـ {days} يوم الجايين. ممكن تكون اتأجلت أو اتلغت.",
-    travelMail: "إيميل شكله بيخص تغيير في رحلة: «{subject}»، من {from}. مافتحتوش وماعملتش حاجة بيه.",
+    flightChanged: "خطة السفر «{title}» اتغيرت في التقويم ({shift}). كانت: {old}. بقت: {now}.",
+    flightCancelled: "خطة السفر «{title}» ({when}) اتلغت في التقويم.",
+    flightMissing: "ماقدرتش ألاقي «{title}» ({when}) في تقويمك خلال الـ {days} يوم الجايين. ممكن تكون اتأجلت أو اتشالت، فيستاهل تبص عليها.",
+    travelMail: "إيميل عنوانه شكله بيخص تغيير في السفر: «{subject}»، من {from}. أنا شفت العنوان بس مش الرسالة، فده تلميح مش تأكيد. اتأكد منه بنفسك.",
+    digestHeader: "{n} حاجات تستاهل تبص عليها:",
+    welcome:
+      "تنبيه: التنبيهات الاستباقية اتفعّلت. هبعتلك من نفسي عن الدعوات اللي ماردّتش عليها، وأعياد الميلاد، وأي تغيير في رحلات أو سفريات على تقويمك، وإيميلات عنوانها شكله بيخص تغيير في السفر (بقرا العناوين بس). بسكت بالليل إلا لو رحلة قربت تقلع. قولي أسكّت نوع معين أو حاجة بعينها (مثلًا \"بطّل تنبهني عن اجتماع الجمعة\")، أو صحّحلي (\"دي مش رحلة\")، أو قول \"وقّف التنبيهات\" وأوقفها كلها.",
+    later: "اتأخرت {d}",
+    earlier: "اتقدمت {d}",
   },
 } as const;
 
@@ -242,19 +270,34 @@ function formatWhen(start: string, allDay: boolean, tz: string, lang: Lang): str
 // Heuristics
 // ---------------------------------------------------------------------------
 
-const FLIGHT_WORDS = /\bflight\b|\bairlines?\b|✈|🛫|🛬|رحلة\s*(?:طيران|جوية|جويّة)|طيران/i;
+const FLIGHT_WORDS =
+  /\b(?:flights?|airlines?|airways|airport|boarding(?:\s+pass)?|departure|layover|itinerary)\b|\b(?:trip|travel|fly|flying)\s+to\b|✈|🛫|🛬|رحلة\s*(?:طيران|جوية|جويّة)|رحلة\s*(?:إلى|الى|لـ)|طيران|طيارة|مطار|سفرية|سفر\b/i;
 const FLIGHT_ROUTE = /\b[A-Z]{3}\s*(?:→|->|–|—|-|to)\s*[A-Z]{3}\b/;
-const BIRTHDAY_WORDS = /birthday|b-?day|عيد\s*ميلاد/i;
+const FLIGHT_NUMBER = /\b[A-Z][A-Z0-9]\s?\d{2,4}\b.*\b(?:flight|→|->)|\bflight\s+[A-Z0-9]{2}\s?\d{2,4}\b/i;
+const AIRPORT_PLACE = /\bairport\b|\bint(?:ernation)?al\b.*\bterminal\b|\bterminal\s*\d\b|مطار|\([A-Z]{3}\)/i;
+/** Titles that use the same words for something else: a flight club, a meeting about flights, flight school. */
+const FLIGHT_NOT = /\b(?:club|meeting|meetup|school|class|course|training|simulator|workshop|webinar|lunch|dinner|party|podcast|game|movie)\b|اجتماع|نادي|مدرسة|كورس|دورة|تدريب|ورشة|حفلة|غدا|عشا/i;
+const BIRTHDAY_WORDS = /birthday|b-?day|عيد\s*(?:ال)?ميلاد/i;
+const BIRTHDAY_NOT = /\b(?:christ|jesus|nativity|prophet)\b|المسيح|النبي|المولد\s*النبوي/i;
 
-/** A timed event whose title says flight, airline or an airport pair like "CAI → DXB". A heuristic: it can miss a flight titled "Trip" and can catch "Flight club". */
+/**
+ * Does this event look like a flight or trip? Uses the title, the place (an airport), the
+ * calendar's own type (events Google creates from a confirmation email) and a short list of
+ * words that mean something else. A heuristic: the owner can correct it with `trigger_feedback`.
+ */
 export function looksLikeFlight(event: CalendarEvent): boolean {
-  if (event.allDay) return false;
-  return FLIGHT_WORDS.test(event.summary) || FLIGHT_ROUTE.test(event.summary);
+  const text = event.summary;
+  const place = event.location ?? "";
+  const fromMail = event.eventType === "fromGmail";
+  const strong = FLIGHT_ROUTE.test(text) || FLIGHT_NUMBER.test(text) || AIRPORT_PLACE.test(place) || (fromMail && FLIGHT_WORDS.test(`${text} ${place}`));
+  if (strong) return true;
+  if (FLIGHT_NOT.test(text)) return false;
+  return FLIGHT_WORDS.test(text);
 }
 
 export function looksLikeBirthday(event: CalendarEvent): boolean {
-  if (!event.allDay) return false;
-  return event.eventType === "birthday" || BIRTHDAY_WORDS.test(event.summary);
+  if (event.eventType === "birthday") return true;
+  return BIRTHDAY_WORDS.test(event.summary) && !BIRTHDAY_NOT.test(event.summary);
 }
 
 const TRAVEL_MAIL_PATTERNS: readonly RegExp[] = [
@@ -290,56 +333,93 @@ function daysBetween(fromDate: string, toDate: string): number {
   return Math.round((b - a) / DAY);
 }
 
+/** Minutes between two instants (timed) or between two dates (all-day, in whole days). Signed: positive means later. */
+function shiftMinutes(oldStart: string, oldAllDay: boolean, newStart: string, newAllDay: boolean): number {
+  if (oldAllDay || newAllDay) {
+    const a = oldAllDay ? oldStart : oldStart.slice(0, 10);
+    const b = newAllDay ? newStart : newStart.slice(0, 10);
+    return daysBetween(a, b) * 1440;
+  }
+  return Math.round((Date.parse(newStart) - Date.parse(oldStart)) / 60_000);
+}
+
+function startMs(start: string, allDay: boolean): number {
+  return Date.parse(allDay ? `${start}T00:00:00Z` : start);
+}
+
+function formatShift(minutes: number, allDay: boolean, lang: Lang): string {
+  const abs = Math.abs(minutes);
+  let d: string;
+  if (allDay) {
+    const days = Math.round(abs / 1440);
+    d = lang === "ar" ? `${days} يوم` : `${days} day${days === 1 ? "" : "s"}`;
+  } else {
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    d = lang === "ar" ? [h ? `${h} س` : "", m ? `${m} د` : ""].filter(Boolean).join(" ") : [h ? `${h} h` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
+  }
+  return render(lang, minutes >= 0 ? "later" : "earlier", { d });
+}
+
 // ---------------------------------------------------------------------------
 // Engine
 // ---------------------------------------------------------------------------
 
 export class TriggerEngine {
   private readonly deps: TriggerEngineDeps;
+  private readonly prefs: TriggerPrefs;
   private readonly now: () => Date;
   private running = false;
 
   constructor(deps: TriggerEngineDeps) {
     this.deps = deps;
+    this.prefs = deps.prefs ?? new TriggerPrefs(deps.state);
     this.now = deps.now ?? (() => new Date());
   }
 
   /** One scan: read, detect, deliver what is due. Safe to call concurrently; the second call returns at once. */
   async run(): Promise<TriggerRunResult> {
     if (this.running) return { detected: 0, sent: 0, held: 0, failed: false, skipped: "busy" };
+    if (this.prefs.isPaused()) return { detected: 0, sent: 0, held: 0, failed: false, skipped: "paused" };
     this.running = true;
     const state = this.loadState();
     try {
       const now = this.now();
-      const pending = (await this.detect(now, state)).filter((a) => state.fired[a.key] === undefined);
-      pending.sort((a, b) => Number(b.urgent) - Number(a.urgent));
       const cfg = this.deps.config;
+      const read = await this.detect(now, state);
+      const pending = read.alerts.filter((a) => state.fired[a.key] === undefined && !this.prefs.isMuted(a.kind, a.title));
       const window = this.deps.quiet?.() ?? { from: cfg.quietFrom, to: cfg.quietTo };
       const quiet = inQuietHours(now, this.deps.timezone, window.from, window.to);
-      const due = quiet ? pending.filter((a) => a.urgent) : pending;
-      let held = pending.length - due.length;
-      const batch = due.slice(0, cfg.maxPerRun);
-      held += due.length - batch.length;
       let sent = 0;
       let failed = false;
-      for (const alert of batch) {
-        let ok = false;
-        try {
-          ok = await this.deps.send(alert.text);
-        } catch {
-          ok = false;
-        }
-        if (!ok) {
-          failed = true;
-          held += batch.length - sent; // the rest wait for the next scan
-          break;
-        }
-        sent++;
-        state.fired[alert.key] = now.toISOString();
-        alert.commit?.(state);
-        this.deps.audit.append({ kind: "schedule", conversationKey: "triggers", principal: "owner", detail: { trigger: alert.kind, key: alert.key, urgent: alert.urgent } });
+      let welcome = false;
+
+      // The one-time explanation goes first, and only when the calendar was readable, so it never promises a feature that is not working.
+      if (!state.welcomed && read.calendarOk && !quiet) {
+        if (await this.safeSend(this.text("welcome"))) {
+          state.welcomed = true;
+          welcome = true;
+          this.deps.audit.append({ kind: "trigger", conversationKey: "triggers", principal: "owner", detail: { trigger: "welcome" } });
+        } else failed = true;
       }
-      return { detected: pending.length, sent, held, failed };
+
+      if (!failed) {
+        const urgent = pending.filter((a) => a.urgent).slice(0, cfg.maxPerRun);
+        const normal = quiet ? [] : pending.filter((a) => !a.urgent).slice(0, cfg.maxPerRun);
+        for (const alert of urgent) {
+          if (!(await this.deliver([alert], alert.text, false, now, state))) {
+            failed = true;
+            break;
+          }
+          sent++;
+        }
+        if (!failed && normal.length > 0) {
+          const text = normal.length === 1 ? normal[0]!.text : this.digest(normal);
+          if (await this.deliver(normal, text, normal.length > 1, now, state)) sent += normal.length;
+          else failed = true;
+        }
+      }
+      return { detected: pending.length, sent, held: pending.length - sent, failed, ...(welcome ? { welcome } : {}) };
     } finally {
       this.pruneFired(state, this.now());
       this.saveState(state);
@@ -347,19 +427,56 @@ export class TriggerEngine {
     }
   }
 
-  /** All facts worth an alert right now, deduplicated against `fired` by the caller. Never throws: a failing source is audited and skipped. */
-  private async detect(now: Date, state: TriggerState): Promise<PendingAlert[]> {
+  private text(key: "welcome"): string {
+    return TEXT[this.deps.language()][key];
+  }
+
+  private digest(alerts: PendingAlert[]): string {
+    const lang = this.deps.language();
+    const header = render(lang, "digestHeader", { n: alerts.length });
+    let out = header;
+    for (const a of alerts) {
+      const line = `\n• ${a.text}`;
+      if (out.length + line.length > DIGEST_MAX_CHARS) break;
+      out += line;
+    }
+    return out;
+  }
+
+  private async safeSend(text: string): Promise<boolean> {
+    try {
+      return await this.deps.send(text);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Send one message that stands for these alerts. Only after the channel took it are they recorded as sent. */
+  private async deliver(alerts: PendingAlert[], text: string, digest: boolean, now: Date, state: TriggerState): Promise<boolean> {
+    if (!(await this.safeSend(text))) return false;
+    for (const alert of alerts) {
+      state.fired[alert.key] = now.toISOString();
+      alert.commit?.(state);
+      this.deps.audit.append({ kind: "trigger", conversationKey: "triggers", principal: "owner", detail: { trigger: alert.kind, key: alert.key, urgent: alert.urgent, ...(digest ? { digest: true } : {}) } });
+    }
+    return true;
+  }
+
+  /** All facts worth an alert right now, not yet checked against `fired`. Never throws: a failing source is audited and skipped. */
+  private async detect(now: Date, state: TriggerState): Promise<{ alerts: PendingAlert[]; calendarOk: boolean }> {
     const cfg = this.deps.config;
     const alerts: PendingAlert[] = [];
+    let calendarOk = false;
     const horizon = Math.max(cfg.inviteHorizonHours * HOUR, cfg.flightHorizonDays * DAY);
     const to = new Date(now.getTime() + horizon);
-    // Birthdays are matched by date, so read from the start of the owner's yesterday to be safe at day edges.
+    // Birthdays are matched by date, so read from yesterday to be safe at day edges.
     const from = new Date(now.getTime() - DAY);
     try {
       const read = await this.deps.source.calendar({ from, to });
+      calendarOk = true;
       alerts.push(...this.invites(read.events, now));
       alerts.push(...this.birthdays(read.events, now));
-      alerts.push(...this.flights(read, now, state));
+      alerts.push(...(await this.travel(read, now, state)));
     } catch (error) {
       this.fail("calendar", error);
     }
@@ -371,7 +488,7 @@ export class TriggerEngine {
         this.fail("mail", error);
       }
     }
-    return alerts;
+    return { alerts, calendarOk };
   }
 
   private fail(part: string, error: unknown): void {
@@ -382,106 +499,150 @@ export class TriggerEngine {
   private invites(events: CalendarEvent[], now: Date): PendingAlert[] {
     const lang = this.deps.language();
     const limit = now.getTime() + this.deps.config.inviteHorizonHours * HOUR;
+    const soonMs = this.deps.config.inviteSoonHours * HOUR;
     const out: PendingAlert[] = [];
     for (const e of events) {
       if (e.allDay || e.status === "cancelled" || e.organizerSelf || e.selfResponse !== "needsAction") continue;
       const at = Date.parse(e.start);
       if (!Number.isFinite(at) || at <= now.getTime() || at > limit) continue;
-      const soon = at - now.getTime() <= SOON_INVITE_MS;
+      const soon = at - now.getTime() <= soonMs;
       out.push({
         key: `invite:${e.id}:${e.start}:${soon ? "soon" : "early"}`,
         kind: "invite",
         urgent: false,
+        title: titleKey(e.summary),
         text: render(lang, soon ? "inviteSoon" : "inviteEarly", { title: sanitizeExternal(e.summary), when: formatWhen(e.start, false, this.deps.timezone, lang) }),
       });
     }
     return out;
   }
 
+  private isBirthday(e: CalendarEvent): boolean {
+    return this.prefs.override("birthday", e.summary) ?? looksLikeBirthday(e);
+  }
+
+  private isTravel(e: CalendarEvent): boolean {
+    return this.prefs.override("flight", e.summary) ?? looksLikeFlight(e);
+  }
+
   private birthdays(events: CalendarEvent[], now: Date): PendingAlert[] {
     const lang = this.deps.language();
-    const today = localParts(now, this.deps.timezone).date;
+    const tz = this.deps.timezone;
+    const today = localParts(now, tz).date;
     const out: PendingAlert[] = [];
     const seen = new Set<string>();
     for (const e of events) {
-      if (e.status === "cancelled" || !looksLikeBirthday(e) || !/^\d{4}-\d{2}-\d{2}$/.test(e.start)) continue;
-      const days = daysBetween(today, e.start);
+      if (e.status === "cancelled" || !this.isBirthday(e)) continue;
+      // A birthday may be an all-day event or a timed one; either way it belongs to a calendar day in the owner's zone.
+      const date = e.allDay ? e.start : Number.isFinite(Date.parse(e.start)) ? localParts(new Date(e.start), tz).date : "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      const days = daysBetween(today, date);
       if (days !== 0 && days !== 1) continue;
-      const key = `birthday:${e.id}:${e.start}:${days}`;
+      const key = `birthday:${e.id}:${date}:${days}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ key, kind: "birthday", urgent: false, text: render(lang, days === 0 ? "birthdayToday" : "birthdayTomorrow", { title: sanitizeExternal(e.summary) }) });
+      out.push({ key, kind: "birthday", urgent: false, title: titleKey(e.summary), text: render(lang, days === 0 ? "birthdayToday" : "birthdayTomorrow", { title: sanitizeExternal(e.summary) }) });
     }
     return out;
   }
 
-  private flights(read: CalendarRead, now: Date, state: TriggerState): PendingAlert[] {
+  private async travel(read: CalendarRead, now: Date, state: TriggerState): Promise<PendingAlert[]> {
+    const cfg = this.deps.config;
     const lang = this.deps.language();
     const tz = this.deps.timezone;
-    const days = this.deps.config.flightHorizonDays;
-    const rangeEnd = now.getTime() + days * DAY;
+    const rangeEnd = now.getTime() + cfg.flightHorizonDays * DAY;
     const out: PendingAlert[] = [];
     const seenIds = new Set<string>();
-    const urgentAt = (start: string): boolean => {
+    const urgentAt = (start: string, allDay: boolean): boolean => {
+      if (allDay) return false;
       const t = Date.parse(start);
-      return Number.isFinite(t) && t > now.getTime() - HOUR && t - now.getTime() <= URGENT_FLIGHT_MS;
+      return Number.isFinite(t) && t > now.getTime() - HOUR && t - now.getTime() <= cfg.urgentFlightHours * HOUR;
     };
+    const snapshotOf = (e: CalendarEvent): FlightSnapshot => ({ start: e.start, summary: sanitizeExternal(e.summary), seenAt: now.toISOString(), allDay: e.allDay });
+    const meaningful = (minutes: number, allDay: boolean): boolean => (allDay ? Math.abs(minutes) >= 1440 : Math.abs(minutes) >= Math.max(1, cfg.flightChangeMinutes));
+
+    /** A change alert from a snapshot to what the calendar shows now, or nothing when the move is too small to matter. */
+    const changed = (id: string, snap: FlightSnapshot, e: CalendarEvent): PendingAlert | undefined => {
+      const allDay = snap.allDay === true || e.allDay;
+      const minutes = shiftMinutes(snap.start, snap.allDay === true, e.start, e.allDay);
+      if (!meaningful(minutes, allDay)) return undefined; // not applied to the snapshot either, so small drifts add up until they matter
+      const next = snapshotOf(e);
+      return {
+        key: `flight:${id}:${snap.start}>${e.start}`,
+        kind: "flight",
+        urgent: urgentAt(e.start, e.allDay) || urgentAt(snap.start, snap.allDay === true),
+        title: titleKey(e.summary),
+        text: render(lang, "flightChanged", { title: sanitizeExternal(e.summary), shift: formatShift(minutes, allDay, lang), old: formatWhen(snap.start, snap.allDay === true, tz, lang), now: formatWhen(e.start, e.allDay, tz, lang) }),
+        commit: (s) => void (s.flights[id] = next),
+      };
+    };
+    const cancelled = (id: string, snap: FlightSnapshot, title: string): PendingAlert => ({
+      key: `flight-cancel:${id}`,
+      kind: "flight",
+      urgent: urgentAt(snap.start, snap.allDay === true),
+      title: titleKey(title),
+      text: render(lang, "flightCancelled", { title: sanitizeExternal(title), when: formatWhen(snap.start, snap.allDay === true, tz, lang) }),
+      commit: (s) => void delete s.flights[id],
+    });
 
     for (const e of read.events) {
-      if (!looksLikeFlight(e)) continue;
-      const at = Date.parse(e.start);
-      if (!Number.isFinite(at)) continue;
-      seenIds.add(e.id);
-      const snap = state.flights[e.id];
-      if (e.status === "cancelled") {
-        if (snap && at > now.getTime()) {
-          out.push({
-            key: `flight-cancel:${e.id}`,
-            kind: "flight",
-            urgent: urgentAt(snap.start),
-            text: render(lang, "flightCancelled", { title: sanitizeExternal(e.summary), when: formatWhen(snap.start, false, tz, lang) }),
-            commit: (s) => void delete s.flights[e.id],
-          });
-        }
+      if (e.status !== "cancelled" && !this.isTravel(e)) {
+        delete state.flights[e.id]; // no longer a trip (the owner said so, or the title changed): stop watching it
         continue;
       }
+      if (e.status === "cancelled" && !state.flights[e.id]) continue; // never watched, nothing to report
+      const at = startMs(e.start, e.allDay);
+      if (!Number.isFinite(at)) continue;
+      const snap = state.flights[e.id];
+      if (e.status === "cancelled") {
+        if (snap && startMs(snap.start, snap.allDay === true) > now.getTime()) out.push(cancelled(e.id, snap, e.summary));
+        continue;
+      }
+      seenIds.add(e.id);
       if (at > rangeEnd || at < now.getTime() - DAY) continue;
       if (!snap) {
         // First sight is the baseline, never an alert: "changed" needs something to change from.
-        state.flights[e.id] = { start: e.start, summary: sanitizeExternal(e.summary), seenAt: now.toISOString() };
+        state.flights[e.id] = snapshotOf(e);
         continue;
       }
-      if (Date.parse(snap.start) !== at) {
-        const next = { start: e.start, summary: sanitizeExternal(e.summary), seenAt: now.toISOString() };
-        out.push({
-          key: `flight:${e.id}:${snap.start}>${e.start}`,
-          kind: "flight",
-          urgent: urgentAt(e.start) || urgentAt(snap.start),
-          text: render(lang, "flightChanged", { title: sanitizeExternal(e.summary), old: formatWhen(snap.start, false, tz, lang), now: formatWhen(e.start, false, tz, lang) }),
-          commit: (s) => void (s.flights[e.id] = next),
-        });
+      const alert = changed(e.id, snap, e);
+      if (alert) out.push(alert);
+    }
+
+    // A watched plan that is gone from the normal window. Before saying so, look further ahead: it may simply have moved out of range.
+    const candidates = read.complete ? Object.entries(state.flights).filter(([id, snap]) => !seenIds.has(id) && startMs(snap.start, snap.allDay === true) > now.getTime() && startMs(snap.start, snap.allDay === true) <= rangeEnd) : [];
+    if (candidates.length > 0) {
+      const wideDays = Math.min(365, Math.max(WIDE_DAYS_MIN, cfg.flightHorizonDays * 4));
+      let wide: CalendarRead | undefined;
+      try {
+        wide = await this.deps.source.calendar({ from: now, to: new Date(now.getTime() + wideDays * DAY) });
+      } catch (error) {
+        this.fail("calendar (wide)", error); // cannot confirm, so say nothing
+      }
+      if (wide) {
+        for (const [id, snap] of candidates) {
+          const found = wide.events.find((e) => e.id === id);
+          if (found && found.status === "cancelled") out.push(cancelled(id, snap, snap.summary));
+          else if (found) {
+            const alert = changed(id, snap, found);
+            if (alert) out.push(alert);
+          } else if (wide.complete) {
+            out.push({
+              key: `flight-missing:${id}:${snap.start}`,
+              kind: "flight",
+              urgent: urgentAt(snap.start, snap.allDay === true),
+              title: titleKey(snap.summary),
+              text: render(lang, "flightMissing", { title: snap.summary, when: formatWhen(snap.start, snap.allDay === true, tz, lang), days: wideDays }),
+              commit: (s) => void delete s.flights[id],
+            });
+          }
+        }
       }
     }
 
-    // A watched flight that is gone from a complete read. Only claimed when the read was complete.
-    if (read.complete) {
-      for (const [id, snap] of Object.entries(state.flights)) {
-        if (seenIds.has(id)) continue;
-        const at = Date.parse(snap.start);
-        if (!Number.isFinite(at) || at <= now.getTime() || at > rangeEnd) continue;
-        out.push({
-          key: `flight-missing:${id}:${snap.start}`,
-          kind: "flight",
-          urgent: urgentAt(snap.start),
-          text: render(lang, "flightMissing", { title: snap.summary, when: formatWhen(snap.start, false, tz, lang), days }),
-          commit: (s) => void delete s.flights[id],
-        });
-      }
-    }
-
-    // Flights already in the past are no longer watched.
+    // Plans already in the past are no longer watched.
     for (const [id, snap] of Object.entries(state.flights)) {
-      const at = Date.parse(snap.start);
+      const at = startMs(snap.start, snap.allDay === true);
       if (!Number.isFinite(at) || at < now.getTime() - 2 * DAY) delete state.flights[id];
     }
     return out;
@@ -496,6 +657,7 @@ export class TriggerEngine {
         key: `mail:${m.id}`,
         kind: "travel_mail",
         urgent: false,
+        title: titleKey(m.subject),
         text: render(lang, "travelMail", { subject: sanitizeExternal(m.subject), from: sanitizeExternal(m.from, 80) }),
       });
     }
@@ -512,6 +674,7 @@ export class TriggerEngine {
       version: 1,
       fired: raw.fired && typeof raw.fired === "object" ? { ...raw.fired } : {},
       flights: raw.flights && typeof raw.flights === "object" ? { ...raw.flights } : {},
+      ...(raw.welcomed === true ? { welcomed: true } : {}),
     };
   }
 
