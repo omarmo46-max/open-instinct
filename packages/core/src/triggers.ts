@@ -414,8 +414,8 @@ export class TriggerEngine {
           sent++;
         }
         if (!failed && normal.length > 0) {
-          const text = normal.length === 1 ? normal[0]!.text : this.digest(normal);
-          if (await this.deliver(normal, text, normal.length > 1, now, state)) sent += normal.length;
+          const { text, included } = normal.length === 1 ? { text: normal[0]!.text, included: normal } : this.digest(normal);
+          if (await this.deliver(included, text, included.length > 1, now, state)) sent += included.length;
           else failed = true;
         }
       }
@@ -431,16 +431,18 @@ export class TriggerEngine {
     return TEXT[this.deps.language()][key];
   }
 
-  private digest(alerts: PendingAlert[]): string {
+  /** One message for several alerts. Only the alerts that fit are in it (and so only those are marked sent); the rest wait for the next scan. */
+  private digest(alerts: PendingAlert[]): { text: string; included: PendingAlert[] } {
     const lang = this.deps.language();
-    const header = render(lang, "digestHeader", { n: alerts.length });
-    let out = header;
+    const included: PendingAlert[] = [];
+    let body = "";
     for (const a of alerts) {
       const line = `\n• ${a.text}`;
-      if (out.length + line.length > DIGEST_MAX_CHARS) break;
-      out += line;
+      if (included.length > 0 && render(lang, "digestHeader", { n: included.length + 1 }).length + body.length + line.length > DIGEST_MAX_CHARS) break;
+      included.push(a);
+      body += line;
     }
-    return out;
+    return { text: render(lang, "digestHeader", { n: included.length }) + body, included };
   }
 
   private async safeSend(text: string): Promise<boolean> {

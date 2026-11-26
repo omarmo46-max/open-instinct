@@ -18,6 +18,12 @@ export function titleKey(title: string): string {
   return normalizeText(title).replace(/[^\p{L}\p{N}]+/gu, " ").trim().slice(0, 80);
 }
 
+/** A stored key matches a title when it is the same, or sits inside it on word boundaries ("friday standup" matches "friday standup weekly"). Short keys only match exactly. */
+function keyMatches(title: string, key: string): boolean {
+  if (title === key) return true;
+  return key.length >= 4 && ` ${title} `.includes(` ${key} `);
+}
+
 interface PrefsData {
   version: 1;
   paused: boolean;
@@ -80,7 +86,7 @@ export class TriggerPrefs {
       delete d.mutedTitles[kind];
     } else {
       const k = titleKey(title);
-      d.mutedTitles[kind] = (d.mutedTitles[kind] ?? []).filter((t) => t !== k);
+      d.mutedTitles[kind] = (d.mutedTitles[kind] ?? []).filter((t) => !(keyMatches(t, k) || keyMatches(k, t)));
     }
     this.save(d);
   }
@@ -88,7 +94,7 @@ export class TriggerPrefs {
   isMuted(kind: string, title?: string): boolean {
     const d = this.load();
     if (d.mutedKinds.includes(kind)) return true;
-    return title ? (d.mutedTitles[kind] ?? []).includes(title) : false;
+    return title ? (d.mutedTitles[kind] ?? []).some((k) => keyMatches(title, k)) : false;
   }
 
   correct(kind: Correctable, title: string, is: boolean): void {
@@ -103,7 +109,11 @@ export class TriggerPrefs {
   }
 
   override(kind: Correctable, title: string): boolean | undefined {
-    return this.load().overrides[kind][titleKey(title)];
+    const map = this.load().overrides[kind];
+    const t = titleKey(title);
+    if (t in map) return map[t];
+    const hit = Object.keys(map).filter((k) => keyMatches(t, k)).sort((a, b) => b.length - a.length)[0];
+    return hit === undefined ? undefined : map[hit];
   }
 
   status(): { paused: boolean; mutedKinds: string[]; mutedTitles: Record<string, string[]>; notFlights: string[]; extraFlights: string[]; notBirthdays: string[]; extraBirthdays: string[] } {

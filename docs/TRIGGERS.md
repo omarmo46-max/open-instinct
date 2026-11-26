@@ -32,7 +32,7 @@ It will still be wrong sometimes, so the owner can correct it by chat ("that is 
 
 - Quiet hours hold everything except a travel alert for a plan leaving within `urgentFlightHours` (12). The window is learned from habits (see `PROACTIVE.md`).
 - An alert counts as sent only after the channel accepted it. A failed send or a hold is retried next scan; nothing repeats.
-- Several ordinary alerts in one scan go out as one message (a short list). Urgent ones go on their own. At most `maxPerRun` (5) per message.
+- Several ordinary alerts in one scan go out as one message (a short list). Urgent ones go on their own. At most `maxPerRun` (5) per message; if a long list does not fit in one message, only the alerts that fit are marked sent and the rest go in the next scan.
 - A move smaller than `flightChangeMinutes` is ignored, and the same instant written in another time zone is not a change. Small drifts add up against the original time until they matter.
 - The first time it sees a plan it only records it. "Changed" needs something to change from.
 - Before it says a plan is gone, it reads a much wider calendar window (at least 90 days). If the plan is there at another time it reports a move; if the wide read is complete and it is still not there it says "I could not find it, it is worth a look"; if the read was partial it says nothing.
@@ -45,6 +45,7 @@ It will still be wrong sometimes, so the owner can correct it by chat ("that is 
 
 `trigger_mute` (a kind, one item by title, or `all` to pause everything), `trigger_unmute`, `trigger_feedback`, `trigger_status`.
 Kinds: `invite`, `birthday`, `flight`, `travel_mail`.
+A muted or corrected title matches by whole words, so "friday standup" also covers "Friday standup weekly". Titles shorter than 4 characters match exactly only. Use the title as it appears on the calendar, not a translation.
 
 ## Config (`config.json`, key `triggers`)
 

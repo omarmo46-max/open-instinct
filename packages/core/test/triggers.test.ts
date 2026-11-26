@@ -310,6 +310,17 @@ describe("delivery", () => {
     expect(sent).toHaveLength(2);
     expect(sent[1]).toBe(sent[1]!.includes("M4") ? sent[1] : "M4");
   });
+  it("never marks an alert sent that did not fit in the digest", async () => {
+    const events = Array.from({ length: 20 }, (_, i) => ev({ id: `n${i}`, summary: `Meeting ${String(i).padStart(2, "0")} ${"x".repeat(100)}`, start: "2026-11-27T10:00:00Z", selfResponse: "needsAction" }));
+    const { engine, sent } = setup({ events, cfg: { maxPerRun: 20 } });
+    const first = await engine.run();
+    expect(first.sent).toBeLessThan(20);
+    expect(first.held).toBe(20 - first.sent);
+    expect(sent[0]!.length).toBeLessThanOrEqual(3600);
+    while ((await engine.run()).sent > 0);
+    const all = sent.join("\n");
+    for (let i = 0; i < 20; i++) expect(all.split(`Meeting ${String(i).padStart(2, "0")} `).length - 1).toBe(1); // each exactly once
+  });
   it("survives a failing source and says so in the audit log", async () => {
     const { engine, box, audit } = setup();
     box.calendarThrows = true;

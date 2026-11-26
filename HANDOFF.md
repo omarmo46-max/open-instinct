@@ -111,5 +111,5 @@ Details and limits in `docs/PROACTIVE.md`.
 
 ## Test counts at this checkpoint
 
-core 416, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
+core 418, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
 apps 172, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.

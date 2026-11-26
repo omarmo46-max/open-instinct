@@ -28,6 +28,18 @@ describe("trigger tools", () => {
     expect(prefs.isPaused()).toBe(false);
     expect(prefs.isMuted("birthday")).toBe(false);
   });
+  it("matches a muted title by whole words, not by accident", () => {
+    const prefs = new TriggerPrefs(tempState());
+    prefs.mute("invite", "Friday standup");
+    expect(prefs.isMuted("invite", titleKey("Friday standup weekly"))).toBe(true);
+    expect(prefs.isMuted("invite", titleKey("Fridays standups"))).toBe(false);
+    prefs.mute("invite", "hr");
+    expect(prefs.isMuted("invite", titleKey("hr review"))).toBe(false); // too short to match inside a longer title
+    prefs.correct("flight", "flight club", false);
+    expect(prefs.override("flight", "Flight club meeting")).toBe(false);
+    prefs.unmute("invite", "friday standup weekly");
+    expect(prefs.isMuted("invite", titleKey("Friday standup"))).toBe(false);
+  });
   it("rejects unknown kinds", async () => {
     const tools = triggerTools(new TriggerPrefs(tempState()));
     expect((await run(tools, "trigger_mute", { kind: "weather" })).isError).toBe(true);

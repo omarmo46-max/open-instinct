@@ -28,7 +28,7 @@ export function triggerTools(prefs: TriggerPrefs): RegisteredTool[] {
     defineTool({
       name: "trigger_mute",
       label: "Mute alerts",
-      description: `Stop proactive alerts. kind: ${KINDS}, or all to pause every alert. With a title, only that one item is muted (for example one recurring meeting); without it the whole kind is.`,
+      description: `Stop proactive alerts. kind: ${KINDS}, or all to pause every alert. With a title, only that one item is muted (for example one recurring meeting); without it the whole kind is. Use the title exactly as it appears in the alert or on the calendar (not a translation), because matching is by those words.`,
       parameters: Type.Object({ kind: Type.String(), title: Type.Optional(Type.String()) }),
       meta: { ...meta, describe: (a) => `mute alerts: ${arg(a, "kind")} ${arg(a, "title")}`.trim() },
       execute: async ({ kind, title }) => {
