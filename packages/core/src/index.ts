@@ -24,3 +24,8 @@ export * from "./i18n.js";
 export * from "./groups.js";
 export * from "./attachments.js";
 export * from "./triggers.js";
+export * from "./habits.js";
+export * from "./memory-search.js";
+export * from "./preferences.js";
+export * from "./places.js";
+export * from "./proactive-tools.js";

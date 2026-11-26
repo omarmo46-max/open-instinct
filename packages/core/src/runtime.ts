@@ -52,6 +52,8 @@ export interface Outbox {
 }
 
 export interface RuntimeDeps {
+  /** Told when the owner writes (habit learning, B2). Never receives message text. */
+  onOwnerActivity?: (at: Date) => void;
   state: StateDir;
   config: InstinctConfig;
   policy: PolicyEngine;
@@ -400,6 +402,13 @@ export class AgentRuntime {
       if (claimed) {
         msg = claimed;
         base = { ...base, principal: resolvePrincipal(msg, this.deps.config, this.deps.contacts) };
+      }
+      if (base.principal.kind === "owner") {
+        try {
+          this.deps.onOwnerActivity?.(this.now());
+        } catch {
+          // habit learning must never block a message
+        }
       }
       run = this.processInbound(msg);
       this.inboundRuns.set(msg.id, run);

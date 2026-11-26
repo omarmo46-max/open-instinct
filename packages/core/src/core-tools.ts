@@ -138,15 +138,17 @@ function scheduleTools({ scheduler, config }: CoreToolDeps): RegisteredTool[] {
       cron: Type.Optional(Type.String({ description: "minute hour day-of-month month day-of-week" })),
       tz: Type.Optional(Type.String({ description: "IANA timezone; defaults to the owner's" })),
       at: Type.Optional(Type.String({ description: "ISO timestamp for a one-shot run" })),
+      wait_for_wake: Type.Optional(Type.Boolean({ description: "true to hold the job while the owner is asleep (by their habits) and run it when they wake. Leave false for alarms and anything exact." })),
     }),
     meta: { capabilities: ["schedule.manage"], group: "schedule", describe: (a) => `schedule ${argText(a, "name")}` },
-    execute: async ({ name, prompt, cron, tz, at }) => {
+    execute: async ({ name, prompt, cron, tz, at, wait_for_wake }) => {
       if (!cron && !at) return { content: [{ type: "text", text: "Give either cron or at." }], isError: true };
       if (at && Number.isNaN(Date.parse(at))) return { content: [{ type: "text", text: `Invalid timestamp: ${at}` }], isError: true };
       const entry = scheduler.create({
         name,
         prompt,
         enabled: true,
+        ...(wait_for_wake === true ? { waitForWake: true } : {}),
         ...(cron ? { cron } : {}),
         tz: tz ?? config.owner.timezone,
         ...(at ? { nextRunAt: new Date(at).toISOString() } : {}),

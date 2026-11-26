@@ -173,6 +173,8 @@ export interface TriggerEngineDeps {
   timezone: string;
   /** Language for the alert text; read at every run so a changed owner preference applies. */
   language: () => Lang;
+  /** The quiet window to use right now (learned from habits, B2). Defaults to the configured one. */
+  quiet?: () => { from: string; to: string };
   /** Deliver to the owner. True when the message left. */
   send: (text: string) => Promise<boolean>;
   now?: () => Date;
@@ -312,7 +314,8 @@ export class TriggerEngine {
       const pending = (await this.detect(now, state)).filter((a) => state.fired[a.key] === undefined);
       pending.sort((a, b) => Number(b.urgent) - Number(a.urgent));
       const cfg = this.deps.config;
-      const quiet = inQuietHours(now, this.deps.timezone, cfg.quietFrom, cfg.quietTo);
+      const window = this.deps.quiet?.() ?? { from: cfg.quietFrom, to: cfg.quietTo };
+      const quiet = inQuietHours(now, this.deps.timezone, window.from, window.to);
       const due = quiet ? pending.filter((a) => a.urgent) : pending;
       let held = pending.length - due.length;
       const batch = due.slice(0, cfg.maxPerRun);

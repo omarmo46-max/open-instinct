@@ -218,6 +218,8 @@ export interface ScheduleEntry {
    * Only the runtime sets it; the schedule tools cannot. The prompt is then a label.
    */
   task?: string;
+  /** Hold this job while the owner is asleep (by learned habit) and fire it at wake. */
+  waitForWake?: boolean;
   createdAt: string;
   lastRunAt?: string;
 }

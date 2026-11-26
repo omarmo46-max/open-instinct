@@ -51,6 +51,8 @@ export interface HttpApp {
   modelSpec?: string;
   /** Set when the outbox buffers chat replies (ConsoleOutbox or the chat-aware Inkbox wrapper). */
   chatBuffer?: ChatBuffer;
+  /** Set when INSTINCT_LOCATION=1: takes a phone's location fix or arrive/leave event. */
+  location?: { ingest(body: unknown): Promise<{ ok: boolean; events: number; fired: number; error?: string }> };
   /** Set when payments are configured. */
   wallet?: WalletCallback;
   /** Report a finished phone call to the owner. Unset: call.ended events are acknowledged and dropped. */
@@ -422,6 +424,17 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
 
     // A spoken message from the owner (the iPhone Action Button Shortcut): audio in, the agent's answer out.
     if (method === "POST" && path === "/voice") return handleVoice(req, res);
+
+    // The phone's location (an iOS automation or app): a fix {lat, lon, accuracy?} or {place, event}. Off unless INSTINCT_LOCATION=1.
+    if (method === "POST" && path === "/location") {
+      if (!app.location) return sendJson(res, 404, { error: "location is off on this agent" });
+      const raw = await readBody(req, 4096);
+      if (raw === undefined) return sendJson(res, 413, { error: "body too large" });
+      const body = parseJson(raw);
+      if (!body) return sendJson(res, 400, { error: "send a JSON body" });
+      const out = await app.location.ingest(body);
+      return sendJson(res, out.ok ? 200 : 400, out);
+    }
 
     if (method === "POST" && path === "/chat") {
       const raw = await readBody(req, limit);

@@ -67,12 +67,23 @@ The agent scans Gmail and Google Calendar by itself and texts the owner first. C
 - An alert counts as sent only after the channel took it; quiet hours hold all but an urgent flight alert (departs within 12 h).
 - **Not verified live.** Tested against fakes. The slugs `GOOGLECALENDAR_EVENTS_LIST` and `GMAIL_FETCH_EMAILS` and the response field names must be confirmed once with a real Composio account.
 
+## Done: Phase B2 to B5
+
+Details and limits in `docs/PROACTIVE.md`.
+
+- **B2** `core/habits.ts` learns the sleep window from message hours (no text); `Scheduler.start` takes a `hold` callback and `ScheduleEntry.waitForWake` (tool arg `wait_for_wake`); triggers use the learned quiet window.
+- **B3** `core/memory-search.ts` + tool `memory_search`: words by default, meaning with `INSTINCT_SEMANTIC_MEMORY=1` and an embeddings key (opt-in, sends memory text out).
+- **B4** `core/preferences.ts` + tools `preference_note`, `booking_brief`, `preference_forget`. Stated wins; a choice repeated 3 times becomes learned; ties are asked, not guessed.
+- **B5** `core/places.ts`, `LocationService`, tools `place_save`, `arrival_reminder`, `where_am_i`, `place_remove`, route `POST /location`. Off unless `INSTINCT_LOCATION=1`.
+- All new owner tools use the existing `memory.write` capability (owner only), so the permission table is unchanged.
+- Not verified live: iPhone automation, a real embeddings service, Composio slugs (B1).
+
 ## Not done yet (in order the user asked)
 
 | Phase | Items |
 |---|---|
 | A (closed) | Nothing open. Only carried to the live test phase: run the checklist at the end of `docs/IPHONE-SHORTCUT.md` on a real iPhone |
-| **B** proactive + memory (B1 done) | ~~B1 triggers~~ (done, see below), B2 sleep/wake scheduling by habit, B3 semantic memory search, B4 learned preferences applied to bookings, B5 location and arrival awareness (note: there is **no B6**) |
+| **B** proactive + memory (B1 to B5 done) | ~~B1 triggers~~ (done, see below), B2 sleep/wake scheduling by habit, B3 semantic memory search, B4 learned preferences applied to bookings, B5 location and arrival awareness (note: there is **no B6**) |
 | **C** security (all) | C1 content firewall for every inbound message and attachment, C2 separate action monitor (block or ask before execution), C3 hallucination / grounding checker, C4 signed tool identity and short-lived credentials, C5 end-to-end encrypted files between agents, C6 vault (logins, cards, addresses), C7 TOTP, C8 1Password broker, C9 external audit and pen test (needs outside people) |
 | **D** | D1 spending budget (autonomous within a limit; needs a payment rail and API access), D5 compensation-claim skill |
 | **E** (all) | E1 business-agent protocols (PAP / PACT style; needs partners), E2 domain connectors (health booking etc.; needs partner APIs), E3 revocable invite links and referrals, E4 group coordination of 10 to 100 people incl. non-users, E5 shareable interactive pages, E6 Concierge calls without per-call approval |
@@ -99,5 +110,5 @@ The agent scans Gmail and Google Calendar by itself and texts the owner first. C
 
 ## Test counts at this checkpoint
 
-core 384, gateway 84, server 132, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
+core 400, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
 apps 171, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.

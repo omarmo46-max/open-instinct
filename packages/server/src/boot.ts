@@ -19,10 +19,18 @@ import {
   Scheduler,
   StateDir,
   ToolRegistry,
+  HabitStore,
+  LocationService,
+  MemorySearch,
+  PlaceStore,
+  PreferenceStore,
   TriggerEngine,
   TRIGGERS_SCAN_TASK,
   TRIGGERS_SCHEDULE_ID,
   coreTools,
+  inQuietHours,
+  openAIEmbedder,
+  proactiveTools,
   ensurePersona,
   loadConfig,
   ownerClaimStatus,
@@ -169,6 +177,18 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   const scheduler = new Scheduler(state);
   const contacts = new ContactStore(state, { warn: log });
   const memory = new MemoryStore(state);
+  // Phase B: habits (B2), memory search (B3), booking preferences (B4), places (B5).
+  const triggersConfig = resolveTriggers(config.triggers, env);
+  const habits = new HabitStore(state, config.owner.timezone);
+  /** Quiet hours now: the owner's learned sleep window once there is enough data, else the configured one. */
+  const quietWindow = (): { from: string; to: string } => {
+    const learned = habits.sleepWindow();
+    return learned.confident ? { from: learned.from, to: learned.to } : { from: triggersConfig.quietFrom, to: triggersConfig.quietTo };
+  };
+  const embedKey = env.EMBED_API_KEY || env.OPENAI_API_KEY;
+  // Meaning search sends memory text to the embeddings service, so it needs an explicit opt-in.
+  const embedder = env.INSTINCT_SEMANTIC_MEMORY === "1" && embedKey ? openAIEmbedder({ apiKey: embedKey, ...(env.EMBED_BASE_URL ? { baseUrl: env.EMBED_BASE_URL } : {}), ...(env.EMBED_MODEL ? { model: env.EMBED_MODEL } : {}), ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }) : undefined;
+  const places = env.INSTINCT_LOCATION === "1" ? new PlaceStore(state) : undefined;
   const a2aStore = new A2AStore(state);
 
   const model = opts.model ?? resolveModel(config.model.primary, env);
@@ -291,6 +311,8 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       ...(env.YDC_API_KEY || env.YOU_SEARCH === "1" ? { youSearch: env.YDC_API_KEY ? { apiKey: env.YDC_API_KEY } : {} } : {}),
     }),
   );
+  registry.registerMany(proactiveTools({ search: new MemorySearch(state, memory, embedder), prefs: new PreferenceStore(state), ...(places ? { places } : {}) }));
+  const locationService = places ? new LocationService(places, (text) => runtime.notifyOwner(text, "location")) : undefined;
 
   if (env.CONTEXT_DEV_API_KEY) {
     registry.registerMany(
@@ -523,6 +545,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   // eslint-disable-next-line prefer-const
   let runtime: AgentRuntime;
   runtime = new AgentRuntime({
+    onOwnerActivity: (at) => habits.record(at),
     state,
     config,
     policy,
@@ -555,7 +578,6 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   // Proactive triggers (B1). Off unless the owner turned them on and a Composio session exists,
   // because they read mail and calendar. The scan is a schedule entry so Maritime's GET /schedules
   // wakes a sleeping VM; the entry runs code, not a prompt.
-  const triggersConfig = resolveTriggers(config.triggers, env);
   let triggerEngine: TriggerEngine | undefined;
   if (triggersConfig.enabled && apps) {
     const composio = apps;
@@ -566,6 +588,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       config: triggersConfig,
       timezone: config.owner.timezone,
       language: () => pickLanguage(config.owner, undefined),
+      quiet: quietWindow,
       send: (text) => runtime.notifyOwner(text, "triggers"),
     });
     scheduler.ensureSystem({ id: TRIGGERS_SCHEDULE_ID, name: "Proactive triggers", cron: scanCron(triggersConfig.intervalMinutes), tz: config.owner.timezone, prompt: "(internal) scan mail and calendar for things to tell the owner", task: TRIGGERS_SCAN_TASK });
@@ -580,6 +603,10 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       return;
     }
     await runtime.runScheduled(entry);
+  }, 30_000, (entry, now) => {
+    if (entry.waitForWake !== true) return false;
+    const w = quietWindow();
+    return inQuietHours(now, entry.tz ?? config.owner.timezone, w.from, w.to);
   });
 
   if (whatsapp) {
@@ -644,6 +671,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     startedAt,
     modelSpec,
     chatBuffer,
+    ...(locationService ? { location: locationService } : {}),
     ...(wallet ? { wallet } : {}),
     ...(telegram ? { telegramOwnBot: true } : {}),
     ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),

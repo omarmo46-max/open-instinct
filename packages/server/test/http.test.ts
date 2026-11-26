@@ -276,6 +276,27 @@ describe("http server", () => {
     expect(app.inbound).toHaveLength(0);
   });
 
+  describe("POST /location (phone location, B5)", () => {
+    const send = (body: unknown) => fetch(`${base}/location`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+    it("is off (404) unless the agent enabled location", async () => {
+      app.location = undefined as never;
+      expect((await send({ lat: 1, lon: 1 })).status).toBe(404);
+    });
+
+    it("passes a fix or an event to the service and returns its answer; bad input is 400", async () => {
+      const seen: unknown[] = [];
+      app.location = { ingest: async (b) => (seen.push(b), b && (b as { lat?: number }).lat === 1 ? { ok: true, events: 1, fired: 1 } : { ok: false, events: 0, fired: 0, error: "bad" }) };
+      const ok = await send({ lat: 1, lon: 1 });
+      expect(ok.status).toBe(200);
+      expect(await ok.json()).toEqual({ ok: true, events: 1, fired: 1 });
+      expect((await send({ nope: true })).status).toBe(400);
+      const notJson = await fetch(`${base}/location`, { method: "POST", body: "x" });
+      expect(notJson.status).toBe(400);
+      expect(seen).toHaveLength(2);
+    });
+  });
+
   it("unknown routes are 404 JSON", async () => {
     const res = await fetch(`${base}/nope`);
     expect(res.status).toBe(404);

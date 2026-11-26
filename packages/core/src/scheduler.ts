@@ -382,13 +382,20 @@ export class Scheduler {
    * Poll for due entries. Each is marked as run before `onFire` so a slow job cannot
    * fire twice. Returns a stop function. The timer never keeps the process alive.
    */
-  start(onFire: (entry: ScheduleEntry) => Promise<void>, intervalMs = 30_000): () => void {
+  start(onFire: (entry: ScheduleEntry) => Promise<void>, intervalMs = 30_000, hold?: (entry: ScheduleEntry, now: Date) => boolean): () => void {
     let running = false;
     const tick = async (): Promise<void> => {
       if (running) return;
       running = true;
       try {
         for (const entry of this.due()) {
+          let held = false;
+          try {
+            held = hold?.(entry, this.now()) === true;
+          } catch {
+            held = false;
+          }
+          if (held) continue; // stays due; fires at the first tick after the hold ends
           this.markRan(entry.id);
           try {
             await onFire(entry);
