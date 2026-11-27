@@ -72,10 +72,10 @@ import { ampleTools, type AmpleCredentials } from "@open-instinct/ample";
 import { AtomicMailBackend, atomicMailGuidance } from "@open-instinct/atomicmail";
 import { contextTools } from "@open-instinct/context";
 import { keenableTools } from "@open-instinct/keenable";
-import { networkTools, PartnerRegistry, partnerTools } from "@open-instinct/network";
+import { networkTools, PartnerRegistry, partnerTools, e2eeA2aTools } from "@open-instinct/network";
 import { ChatAwareOutbox, ConsoleOutbox, type ChatReplyBuffer } from "./console-outbox.js";
 import { fileTools, resolveInsideWorkspace } from "./file-tools.js";
-import { describeDataPart, promptExtraFor } from "./hooks.js";
+import { makeDescribeDataPart, promptExtraFor } from "./hooks.js";
 import { appsNotConfiguredTool, setupSummaryFor } from "./setup-summary.js";
 import { createScheduleSync, type ScheduleSync } from "./maritime-schedules.js";
 import { createPages } from "./pages.js";
@@ -610,6 +610,8 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   const takesSecrets = new Set(["computer", "computer_batch", ...(env.INSTINCT_SECRET_TOOLS ?? "").split(",").map((s) => s.trim()).filter(Boolean)]);
   registry.registerMany(registry.all().filter((t) => takesSecrets.has(t.spec.name)).map((t) => ({ spec: { ...t.spec, meta: { ...t.spec.meta, acceptsSecrets: true } } })));
   registry.registerMany(securityTools({ audit, state, vault, stepUp, stepUpStore, op, keyring, pins, identity, registry, quarantined, issuer: "Open Instinct", rewrap: (t) => (broker.available() ? broker.wrap(t) : t) }));
+  // C5 on the wire: encrypted files and key exchange between agents over A2A (needs Inkbox A2A and a handle).
+  registry.registerMany(e2eeA2aTools({ ...(a2a ? { a2a } : {}), keyring, contacts, audit, ...(inkbox ? { selfHandle: inkbox.handle } : {}), workspace: state.path("workspace") }));
   // C4: a tool whose description or schema changed since it was pinned is taken out of service until the owner accepts it.
   const pinCheck = pins.check(registry.all()); // watches tools from outside servers (Composio, MCP), not the agent's own
   for (const name of pinCheck.changed) {
@@ -646,7 +648,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     streamFn: opts.streamFn ?? (streamSimple as StreamFn),
     getApiKey: (provider: string) => apiKeyFor(provider, env),
     // Core cannot import the network package; the server bridges OIP and the network guidance.
-    describeData: describeDataPart,
+    describeData: makeDescribeDataPart({ keyring, workspace: state.path("workspace") }),
     promptExtra: promptExtraFor,
     setupSummary: () =>
       setupSummaryFor({

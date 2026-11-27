@@ -31,3 +31,4 @@ export {
   type PartnerIntent,
   type PartnerToolDeps,
 } from "./partners.js";
+export { e2eeA2aTools, decodeE2ee, describeE2ee, e2eeFileData, e2eeKeysData, fingerprintOf, E2EE_A2A_MAX_BYTES, E2EE_A2A_VERSION, type E2eeData, type E2eeA2aDeps } from "./e2ee-a2a.js";

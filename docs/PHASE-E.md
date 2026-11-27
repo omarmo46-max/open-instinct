@@ -26,3 +26,7 @@ A standing mandate replaces the per-call yes. `concierge_mandate_set` (always as
 - Honest limit: `partner_confirm` relies on the agent having the owner's yes (as the other commit tools do). Treat a partner connection as something to harden with the owner-ask path before partners with real money join.
 
 To connect a partner: write a `PartnerConnector`, register it, add its test. The fake partner in `packages/network/test/partners.test.ts` is the template.
+
+## C5 over A2A
+
+Encrypted files and keys between agents now work over A2A. Flow: each owner runs `e2ee_share_keys_a2a` to the other's agent, checks the fingerprint with them another way, and pins the keys (`e2ee_pin_peer`). Then `e2ee_send_file_a2a` seals a workspace file (up to 2 MB) for that peer. The receiver verifies the signature against the pinned key, decrypts into `workspace/received/`, and treats the content as untrusted. A forged sender label, a changed byte or an unpinned sender is refused.

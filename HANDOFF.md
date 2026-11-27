@@ -84,7 +84,7 @@ Details and limits in `docs/PROACTIVE.md`.
 Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit and penetration test) is not done: it needs outside people.
 
 - **C1** `core/firewall.ts`: inbound text and attachments scored; allow, warn (taints the conversation 30 min) or block (strangers only, silent). **C2** `core/action-monitor.ts`: ask or block before a tool runs (secrets in arguments, stored credentials, tainted conversation, bursts). **C3** `core/grounding.ts`: unsupported figures, links, codes and claimed actions get a note.
-- **C4** `core/tool-identity.ts`: Ed25519 identity, pins for outside tools (Composio, MCP; quarantine on change), signed manifest, short-lived credentials. **C5** `core/e2ee.ts`: X25519 + AES-256-GCM files between agents with pinned peers (not yet wired into the A2A protocol).
+- **C4** `core/tool-identity.ts`: Ed25519 identity, pins for outside tools (Composio, MCP; quarantine on change), signed manifest, short-lived credentials. **C5** `core/e2ee.ts`: X25519 + AES-256-GCM files between agents with pinned peers. Now wired into A2A (see Phase E fix below).
 - **C6** `core/vault.ts` + `core/secrets-broker.ts`: encrypted vault, `{{secret:...}}` references filled in after approval and scrubbed from results. **C7** `core/totp.ts`: RFC 6238 and step-up. **C8** `core/onepassword.ts`: 1Password through the `op` CLI with an allowed-vault list.
 - Wiring: `RuntimeDeps.security` (interface in `security-types.ts`, implemented by `SecurityLayer`), hooks in `runtime.ts` (inbound, guard, recordToolCall, reply), `ToolMeta.secretAccess` / `acceptsSecrets`, `ToolRegistry.remove`, boot in `server/boot.ts`, owner tools in `core/security-tools.ts`.
 - Second pass: pins watch only `meta.external` tools (set in `apps/wrap.ts`); tool results are scanned and taint the conversation (`inspectToolResult`); owner approval of credential use is a signed single-use `CredentialIssuer` token; secret-reveal tools are no longer scrubbed and are withheld from the audit; security events have audit kind `security`; the audit log is hash-chained (`AuditLog.verify`, tool `audit_verify`).
@@ -105,6 +105,10 @@ Details in `docs/PHASE-E.md`.
 - **E1 + E2 foundation** the partner layer `OPP/1` and `PartnerConnector`, `network/src/partners.ts`; no partner connected yet.
 - **E3 (invite links, referrals) and E4 (group coordination of 10 to 100) are dropped**: not built, no code. Phase A's allowed-groups feature stays.
 - Not verified live: real calls, real visitors on a public page, a real partner.
+
+## Fix after Phase E: C5 wired into A2A
+
+`network/src/e2ee-a2a.ts`: encrypted files and key exchange now travel over A2A as one data part (`e2ee: "1"`). Tools `e2ee_share_keys_a2a` and `e2ee_send_file_a2a` (owner only, files up to 2 MB, inside the workspace). The receiver (`server/src/hooks.ts`, `makeDescribeDataPart`) decrypts a file from a pinned peer into `workspace/received/` and tells the model it is untrusted; unpinned, forged or changed files are not opened. Keys that arrive are never trusted on sight: the owner confirms the fingerprint, then `e2ee_pin_peer`. Tested end to end with two agents (`network/test/e2ee-a2a.test.ts`). E5 is also checked through the real boot and HTTP (`server/test/phase-e-boot.test.ts`).
 
 ## Not done yet (in order the user asked)
 
