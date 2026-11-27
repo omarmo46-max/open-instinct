@@ -55,6 +55,8 @@ export interface HttpApp {
   location?: { ingest(body: unknown): Promise<{ ok: boolean; events: number; fired: number; error?: string }> };
   /** Set when payments are configured. */
   wallet?: WalletCallback;
+  /** Set when EGP_WALLET=1: serves the owner's private one-time card page. */
+  egp?: { handleHttp(method: string, path: string, body: string): { status: number; html: string } | undefined };
   /** Report a finished phone call to the owner. Unset: call.ended events are acknowledged and dropped. */
   onCallEnded?(event: CallEndedEvent): Promise<void>;
   /**
@@ -404,6 +406,18 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     if (method === "GET" && path === "/oauth/link/callback") return linkCallback(url, res);
+
+    // The owner's private EGP card page. The link carries its own one-time token, so it sits before the owner-token check.
+    if (app.egp && path.startsWith("/egp/card/") && (method === "GET" || method === "POST")) {
+      let body = "";
+      if (method === "POST") {
+        const raw = await readBody(req, 4096);
+        if (raw === undefined) return sendJson(res, 413, { error: "too large" });
+        body = raw.toString("utf8");
+      }
+      const page = app.egp.handleHttp(method, path, body);
+      if (page) return sendHtml(res, page.status, page.html);
+    }
 
     // Everything below is the owner's surface.
     if (!tokenMatches(chatToken, presentedToken(req.headers))) {

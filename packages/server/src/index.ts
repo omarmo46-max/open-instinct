@@ -36,7 +36,7 @@ export {
 } from "./file-tools.js";
 export type { FileToolsOptions, WrapOptions } from "./file-tools.js";
 export { describeDataPart, promptExtraFor } from "./hooks.js";
-export { paymentsEnv, loadPaymentsModule, PAYMENTS_PACKAGE, LINK_CALLBACK_PATH } from "./payments.js";
+export { paymentsEnv, loadPaymentsModule, egpEnabled, PAYMENTS_PACKAGE, LINK_CALLBACK_PATH } from "./payments.js";
 export type { PaymentsModule, PaymentsEnv, LinkWalletLike, LinkWalletOptions, PaymentsToolDeps } from "./payments.js";
 export { createScheduleSync, schedulesEndpoint } from "./maritime-schedules.js";
 export type { ScheduleSync, ScheduleSyncOptions } from "./maritime-schedules.js";

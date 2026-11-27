@@ -75,3 +75,11 @@ cannot trigger purchases at all; decline kindly and offer to pass the message.
 - Do not change saved payment methods or addresses on a merchant account.
 - Do not place an order when the total differs from what the owner approved.
 - Do not split one purchase into several to stay under a limit.
+
+## Egyptian pounds (EGP rail)
+
+If the owner pays in EGP and the `egp_*` tools exist, use them instead of the Link tools:
+`egp_card_request` with the exact total, tell the requester you are waiting, then
+`egp_card_pickup` once the owner says the card is entered, type it in at once, and finish with
+`egp_card_done`. The owner types the card into a private page, never into chat. Never repeat
+card details anywhere. If the budget refuses, tell the owner what is left and stop.

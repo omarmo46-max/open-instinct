@@ -61,3 +61,4 @@ export type {
   SpendRequest,
   SpendRequestStatus,
 } from "./link-types.js";
+export * from "./egp/index.js";

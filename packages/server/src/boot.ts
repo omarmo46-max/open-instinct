@@ -78,7 +78,7 @@ import { fileTools, resolveInsideWorkspace } from "./file-tools.js";
 import { describeDataPart, promptExtraFor } from "./hooks.js";
 import { appsNotConfiguredTool, setupSummaryFor } from "./setup-summary.js";
 import { createScheduleSync, type ScheduleSync } from "./maritime-schedules.js";
-import { loadPaymentsModule, paymentsEnv, type LinkWalletLike, type PaymentsModule } from "./payments.js";
+import { egpEnabled, loadPaymentsModule, paymentsEnv, type EgpRailLike, type LinkWalletLike, type PaymentsModule } from "./payments.js";
 import { createSkillCatalog, formatSkillsIndex, loadSkillTool, ownerSkillsDir, resolveSkillsDir, skillsFor } from "./skills.js";
 
 /** How often the skill folders are re-read; an owner-installed skill shows up within this. */
@@ -537,6 +537,24 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     }
   }
 
+  // Egyptian pounds: a budgeted, owner-approved card rail (Vodafone Cash temporary cards), opt-in with EGP_WALLET=1.
+  // Independent of Stripe Link; both can run side by side.
+  let egp: EgpRailLike | undefined;
+  if (egpEnabled(env)) {
+    const mod = opts.payments ?? (await loadPaymentsModule());
+    if (!mod?.createEgpRail) {
+      log("payments: EGP_WALLET=1 but this @open-instinct/payments build has no EGP rail; skipping");
+    } else {
+      const publicUrl = (env.INSTINCT_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`).replace(/\/+$/, "");
+      const rail = await safely(log, "egp", () => mod.createEgpRail!({ state, outbox, config, audit, publicUrl }));
+      if (rail) {
+        egp = rail;
+        registry.registerMany(rail.tools);
+        log(`payments: EGP rail on, card page ${publicUrl}/egp/card/...`);
+      }
+    }
+  }
+
   const skillsDir = resolveSkillsDir({ explicit: opts.skillsDir, env, packageUrl: import.meta.url });
   // The image's skills/ first, then the owner's <data>/skills. Skills are re-read every 30 s, so one
   // installed there after boot (a git clone, a SKILL.md the agent wrote) is in the index and loadable
@@ -722,6 +740,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     chatBuffer,
     ...(locationService ? { location: locationService } : {}),
     ...(wallet ? { wallet } : {}),
+    ...(egp ? { egp } : {}),
     ...(telegram ? { telegramOwnBot: true } : {}),
     ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),
     enrichInbound: enrich,

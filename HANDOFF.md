@@ -1,7 +1,7 @@
 # HANDOFF: where the work stands
 
 Read this first in a new chat. It says what is done, what is left, how to work, and what to watch out for.
-Last updated after **Phase A was closed** (all tests green, build clean). **Next: Phase B.**
+Last updated after **Phase D** (D1 as an EGP rail, D5 as a skill). Phases A, B1 to B5 and C1 to C8 are done. **Next: Phase E, or a live test phase first.**
 
 ## The project in one paragraph
 
@@ -90,6 +90,11 @@ Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit an
 - Second pass: pins watch only `meta.external` tools (set in `apps/wrap.ts`); tool results are scanned and taint the conversation (`inspectToolResult`); owner approval of credential use is a signed single-use `CredentialIssuer` token; secret-reveal tools are no longer scrubbed and are withheld from the audit; security events have audit kind `security`; the audit log is hash-chained (`AuditLog.verify`, tool `audit_verify`).
 - Behavior change to know about: a reply that states a figure, link or code nobody supplied now ends with a plain note; set `INSTINCT_GROUNDING=off` to remove it.
 - Not verified live: a real 1Password account, a real authenticator app, a browser filling a login, real attackers.
+
+## Done: Phase D
+
+- **D1** EGP budget rail, `packages/payments/src/egp/`, opt-in with `EGP_WALLET=1`; details in `docs/PAYMENTS-EGYPT.md`. Vodafone Cash temporary cards are made by the owner by hand; budget, holds, single-use card pickup and the private card page are built. A partner API plugs in through `AutomaticCardIssuer`. Stripe Link is untouched. Not verified live.
+- **D5** `skills/compensation-claims/SKILL.md`: evidence, claim, Arabic/English drafts, approval, follow-up, escalation.
 
 ## Not done yet (in order the user asked)
 

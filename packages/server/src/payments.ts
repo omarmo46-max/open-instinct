@@ -31,9 +31,21 @@ export interface PaymentsToolDeps {
   state: StateDir;
 }
 
+export interface EgpRailLike {
+  tools: RegisteredTool[];
+  handleHttp(method: string, path: string, body: string): { status: number; html: string } | undefined;
+}
+
 export interface PaymentsModule {
   LinkWallet: new (opts: LinkWalletOptions) => LinkWalletLike;
   paymentsTools(deps: PaymentsToolDeps): RegisteredTool[];
+  /** Egyptian-pound rail (Vodafone Cash temporary cards today, partners later). Optional in older builds. */
+  createEgpRail?(opts: { state: StateDir; outbox: Outbox; config: InstinctConfig; audit: AuditLog; publicUrl: string }): EgpRailLike;
+}
+
+/** The EGP rail is opt-in: EGP_WALLET=1. It needs no Stripe keys, so Egypt works without Link. */
+export function egpEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.EGP_WALLET?.trim() === "1";
 }
 
 export const PAYMENTS_PACKAGE = "@open-instinct/payments";
