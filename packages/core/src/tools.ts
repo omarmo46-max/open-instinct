@@ -82,6 +82,11 @@ export class ToolRegistry {
     this.tools.set(tool.spec.name, tool);
   }
 
+  /** Take a tool out (a tool whose description or schema changed since it was pinned). */
+  remove(name: string): boolean {
+    return this.tools.delete(name);
+  }
+
   registerMany(tools: RegisteredTool[]): void {
     for (const tool of tools) this.register(tool);
   }

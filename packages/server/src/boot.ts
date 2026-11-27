@@ -19,8 +19,21 @@ import {
   Scheduler,
   StateDir,
   ToolRegistry,
+  AgentKeyring,
+  CredentialIssuer,
   HabitStore,
+  Identity,
   LocationService,
+  OnePasswordClient,
+  SecretBroker,
+  SecurityLayer,
+  StepUp,
+  StepUpStore,
+  ToolPins,
+  Vault,
+  defaultOpRunner,
+  keyFromEnv,
+  securityTools,
   MemorySearch,
   PlaceStore,
   PreferenceStore,
@@ -546,9 +559,40 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     return parts.length > 0 ? parts.join("\n\n") : undefined;
   };
 
+  // Phase C (C1 to C8). The runtime hooks are on by default; INSTINCT_SECURITY=0 turns them off.
+  const identity = Identity.load(state);
+  const vaultKey = keyFromEnv(env);
+  const vault = vaultKey || env.INSTINCT_VAULT_PASSPHRASE ? new Vault(state, { key: vaultKey, passphrase: env.INSTINCT_VAULT_PASSPHRASE }) : undefined;
+  const stepUpStore = new StepUpStore(state);
+  const stepUp = new StepUp({ secret: () => stepUpStore.secret() });
+  const opVaults = (env.INSTINCT_OP_VAULTS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const op = env.OP_SERVICE_ACCOUNT_TOKEN && opVaults.length > 0 ? new OnePasswordClient({ run: defaultOpRunner(env.OP_SERVICE_ACCOUNT_TOKEN), vaults: opVaults }) : undefined;
+  const keyring = new AgentKeyring(state, identity);
+  const pins = new ToolPins(state, identity);
+  const quarantined = new Map<string, RegisteredTool>();
+  const broker = new SecretBroker({ vault, op, issuer: new CredentialIssuer(identity) });
+  // Only tools built to type into a page may be given {{secret:...}} references.
+  const takesSecrets = new Set(["computer", "computer_batch", ...(env.INSTINCT_SECRET_TOOLS ?? "").split(",").map((s) => s.trim()).filter(Boolean)]);
+  registry.registerMany(registry.all().filter((t) => takesSecrets.has(t.spec.name)).map((t) => ({ spec: { ...t.spec, meta: { ...t.spec.meta, acceptsSecrets: true } } })));
+  registry.registerMany(securityTools({ audit, state, vault, stepUp, stepUpStore, op, keyring, pins, identity, registry, quarantined, issuer: "Open Instinct", rewrap: (t) => (broker.available() ? broker.wrap(t) : t) }));
+  // C4: a tool whose description or schema changed since it was pinned is taken out of service until the owner accepts it.
+  const pinCheck = pins.check(registry.all()); // watches tools from outside servers (Composio, MCP), not the agent's own
+  for (const name of pinCheck.changed) {
+    const tool = registry.get(name);
+    if (tool) {
+      quarantined.set(name, tool);
+      registry.remove(name);
+    }
+    audit.append({ kind: "security", conversationKey: "security", principal: "system", detail: { tool: name, quarantined: true, reason: "changed since it was pinned" } });
+  }
+  if (pinCheck.changed.length > 0) log(`security: ${pinCheck.changed.length} tool(s) changed since they were pinned and are out of service: ${pinCheck.changed.join(", ")}`);
+  if (broker.available()) for (const t of registry.all()) registry.register(broker.wrap(t));
+  const security = env.INSTINCT_SECURITY === "0" ? undefined : new SecurityLayer({ broker, stepUp, groundingMode: env.INSTINCT_GROUNDING === "off" ? "off" : "note", memoryText: () => memory.readDurable() });
+
   // eslint-disable-next-line prefer-const
   let runtime: AgentRuntime;
   runtime = new AgentRuntime({
+    ...(security ? { security } : {}),
     onOwnerActivity: (at) => habits.record(at),
     state,
     config,

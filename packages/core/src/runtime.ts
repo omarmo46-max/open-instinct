@@ -20,6 +20,7 @@ import type { ContactStore } from "./contacts.js";
 import type { MemoryStore } from "./memory.js";
 import { OwnerNotifier } from "./notifier.js";
 import { DEFAULT_TIER_TABLE, SPEND_CAPABILITIES, type PolicyEngine } from "./policy.js";
+import type { SecurityHooks } from "./security-types.js";
 import { isNewConversationCommand, pickLanguage, t as tr, type Lang } from "./i18n.js";
 import { loadImageAttachments } from "./attachments.js";
 import { GroupRegistry } from "./groups.js";
@@ -52,6 +53,8 @@ export interface Outbox {
 }
 
 export interface RuntimeDeps {
+  /** Phase C: content firewall, action monitor, grounding check, step-up. Optional so the runtime works without it. */
+  security?: SecurityHooks;
   /** Told when the owner writes (habit learning, B2). Never receives message text. */
   onOwnerActivity?: (at: Date) => void;
   state: StateDir;
@@ -569,6 +572,11 @@ export class AgentRuntime {
         this.ownerLast = { conversationKey: msg.conversationKey, channel: msg.channel };
         this.deps.state.writeJson("owner-route.json", this.ownerLast);
       }
+      // A bare authenticator code settles a step-up challenge here and never reaches the model.
+      if (this.deps.security && APPROVAL_CHANNELS.has(msg.channel)) {
+        const code = this.deps.security.interceptCode(msg.text);
+        if (code.handled) return { ...base, acked: true, reply: code.reply };
+      }
       // Only a carrier-bound or local channel can settle an approval; an email From is not proof.
       const match = APPROVAL_CHANNELS.has(msg.channel) ? approvals.matchReply(msg.text) : undefined;
       if (match) {
@@ -578,10 +586,23 @@ export class AgentRuntime {
       }
     }
 
+    // C1: look at the message and its attachments before the model does.
+    let securityNote: string | undefined;
+    if (this.deps.security) {
+      const verdict = this.deps.security.inbound({ text, attachments: msg.attachments, principalKind: principal.kind, conversationKey: routedKey ?? runtimeKey(msg, principal) });
+      if (verdict.findings.length > 0) {
+        this.deps.audit.append({ kind: "security", conversationKey: msg.conversationKey, principal: principal.id, detail: { firewall: verdict.action, score: verdict.score, rules: [...new Set(verdict.findings.map((f) => f.rule))].slice(0, 8) } });
+      }
+      if (verdict.action === "block") return { ...base, acked: true }; // dropped and logged; the owner is not pinged, so an attacker cannot use it to spam them
+      text = verdict.text;
+      securityNote = verdict.note;
+    }
+
     // Everything the sender controls (text, attachment names, data parts) sits inside the
     // untrusted boundary when the sender is not the owner.
     const body = withData(withAttachments(text, msg), msg, this.deps.describeData);
-    const prompt = principal.kind === "owner" && !msg.meta?.delegatedResult ? body : wrapUntrusted(body, untrustedLabel(msg, principal));
+    const framed = principal.kind === "owner" && !msg.meta?.delegatedResult ? body : wrapUntrusted(body, untrustedLabel(msg, principal));
+    const prompt = securityNote ? `${securityNote}\n${framed}` : framed;
     const conv = this.conversation(routedKey ?? runtimeKey(msg, principal), principal, { deliveryKey: msg.conversationKey, replyRef: msg.replyRef });
     if (conv.channel === "a2a" && !this.a2aStore.active(conv.replyRef.taskId ?? "", conv.replyRef.messageId)) return { ...base, acked: true, blocked: "inactive-task" };
     const stashed = this.takeStash(conv.key);
@@ -601,6 +622,8 @@ export class AgentRuntime {
     // Only a run the owner started with their own words may settle an approval through a tool.
     conv.ownerTurn = principal.kind === "owner" && !group && !msg.meta?.delegatedResult && APPROVAL_CHANNELS.has(msg.channel);
     const ack = this.startSlowReplyAck(msg, principal, group || arrival.queued || Boolean(msg.meta?.delegatedResult));
+    this.deps.security?.startTurn(conv.key);
+    this.deps.security?.evidence(conv.key, "user", body);
     // Pictures go to the model itself when it can see and the sender is someone the owner knows.
     const images = principal.kind !== "stranger" && principal.kind !== "group" && this.deps.model.input?.includes("image") ? loadImageAttachments(msg, this.deps.state.path("workspace", "inbound")) : [];
     const run = conv.run(prompt, images.length > 0 ? images : undefined).finally(() => {
@@ -612,7 +635,9 @@ export class AgentRuntime {
     const outcome = await run;
     // The "on it" lands before the answer or not at all.
     await ack.stop();
-    const reply = this.replyText(outcome, principal);
+    const rawReply = this.replyText(outcome, principal);
+    // C3: tie figures, links and "I did it" claims to something real, or say they are unchecked.
+    const reply = this.deps.security && rawReply ? this.deps.security.ground(conv.key, rawReply) : rawReply;
     if (!outcome.ok) this.auditError(conv.key, principal, outcome.error);
     if (DELIVERABLE.has(msg.channel) && reply) {
       await this.deliver(conv, reply, { keepPrompt: approvals.promptedToken() !== promptedBefore, arrivedSeq: arrival.arrivedSeq, failure: !outcome.ok });
@@ -649,6 +674,7 @@ export class AgentRuntime {
   private async startFresh(msg: InboundMessage, principal: Principal, routedKey: string | undefined, base: { principal: Principal; conversationKey: string }): Promise<HandleResult> {
     const key = routedKey ?? runtimeKey(msg, principal);
     this.conversations.delete(key);
+    this.deps.security?.reset(key);
     rmSync(join(this.sessionsDir, `${encodeURIComponent(key)}.jsonl`), { force: true });
     this.deps.audit.append({ kind: "policy", conversationKey: msg.conversationKey, principal: principal.id, detail: { reset: "new conversation requested", key } });
     // The command carries no language of its own ("/new"), so an Arabic phrase wins, then the owner's preference.
@@ -831,7 +857,7 @@ export class AgentRuntime {
       if (limit) return { block: true, reason: limit };
     }
 
-    const decision = policy.evaluate(principal, meta, args);
+    let decision = policy.evaluate(principal, meta, args);
     audit.append({
       kind: "policy",
       conversationKey: conv.key,
@@ -839,7 +865,25 @@ export class AgentRuntime {
       detail: { tool: toolName, outcome: decision.outcome, reason: decision.reason, ...(decision.outcome === "allow" && decision.viaGrant ? { viaGrant: decision.viaGrant } : {}) },
     });
 
-    if (decision.outcome === "allow") return undefined;
+    // C2: a second judge looks at what the call would do. It can ask or block, never loosen the policy.
+    const sec = this.deps.security;
+    if (sec && decision.outcome !== "deny") {
+      const verdict = sec.assessTool({ conversationKey: conv.key, tool: toolName, args, capabilities: meta.capabilities, principalKind: principal.kind, secretAccess: meta.secretAccess === true, acceptsSecrets: meta.acceptsSecrets === true, describe: safeDescribe(meta, args) });
+      if (verdict.action === "block") {
+        audit.append({ kind: "security", conversationKey: conv.key, principal: principal.id, detail: { monitor: "block", tool: toolName, reason: verdict.reason } });
+        return { block: true, reason: `Blocked by the security monitor: ${verdict.reason}. Do not retry this call. Tell the owner what you were asked to do and why it was stopped.` };
+      }
+      if (verdict.action === "ask") {
+        audit.append({ kind: "security", conversationKey: conv.key, principal: principal.id, detail: { monitor: "ask", tool: toolName, reason: verdict.reason } });
+        if (decision.outcome === "allow") decision = { outcome: "ask", reason: `security monitor: ${verdict.reason}`, approvalPrompt: verdict.prompt };
+        else if (decision.outcome === "ask") decision = { ...decision, approvalPrompt: `${decision.approvalPrompt} (${verdict.prompt})` };
+      }
+    }
+
+    if (decision.outcome === "allow") {
+      sec?.grantSecrets(toolName, args);
+      return undefined;
+    }
     if (decision.outcome === "deny") {
       // Enforced twice: the requester hears a polite no, and the owner hears that it was asked.
       if (principal.kind !== "owner") {
@@ -856,6 +900,7 @@ export class AgentRuntime {
     const consumed = this.consumeApproval({ conversationKey: conv.key, requestedBy: principal.id, capability, toolName, argsHash, amountUsd });
     if (consumed) {
       audit.append({ kind: "policy", conversationKey: conv.key, principal: principal.id, detail: { tool: toolName, outcome: "allow", reason: `owner approved ${consumed.token}: ${consumed.summary}` } });
+      sec?.grantSecrets(toolName, args);
       return undefined;
     }
 
@@ -890,8 +935,19 @@ export class AgentRuntime {
     const meta = registry.meta(toolName);
     const detail: Record<string, unknown> = { tool: toolName, isError, summary: safeDescribe(meta, args) };
     const preview = contentPreview(content);
-    if (preview) detail.result = preview;
+    if (meta?.secretAccess) detail.result = "[withheld: stored secret]";
+    else if (preview) detail.result = preview;
     audit.append({ kind: "tool_call", conversationKey: conv.key, principal: conv.principal.id, detail });
+    if (this.deps.security) {
+      this.deps.security.toolRan(conv.key, toolName, meta?.capabilities ?? [], !isError);
+      const seen = isError || meta?.secretAccess ? "" : contentText(content);
+      if (seen) {
+        this.deps.security.evidence(conv.key, "tool", seen);
+        // A web page or an email can carry instructions too: a flagged result taints the conversation.
+        const flagged = this.deps.security.inspectToolResult(conv.key, toolName, seen);
+        if (flagged.length > 0) audit.append({ kind: "security", conversationKey: conv.key, principal: conv.principal.id, detail: { firewall: "tool-result", tool: toolName, rules: [...new Set(flagged.map((f) => f.rule))].slice(0, 8) } });
+      }
+    }
     if (toolName === REPLY_TOOL && !isError) conv.repliedViaTool = true;
     if (isError || meta?.recordsOwnSpend) return;
     const amountUsd = meta?.amountUsd?.(args);
@@ -1697,4 +1753,14 @@ function withinBudget<T>(promise: Promise<T>, budgetMs: number): Promise<BudgetO
       resolve({ state: "done", value });
     });
   });
+}
+
+/** All the text a tool returned, for the grounding check. */
+function contentText(content: unknown): string {
+  if (typeof content === "string") return content.slice(0, 50_000);
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((p) => (p && typeof p === "object" && (p as { type?: unknown }).type === "text" ? String((p as { text?: unknown }).text ?? "") : ""))
+    .join("\n")
+    .slice(0, 50_000);
 }

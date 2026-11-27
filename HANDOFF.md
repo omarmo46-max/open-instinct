@@ -11,7 +11,7 @@ Technology), built from public information only; we never saw their code. The go
 Arabic-first, privacy-first product that can compete as a niche player (not head-on with Meta or OpenAI).
 Architecture: Inkbox (messaging identity) -> gateway (stateless relay, signup, Telegram hub) -> Maritime microVM per
 user -> server -> core (Pi agent loop, policy, memory, scheduler, audit) with tool packages around it.
-Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/PERMISSIONS.md`, `docs/SECURITY.md`, `docs/research/INSTINCT.md`
+Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/PERMISSIONS.md`, `docs/SECURITY.md`, `docs/PHASE-C-SECURITY.md`, `docs/research/INSTINCT.md`
 (what the original does), `docs/research/REQUIREMENTS.md`.
 
 ## How to work (the user's rules)
@@ -79,6 +79,18 @@ Details and limits in `docs/PROACTIVE.md`.
 - All new owner tools use the existing `memory.write` capability (owner only), so the permission table is unchanged.
 - Not verified live: iPhone automation, a real embeddings service, Composio slugs (B1).
 
+## Done: Phase C (C1 to C8)
+
+Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit and penetration test) is not done: it needs outside people.
+
+- **C1** `core/firewall.ts`: inbound text and attachments scored; allow, warn (taints the conversation 30 min) or block (strangers only, silent). **C2** `core/action-monitor.ts`: ask or block before a tool runs (secrets in arguments, stored credentials, tainted conversation, bursts). **C3** `core/grounding.ts`: unsupported figures, links, codes and claimed actions get a note.
+- **C4** `core/tool-identity.ts`: Ed25519 identity, pins for outside tools (Composio, MCP; quarantine on change), signed manifest, short-lived credentials. **C5** `core/e2ee.ts`: X25519 + AES-256-GCM files between agents with pinned peers (not yet wired into the A2A protocol).
+- **C6** `core/vault.ts` + `core/secrets-broker.ts`: encrypted vault, `{{secret:...}}` references filled in after approval and scrubbed from results. **C7** `core/totp.ts`: RFC 6238 and step-up. **C8** `core/onepassword.ts`: 1Password through the `op` CLI with an allowed-vault list.
+- Wiring: `RuntimeDeps.security` (interface in `security-types.ts`, implemented by `SecurityLayer`), hooks in `runtime.ts` (inbound, guard, recordToolCall, reply), `ToolMeta.secretAccess` / `acceptsSecrets`, `ToolRegistry.remove`, boot in `server/boot.ts`, owner tools in `core/security-tools.ts`.
+- Second pass: pins watch only `meta.external` tools (set in `apps/wrap.ts`); tool results are scanned and taint the conversation (`inspectToolResult`); owner approval of credential use is a signed single-use `CredentialIssuer` token; secret-reveal tools are no longer scrubbed and are withheld from the audit; security events have audit kind `security`; the audit log is hash-chained (`AuditLog.verify`, tool `audit_verify`).
+- Behavior change to know about: a reply that states a figure, link or code nobody supplied now ends with a plain note; set `INSTINCT_GROUNDING=off` to remove it.
+- Not verified live: a real 1Password account, a real authenticator app, a browser filling a login, real attackers.
+
 ## Not done yet (in order the user asked)
 
 | Phase | Items |
@@ -111,5 +123,5 @@ Details and limits in `docs/PROACTIVE.md`.
 
 ## Test counts at this checkpoint
 
-core 418, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
+core 483, gateway 84, server 134, telegram 25, media 12, inkbox 174 (+1 skipped), cli 88, network 69, payments 67,
 apps 172, computer 43, atomicmail 53, ample 25, keenable 11, whatsapp 6, context 3. Source about 21.4k lines, tests about 16.8k.

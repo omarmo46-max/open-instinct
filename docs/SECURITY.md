@@ -232,3 +232,7 @@ report.
 
 Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [PERMISSIONS.md](PERMISSIONS.md) ·
 [PROTOCOL.md](PROTOCOL.md) · [FAQ.md](FAQ.md)
+
+## Phase C additions
+
+The content firewall, action monitor, grounding check, tool pins, encrypted files, vault, step-up codes and the 1Password broker are described in `PHASE-C-SECURITY.md`.

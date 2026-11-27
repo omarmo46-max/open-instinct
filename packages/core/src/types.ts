@@ -238,6 +238,7 @@ export type AuditKind =
   | "spend"
   | "schedule"
   | "trigger"
+  | "security"
   | "error";
 
 export interface AuditEntry {
@@ -246,6 +247,9 @@ export interface AuditEntry {
   conversationKey?: string;
   principal?: string;
   detail: Record<string, unknown>;
+  /** Hash of the entry before this one, and of this one: a changed or removed line breaks the chain. */
+  prev?: string;
+  hash?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -369,4 +373,10 @@ export interface ToolMeta {
   recordsOwnSpend?: boolean;
   /** Short human description for the audit log. */
   describe?: (args: unknown) => string;
+  /** The tool comes from a server outside the agent (Composio, MCP) whose description can change under it. */
+  external?: boolean;
+  /** The tool returns or reveals a stored secret (vault, 1Password). Always needs the owner's yes, and a step-up code when one is set. */
+  secretAccess?: boolean;
+  /** The tool may be given `{{secret:...}}` references; the runtime fills them in after the owner approves, so the model never sees the value. */
+  acceptsSecrets?: boolean;
 }

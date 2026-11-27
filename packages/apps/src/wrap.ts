@@ -43,6 +43,7 @@ export function metaFor(slug: string, capabilities: Capability[] = capabilitiesF
   return {
     capabilities,
     group: "apps",
+    external: true,
     describe: (args) => describeCall(slug, args),
   };
 }
