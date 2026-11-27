@@ -60,7 +60,7 @@ import {
   scanCron,
 } from "@open-instinct/core";
 import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@open-instinct/core";
-import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, messagingTools, sendFileTool, voiceInstructions } from "@open-instinct/inkbox";
+import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, conciergeTools, messagingTools, sendFileTool, voiceInstructions } from "@open-instinct/inkbox";
 import type { CallEndedEvent, CallOrigination } from "@open-instinct/inkbox";
 import { enrichInbound, transcriberFromEnv } from "@open-instinct/media";
 import { GatewayTelegramChannel, TelegramChannel } from "@open-instinct/telegram";
@@ -72,12 +72,13 @@ import { ampleTools, type AmpleCredentials } from "@open-instinct/ample";
 import { AtomicMailBackend, atomicMailGuidance } from "@open-instinct/atomicmail";
 import { contextTools } from "@open-instinct/context";
 import { keenableTools } from "@open-instinct/keenable";
-import { networkTools } from "@open-instinct/network";
+import { networkTools, PartnerRegistry, partnerTools } from "@open-instinct/network";
 import { ChatAwareOutbox, ConsoleOutbox, type ChatReplyBuffer } from "./console-outbox.js";
 import { fileTools, resolveInsideWorkspace } from "./file-tools.js";
 import { describeDataPart, promptExtraFor } from "./hooks.js";
 import { appsNotConfiguredTool, setupSummaryFor } from "./setup-summary.js";
 import { createScheduleSync, type ScheduleSync } from "./maritime-schedules.js";
+import { createPages } from "./pages.js";
 import { egpEnabled, loadPaymentsModule, paymentsEnv, type EgpRailLike, type LinkWalletLike, type PaymentsModule } from "./payments.js";
 import { createSkillCatalog, formatSkillsIndex, loadSkillTool, ownerSkillsDir, resolveSkillsDir, skillsFor } from "./skills.js";
 
@@ -357,6 +358,8 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   // send_file attaches files on Telegram and WhatsApp conversations through these.
   const fileChannels: NonNullable<Parameters<typeof sendFileTool>[0]["fileChannels"]> = { ...(telegramOut ? { telegram: telegramOut } : {}), ...(whatsapp ? { whatsapp } : {}) };
   if (channel) registry.registerMany(messagingTools({ channel, contacts, config, dataDir: state.root, fileChannels, ...(callOrigination ? { callOrigination } : {}) }));
+  // Concierge calls: standing mandate set by the owner (E6). phone_call above still asks every time.
+  if (channel) registry.registerMany(conciergeTools({ channel, config, audit, state, ...(callOrigination ? { callOrigination } : {}) }));
   else registry.register(sendFileTool({ contacts, config, dataDir: state.root, fileChannels }));
   // Voice AI speaks as the owner's assistant. Only a chosen voice (INKBOX_VOICE or config.json agent.voice)
   // triggers the write: the config is a full replace on Inkbox, and an unset voice keeps the org default.
@@ -555,6 +558,20 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     }
   }
 
+  // Partner layer (E1 + E2): typed business requests and domain connectors. No partner is connected yet, so the
+  // registry starts empty and the tools point to the web and phone fallback. A partner's adapter registers here.
+  const partnerRegistry = new PartnerRegistry();
+  registry.registerMany(partnerTools({ registry: partnerRegistry, config, audit, state }));
+
+  // Shareable pages (E5): polls, sign-ups and RSVPs served by this agent. Opt-in with INSTINCT_PAGES=1.
+  let pagesRail: ReturnType<typeof createPages> | undefined;
+  if (env.INSTINCT_PAGES?.trim() === "1") {
+    const publicUrl = env.INSTINCT_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`;
+    pagesRail = createPages({ state, publicUrl });
+    registry.registerMany(pagesRail.tools);
+    log(`pages: on, ${publicUrl}/p/...`);
+  }
+
   const skillsDir = resolveSkillsDir({ explicit: opts.skillsDir, env, packageUrl: import.meta.url });
   // The image's skills/ first, then the owner's <data>/skills. Skills are re-read every 30 s, so one
   // installed there after boot (a git clone, a SKILL.md the agent wrote) is in the index and loadable
@@ -741,6 +758,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     ...(locationService ? { location: locationService } : {}),
     ...(wallet ? { wallet } : {}),
     ...(egp ? { egp } : {}),
+    ...(pagesRail ? { pages: pagesRail } : {}),
     ...(telegram ? { telegramOwnBot: true } : {}),
     ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),
     enrichInbound: enrich,

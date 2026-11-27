@@ -18,3 +18,5 @@ export { InkboxHttpError, createRest, parseRetryAfter, isHttpStatus, INKBOX_BASE
 export type { RestClient, RestOptions } from "./http.js";
 export { DurableInbox, RetryAfterError } from "./inbox.js";
 export type { DurableInboxOptions } from "./inbox.js";
+export { conciergeTools, checkMandate, readMandate, MANDATE_FILE, CALL_LOG_FILE } from "./concierge.js";
+export type { Mandate, MandateNumber, MandateCheck, CallLogEntry, ConciergeDeps } from "./concierge.js";

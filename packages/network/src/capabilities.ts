@@ -34,6 +34,8 @@ export const CAPABILITIES: readonly Capability[] = [
   "schedule.manage",
   "web.read",
   "apps.use",
+  "phone.call",
+  "phone.concierge",
 ];
 
 export function isCapability(v: unknown): v is Capability {

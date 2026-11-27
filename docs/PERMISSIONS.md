@@ -90,6 +90,7 @@ spend or scope limit.
 | `web.read` (web_search, web_fetch; public hosts only) | yes | yes | yes | yes | yes | no | no |
 | `apps.use` (call a connected app tool) | yes | yes | yes | yes | yes | no | no |
 | `phone.call` (place a Voice AI call) | ask | ask | no | no | no | no | no |
+| `phone.concierge` (a call inside the owner's standing mandate) | yes | no | no | no | no | no | no |
 | `group.notes` (a group's own notebook; only inside an allowed group) | no | no | no | no | no | no | no |
 
 Legend: `yes` allowed · `ask` allowed after the owner approves by text · `limit` allowed within the owner's
@@ -117,6 +118,12 @@ injected "call this number" must never dial on its own. The model's reading of t
 everyone else is denied unless a grant names `phone.call` (a grant is the owner's standing yes, so it opens the
 call without a question each time), and a grant to a partner's Instinct still runs the call from the owner's
 line. See [INKBOX.md](INKBOX.md#phone-calls).
+
+`phone.concierge` is `concierge_call` (E6): a call placed under a standing mandate the owner set earlier. The
+mandate lists the exact numbers, the allowed purposes, the hours (owner time), a daily cap and a per-number
+cap, and it expires (30 days by default). A call outside it is refused, and `phone_call` still asks every
+time. Changing the mandate (`concierge_mandate_set`) carries `phone.call`, so it is always asked and an
+injected instruction cannot widen it. Owner only.
 
 `computer.use` covers every desktop tool, including `request_takeover` and `takeover_status`. Only the
 owner has it, so no other person's Instinct can drive the desktop or hand it to a human.

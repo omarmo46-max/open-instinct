@@ -67,6 +67,7 @@ export type Capability =
   | "web.read"
   | "apps.use"
   | "phone.call"
+  | "phone.concierge"
   | "group.notes";
 
 /** What a tier gets for a capability by default. */

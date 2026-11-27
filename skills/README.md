@@ -22,6 +22,8 @@ skills/
   research/SKILL.md
   purchases/SKILL.md
   compensation-claims/SKILL.md
+  partners/SKILL.md
+  pages/SKILL.md
   files/SKILL.md
   daily-brief/SKILL.md
   trusted-network/SKILL.md

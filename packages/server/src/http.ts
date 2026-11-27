@@ -56,6 +56,8 @@ export interface HttpApp {
   /** Set when payments are configured. */
   wallet?: WalletCallback;
   /** Set when EGP_WALLET=1: serves the owner's private one-time card page. */
+  /** Set when INSTINCT_PAGES=1: serves the public poll / sign-up / RSVP pages. */
+  pages?: { handleHttp(method: string, path: string, body: string, client: string): { status: number; html: string } | undefined };
   egp?: { handleHttp(method: string, path: string, body: string): { status: number; html: string } | undefined };
   /** Report a finished phone call to the owner. Unset: call.ended events are acknowledged and dropped. */
   onCallEnded?(event: CallEndedEvent): Promise<void>;
@@ -406,6 +408,18 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     if (method === "GET" && path === "/oauth/link/callback") return linkCallback(url, res);
+
+    // Public shareable pages (E5). The id in the link is the capability, so this sits before the owner-token check.
+    if (app.pages && path.startsWith("/p/") && (method === "GET" || method === "POST")) {
+      let body = "";
+      if (method === "POST") {
+        const raw = await readBody(req, 4096);
+        if (raw === undefined) return sendJson(res, 413, { error: "too large" });
+        body = raw.toString("utf8");
+      }
+      const page = app.pages.handleHttp(method, path, body, req.socket.remoteAddress ?? "?");
+      if (page) return sendHtml(res, page.status, page.html);
+    }
 
     // The owner's private EGP card page. The link carries its own one-time token, so it sits before the owner-token check.
     if (app.egp && path.startsWith("/egp/card/") && (method === "GET" || method === "POST")) {

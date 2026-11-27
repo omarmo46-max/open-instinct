@@ -1,7 +1,7 @@
 # HANDOFF: where the work stands
 
 Read this first in a new chat. It says what is done, what is left, how to work, and what to watch out for.
-Last updated after **Phase D** (D1 as an EGP rail, D5 as a skill). Phases A, B1 to B5 and C1 to C8 are done. **Next: Phase E, or a live test phase first.**
+Last updated after **Phase E**. Phases A, B1 to B5, C1 to C8, D and E are done. **Next: a live test phase, then Phase F.**
 
 ## The project in one paragraph
 
@@ -96,6 +96,16 @@ Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit an
 - **D1** EGP budget rail, `packages/payments/src/egp/`, opt-in with `EGP_WALLET=1`; details in `docs/PAYMENTS-EGYPT.md`. Vodafone Cash temporary cards are made by the owner by hand; budget, holds, single-use card pickup and the private card page are built. A partner API plugs in through `AutomaticCardIssuer`. Stripe Link is untouched. Not verified live.
 - **D5** `skills/compensation-claims/SKILL.md`: evidence, claim, Arabic/English drafts, approval, follow-up, escalation.
 
+## Done: Phase E (decided with the owner: E5, E6, and the foundation of E1 and E2; E3 and E4 dropped)
+
+Details in `docs/PHASE-E.md`.
+
+- **E5** shareable polls, sign-ups and RSVPs (`INSTINCT_PAGES=1`), `server/src/pages.ts`.
+- **E6** concierge calls under a standing mandate, `inkbox/src/concierge.ts`, new capability `phone.concierge`; `phone_call` still asks every time.
+- **E1 + E2 foundation** the partner layer `OPP/1` and `PartnerConnector`, `network/src/partners.ts`; no partner connected yet.
+- **E3 (invite links, referrals) and E4 (group coordination of 10 to 100) are dropped**: not built, no code. Phase A's allowed-groups feature stays.
+- Not verified live: real calls, real visitors on a public page, a real partner.
+
 ## Not done yet (in order the user asked)
 
 | Phase | Items |
@@ -104,7 +114,7 @@ Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit an
 | **B** proactive + memory (B1 to B5 done) | ~~B1 triggers~~ (done, see below), B2 sleep/wake scheduling by habit, B3 semantic memory search, B4 learned preferences applied to bookings, B5 location and arrival awareness (note: there is **no B6**) |
 | **C** security (all) | C1 content firewall for every inbound message and attachment, C2 separate action monitor (block or ask before execution), C3 hallucination / grounding checker, C4 signed tool identity and short-lived credentials, C5 end-to-end encrypted files between agents, C6 vault (logins, cards, addresses), C7 TOTP, C8 1Password broker, C9 external audit and pen test (needs outside people) |
 | **D** | D1 spending budget (autonomous within a limit; needs a payment rail and API access), D5 compensation-claim skill |
-| **E** (all) | E1 business-agent protocols (PAP / PACT style; needs partners), E2 domain connectors (health booking etc.; needs partner APIs), E3 revocable invite links and referrals, E4 group coordination of 10 to 100 people incl. non-users, E5 shareable interactive pages, E6 Concierge calls without per-call approval |
+| **E** (done) | E5, E6 and the foundation of E1 and E2 are built, see above. E1 and E2 wait for real partners. E3 and E4 are dropped |
 | **F** (all) | F1 web console for users (connectors, vault, settings, delete data) plus a professional marketing site (study the original's buttons and copy; **same principles, original text and design, no copying**; placeholder brand name in one file), F2 accounts, login, billing, F3 status page and alerts, F4 per-user usage and cost, F5 backup and restore, F6 export and delete from chat, F7 readable action log with undo, F8 terms, privacy, brand (needs a lawyer; drafts only), F9 browser on the user's device (residential IP) |
 | Left out on purpose | D2 Shop Pay, D3 local payment rails, D4 subscription audit, Selections, Mac app, WHOOP, the G opportunities (local services, local models, skills marketplace, family plans). Decide together at the end |
 

@@ -71,6 +71,9 @@ const ROWS: Record<Capability, Row> = {
   // brief) with their own plain yes; staff asks the owner; partners and below are denied unless a
   // grant names phone.call.
   "phone.call": ["ask", "ask", "no", "no", "no", "no", "no"],
+  // phone.concierge: a call inside a standing mandate the owner set earlier (numbers, purposes, hours, daily caps).
+  // Owner only. The mandate is the approval; changing it is itself a phone.call-gated, always-ask step.
+  "phone.concierge": ["yes", "no", "no", "no", "no", "no", "no"],
   // group.notes: the shared notes of one group the owner allowed. Only a group principal gets it (see GROUP_ROW);
   // the owner's own memory is never reachable from a group.
   "group.notes": ["no", "no", "no", "no", "no", "no", "no"],

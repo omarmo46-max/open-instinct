@@ -76,3 +76,7 @@ Thursday noon. Added to your calendar and sent Sam the details.
 - Do not pay a deposit or enter card details yourself.
 - Do not book two places for the same slot "just in case".
 - Do not promise a table until the confirmation screen shows it.
+
+## Concierge calls
+
+If the number is on the owner's concierge list and booking is an allowed purpose, `concierge_call` places the call without asking each time. Otherwise use `phone_call`, which asks. After any call, report only what the transcript shows.
