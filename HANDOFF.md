@@ -5,7 +5,7 @@ Last updated after **Phase E**. Phases A, B1 to B5, C1 to C8, D and E are done. 
 
 ## The project in one paragraph
 
-Open Instinct is an open-source, self-hostable personal AI agent you talk to by message (iMessage, SMS, email,
+Orion AI is an open-source, self-hostable personal AI agent you talk to by message (iMessage, SMS, email,
 WhatsApp, Telegram). It is a re-implementation of the closed product "Instinct" (by Noah Shinn / Spear Street
 Technology), built from public information only; we never saw their code. The goal of this fork: a professional,
 Arabic-first, privacy-first product that can compete as a niche player (not head-on with Meta or OpenAI).
@@ -34,7 +34,7 @@ Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/PERMISSIONS.md`, `docs/SECURITY
 pnpm install
 pnpm build            # tsc for every package (order is handled by pnpm)
 pnpm test             # every package; ~1,000 tests
-pnpm --filter @open-instinct/core test    # one package
+pnpm --filter @orion-ai/core test    # one package
 ```
 
 ## Done: Phase A (A1 to A8), closed
@@ -139,7 +139,7 @@ Not verified live: MongoDB (tests use an in-memory store with the same interface
 - Agents provisioned before Phase A have no `agentToken`; they need re-provisioning to use the hub.
 - Link codes grant ownership of an agent: the connect page URL (`/connect/<usr_...>`, 64-bit id) is a capability and must stay private.
 - WhatsApp uses Baileys (unofficial; ban risk; use a dedicated number).
-- Brand: "Open Instinct" is too close to the original and to Merit Systems' OpenInstinct; pick a new name before any public launch.
+- Brand: "Orion AI" is too close to the original and to Merit Systems' OpenInstinct; pick a new name before any public launch.
 - Payments (Stripe Link) are US-only today; a non-US launch needs another rail (D3 is deferred).
 - Business reality: a code-only sale is worth a fraction of rebuild cost (MIT license, no users). Value comes from users, trust and a niche (Arabic, WhatsApp/Telegram, privacy, open audit).
 

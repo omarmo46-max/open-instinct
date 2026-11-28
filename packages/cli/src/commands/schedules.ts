@@ -1,5 +1,5 @@
 /** `instinct schedules ...`: proactive jobs, edited on the local data dir through core's Scheduler. */
-import { parseCron, Scheduler } from "@open-instinct/core";
+import { parseCron, Scheduler } from "@orion-ai/core";
 import { parse, str, type OptionSpec } from "../args.js";
 import { table } from "../ansi.js";
 import type { CliContext } from "../context.js";

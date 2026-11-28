@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { AuditEntry, AuditLog, InstinctConfig, Outbox, OutboundMessage, Principal, ToolContext, ToolResultLike } from "@open-instinct/core";
+import type { AuditEntry, AuditLog, InstinctConfig, Outbox, OutboundMessage, Principal, ToolContext, ToolResultLike } from "@orion-ai/core";
 import type { LinkWalletOptions } from "../src/wallet.js";
 
 /** A real directory with the StateDir methods this package uses. No runtime import from core. */

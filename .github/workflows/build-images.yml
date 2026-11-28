@@ -21,9 +21,9 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - name: open-instinct-agent
+          - name: orion-ai-agent
             dockerfile: deploy/Dockerfile.agent
-          - name: open-instinct-gateway
+          - name: orion-ai-gateway
             dockerfile: deploy/Dockerfile.gateway
     steps:
       - uses: actions/checkout@v4

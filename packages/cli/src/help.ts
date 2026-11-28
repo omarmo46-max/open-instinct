@@ -71,9 +71,9 @@ export const HELP_GROUPS: HelpGroup[] = [
     entries: [
       {
         name: "deploy",
-        usage: "deploy --image ghcr.io/<you>/open-instinct-agent:<tag> [--name instinct-<handle>] [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]",
+        usage: "deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name instinct-<handle>] [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]",
         summary: "Create the Maritime agent (own microVM with a desktop) from a built image. Needs MARITIME_API_KEY.",
-        example: "instinct deploy --image ghcr.io/maria/open-instinct-agent:latest",
+        example: "instinct deploy --image ghcr.io/maria/orion-ai-agent:latest",
         flags: [
           "--maritime-llm (no model key of your own: Maritime injects its metered OpenAI-compatible proxy; INSTINCT_MODEL becomes openai-compatible/<model>)",
           "--model <id> (proxy model with --maritime-llm, default gpt-5.4 or INSTINCT_MARITIME_MODEL; otherwise overrides config.model.primary)",
@@ -167,7 +167,7 @@ export function renderHelp(c: Palette, command?: string): string {
     lines.push(c.dim("  Every command accepts --data-dir <dir> (default $INSTINCT_DATA_DIR or ./.instinct)."));
     return lines.join("\n");
   }
-  lines.push(c.bold("instinct") + "  Open Instinct: a personal agent you text on iMessage, with its own computer.");
+  lines.push(c.bold("instinct") + "  Orion AI: a personal agent you text on iMessage, with its own computer.");
   lines.push("");
   lines.push("Usage: instinct <command> [options]   (add --help to any command)");
   lines.push("");

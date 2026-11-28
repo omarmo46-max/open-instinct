@@ -1,6 +1,6 @@
-# Open Instinct: Technical Reference
+# Orion AI: Technical Reference
 
-An engineer's reference for the four building blocks of Open Instinct, plus the transaction layer that sits on top of them. Every section gives package names, versions, endpoints and code you can paste. Facts were checked against live registries, OpenAPI specs and source files on 2026-10-03.
+An engineer's reference for the four building blocks of Orion AI, plus the transaction layer that sits on top of them. Every section gives package names, versions, endpoints and code you can paste. Facts were checked against live registries, OpenAPI specs and source files on 2026-10-03.
 
 Think of this document as the parts catalog. The architecture document explains how the parts fit; this one tells you the exact bolt sizes.
 
@@ -70,7 +70,7 @@ Think of this document as the parts catalog. The architecture document explains 
 
 A useful analogy: a personal assistant needs a brain, a phone, an office and a set of keys.
 
-| Part | Role in Open Instinct | Analogy |
+| Part | Role in Orion AI | Analogy |
 |---|---|---|
 | Pi | The agent loop: model calls, tools, steering, sessions | The brain |
 | Inkbox | iMessage, email, SMS, phone number per agent | The phone |
@@ -120,7 +120,7 @@ curl -fsSL https://pi.dev/install.sh | sh
 # or
 npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 
-# Library use in Open Instinct
+# Library use in Orion AI
 pnpm add @earendil-works/pi-ai @earendil-works/pi-agent-core @earendil-works/pi-coding-agent typebox
 ```
 
@@ -286,7 +286,7 @@ agent.followUp({ role: "user", content: "Also text Sam the address" });
 
 Modes: `'one-at-a-time'` (default) or `'all'`. In an `AgentSession`, `prompt()` while streaming must say steer-or-follow or it rejects: "Calling `prompt()` without that choice rejects rather than guessing." ([sdk.md](https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/docs/sdk.md)).
 
-OpenClaw maps its `messages.queue.mode` (`steer` default, 500 ms debounce, cap 20, drop `summarize`; also `followup`, `collect`, `interrupt`) directly onto these queues ([OpenClaw queue docs](https://docs.openclaw.ai/concepts/queue.md)). Open Instinct should do the same for iMessage bursts.
+OpenClaw maps its `messages.queue.mode` (`steer` default, 500 ms debounce, cap 20, drop `summarize`; also `followup`, `collect`, `interrupt`) directly onto these queues ([OpenClaw queue docs](https://docs.openclaw.ai/concepts/queue.md)). Orion AI should do the same for iMessage bursts.
 
 ### 1.8 createAgentSession and SessionManager
 
@@ -475,7 +475,7 @@ The gateway shape is still the model to copy:
 - One long-lived process on `ws://127.0.0.1:18789` owns all channel connections. Clients send `{type:'req', id, method, params}` and get `{type:'res', id, ok, payload|error}` ([architecture](https://docs.openclaw.ai/concepts/architecture)).
 - Inbound message -> session key (DMs share `main` unless `session.dmScope: "per-channel-peer"`; groups isolated) -> per-session lane `session:<key>` -> global `main` lane capped by `agents.defaults.maxConcurrent` -> `agentCommand` -> `runEmbeddedAgent` -> events bridged to `tool`/`assistant`/`lifecycle` streams -> reply ([agent-loop](https://docs.openclaw.ai/concepts/agent-loop.md), [session](https://docs.openclaw.ai/concepts/session.md)).
 - Multi-agent routing: `bindings: [{agentId, match:{channel, accountId, peer:{kind:'direct'|'group'|'channel', id}}}]`; each agent has its own workspace (`AGENTS.md`, `SOUL.md`, `USER.md`), `agentDir` and `openclaw-agent.sqlite` ([agent-bindings](https://docs.openclaw.ai/concepts/agent-bindings.md)).
-- iMessage in OpenClaw needs a signed-in Mac: "The Gateway spawns `imsg rpc` and speaks JSON-RPC over stdio" ([imessage](https://docs.openclaw.ai/channels/imessage.md)). Open Instinct avoids this by using Inkbox.
+- iMessage in OpenClaw needs a signed-in Mac: "The Gateway spawns `imsg rpc` and speaks JSON-RPC over stdio" ([imessage](https://docs.openclaw.ai/channels/imessage.md)). Orion AI avoids this by using Inkbox.
 - Resource packages declare `{"openclaw":{"extensions":["extensions/index.ts"],"skills":["skills/*.md"]}}` in `package.json`, mirroring Pi packages.
 
 ---
@@ -784,7 +784,7 @@ The "unique recipients" cap matters for Instinct: it bounds how many humans one 
 
 Maritime's `identity` add-on (`addOns: ["identity"]` on create, or `POST /api/agents/{id}/capabilities {capability: "identity", action: "add"}`) provisions an Inkbox identity for an agent and injects it as container env: `INKBOX_API_KEY` (identity-scoped), `INKBOX_IDENTITY_ID`, `INKBOX_AGENT_HANDLE`, `INKBOX_EMAIL`, `INKBOX_PHONE_NUMBER`, `INKBOX_PHONE_NUMBER_ID`, `INKBOX_TUNNEL_HOST`. `GET /api/inkbox/{agent_id}` returns the same identity ([openapi.json](https://api.maritime.sh/openapi.json)). The add-on covers SMS and email; it does not enable iMessage, and it does not subscribe webhooks for you.
 
-Open Instinct provisions its own identity with `imessage_enabled: true` (section 2.3) and passes the resulting `INKBOX_*` values as `initialEnvVars`, so it does not depend on the add-on. Agents always get an identity-scoped key, never the org admin key.
+Orion AI provisions its own identity with `imessage_enabled: true` (section 2.3) and passes the resulting `INKBOX_*` values as `initialEnvVars`, so it does not depend on the add-on. Agents always get an identity-scoped key, never the org admin key.
 
 ---
 
@@ -802,7 +802,7 @@ curl -X POST https://api.maritime.sh/api/agents \
   -d '{
     "name": "instinct-maria",
     "framework": "custom",
-    "imageName": "ghcr.io/<you>/open-instinct-agent:latest",
+    "imageName": "ghcr.io/<you>/orion-ai-agent:latest",
     "exposedPort": 18789,
     "healthCheckPath": "/health",
     "externalId": "usr_01J9F4M2K8",
@@ -819,7 +819,7 @@ curl -X POST https://api.maritime.sh/api/agents \
 
 `AgentCreate` fields (camelCase, from [openapi.json](https://api.maritime.sh/openapi.json)): `name` (required), `description`, `externalId`, `instructions`, `framework` (default `custom`), `templateId`, `imageName`, `githubRepo`, `branch`, `initialEnvVars[{key, value, isSecret=true}]`, `useMaritimeLlm`, `exposedPort`, `healthCheckPath`, `hasWebUi`, `publicWeb`, `desktop` (forces 4 GiB and 2 vCPU), `memMb`, `vcpus`, `idleTtlSeconds` (0 = always-on), `diskGb`, `computeMinutesLimit`, `addOns: ["identity"|"browser"]`, `gatewayPassword`, `serverId`, `uploadS3Key`, `autoPair`, `tier`.
 
-`templateId` picks one of Maritime's own templates (the dashboard lists them) and overrides `framework` and `imageName`. Open Instinct does not use a template; it ships its own image with `framework: "custom"`.
+`templateId` picks one of Maritime's own templates (the dashboard lists them) and overrides `framework` and `imageName`. Orion AI does not use a template; it ships its own image with `framework: "custom"`.
 
 `instructions` is the persona. Maritime makes it available to the agent; for a custom image, read it from your own config and prompt files instead of relying on platform conventions.
 
@@ -840,7 +840,7 @@ curl -X POST https://api.maritime.sh/api/agents/$AGENT/chat \
 
 `deploy` scope. 429 and 503 carry `Retry-After`. A chat call wakes a sleeping VM.
 
-For a bring-your-own image (which Open Instinct is), Maritime POSTs to your container ([BYO agent docs](https://maritime.sh/docs)):
+For a bring-your-own image (which Orion AI is), Maritime POSTs to your container ([BYO agent docs](https://maritime.sh/docs)):
 
 - Bind `0.0.0.0:$PORT`. Port 8080 is reserved inside the VM.
 - `GET /health` returns 2xx.
@@ -848,7 +848,7 @@ For a bring-your-own image (which Open Instinct is), Maritime POSTs to your cont
 - Persist to `/data`. Ship `python3`. Optional `GET /schedules`.
 - LLM credentials are only injected when `useMaritimeLlm: true` is set at create or `POST /reset-llm` is called later.
 
-Each `conversation_id` should map to one persisted session under `/data`, which is how Open Instinct's server works.
+Each `conversation_id` should map to one persisted session under `/data`, which is how Orion AI's server works.
 
 ### 3.3 Env vars and secrets
 
@@ -866,10 +866,10 @@ Secrets are stored encrypted; duplicates yield 409 `duplicate_env_key`. The mete
 
 ### 3.4 Templates and custom images
 
-Two ways to ship Open Instinct:
+Two ways to ship Orion AI:
 
-1. `framework: "custom"` + `imageName: "ghcr.io/<you>/open-instinct-agent:<tag>"`, with your own model key or `useMaritimeLlm: true`. Works today with no Maritime change. This is what `instinct deploy` and the gateway do.
-2. A Maritime template entry for Open Instinct, which would add a dashboard card. That is a platform-side addition and not required.
+1. `framework: "custom"` + `imageName: "ghcr.io/<you>/orion-ai-agent:<tag>"`, with your own model key or `useMaritimeLlm: true`. Works today with no Maritime change. This is what `instinct deploy` and the gateway do.
+2. A Maritime template entry for Orion AI, which would add a dashboard card. That is a platform-side addition and not required.
 
 For a custom image you own the whole configuration: prompt files, MCP servers, skills and channels all come from the image and from `/data`. Nothing in the VM rewrites them.
 
@@ -889,14 +889,14 @@ POST   /api/agents/{id}/exec                {"command": "ls /data" | ["ls","/dat
        -> {"exitCode", "stdout", "stderr": ""}
 ```
 
-Open Instinct sends files to the owner through its own channels (Inkbox media URLs and email attachments), so it does not depend on the dashboard's file-sharing conventions.
+Orion AI sends files to the owner through its own channels (Inkbox media URLs and email attachments), so it does not depend on the dashboard's file-sharing conventions.
 
 ### 3.6 Schedules and heartbeats
 
 The agent owns its schedule. Maritime reads it and wakes the VM shortly before each run, so a sleeping agent still fires its jobs. Two mechanisms exist ([openapi.json](https://api.maritime.sh/openapi.json)):
 
 - Poll: Maritime calls the optional `GET /schedules` on the agent.
-- Push, which Open Instinct uses: the agent POSTs its full list whenever it changes.
+- Push, which Orion AI uses: the agent POSTs its full list whenever it changes.
 
 ```bash
 curl -X POST "$MARITIME_BACKEND_URL/api/agents/internal/schedules" \
@@ -937,7 +937,7 @@ Errors are `{error, message, retryAfterS}`: 402 plan, 409 `human_in_control`, 42
 
 Observed behaviour: `get_computer` does not wake (it returns `sleeping` in under a second); the first action wakes the computer, which takes a few seconds and up to 60 s. An unentitled account still gets a `computer_id`; the first action returns `no_plan` 402. Computers needs a paid plan and is billed per seat; see [maritime.sh/pricing](https://maritime.sh/pricing). Prefer `request_takeover` with `wait:false` plus `takeover_status` polling over a long-held `wait:true` call.
 
-Any agent can also get its own screen with `desktop: true`. Inside that VM, `desktopd` listens on loopback (`http://127.0.0.1:5911`: `GET /health`, `POST /action`, `POST /batch`, `POST /takeover`, `GET /takeover/wait`, `GET /fs/read`, `POST /fs/write`), and `maritime-computer-mcp` on PATH wraps it as a stdio MCP server exposing `computer`, `computer_batch`, `request_takeover`, and `run_shell` when `DESKTOPD_ALLOW_SHELL=1`. Open Instinct's `computer` package talks to desktopd over HTTP directly.
+Any agent can also get its own screen with `desktop: true`. Inside that VM, `desktopd` listens on loopback (`http://127.0.0.1:5911`: `GET /health`, `POST /action`, `POST /batch`, `POST /takeover`, `GET /takeover/wait`, `GET /fs/read`, `POST /fs/write`), and `maritime-computer-mcp` on PATH wraps it as a stdio MCP server exposing `computer`, `computer_batch`, `request_takeover`, and `run_shell` when `DESKTOPD_ALLOW_SHELL=1`. Orion AI's `computer` package talks to desktopd over HTTP directly.
 
 Pi wiring for the hosted MCP:
 
@@ -949,7 +949,7 @@ const transport = new StreamableHttpTransport("https://mcp.maritime.sh/mcp/u/usr
 
 ### 3.8 Guidance for the agent
 
-Maritime's own templates give their agents a short platform note: only `/data` survives a restart, the VM does not run between turns, and the `MARITIME_*` env vars identify the agent. Open Instinct ships the equivalent in its own prompt files with the same split: identity first, platform mechanics second, and the mechanics block says of itself that it is not the agent's identity.
+Maritime's own templates give their agents a short platform note: only `/data` survives a restart, the VM does not run between turns, and the `MARITIME_*` env vars identify the agent. Orion AI ships the equivalent in its own prompt files with the same split: identity first, platform mechanics second, and the mechanics block says of itself that it is not the agent's identity.
 
 ### 3.9 SDKs
 
@@ -961,7 +961,7 @@ const m = new Maritime({ apiKey: process.env.MARITIME_API_KEY! });
 
 const agent = await m.agents.provision({            // idempotent on externalId
   name: "instinct-maria", externalId: "usr_01J9F4M2K8",
-  imageName: "ghcr.io/you/open-instinct-agent:0.1.0",
+  imageName: "ghcr.io/you/orion-ai-agent:0.1.0",
   instructions: persona,
   env: [{ key: "INKBOX_API_KEY", value: key, secret: true }],
 });
@@ -972,23 +972,23 @@ const computer = await m.computers.create({ externalUserId: "usr_01J9F4M2K8" });
 const shot = await m.computers.act(computer.id, { action: "screenshot" });
 ```
 
-Resources: `agents` (create, provision, get, list, chat, start/stop/sleep/restart/delete, listEnv/setEnv/deleteEnv/reloadEnv, logs, identity, exec, `files.*`, `skills.*`), `computers` (create, list, get, delete, wake, sleep, act, screenshot, exec, viewer, closeSession, sessions, usage, `files.*`), `projects`, `keys`, `webhooks`, `billing`, plus `verifyWebhookSignature`, `pushSchedules`, `observeScheduler`, and computer-use dialect converters (`fromOpenAI`, `fromGemini`, `fromQwen`). The SDK's `create` type does not expose every `AgentCreate` field (`desktop`, `exposedPort`, `healthCheckPath`, `framework`, `useMaritimeLlm`); POST `/api/agents` directly when you need them, which is what Open Instinct does.
+Resources: `agents` (create, provision, get, list, chat, start/stop/sleep/restart/delete, listEnv/setEnv/deleteEnv/reloadEnv, logs, identity, exec, `files.*`, `skills.*`), `computers` (create, list, get, delete, wake, sleep, act, screenshot, exec, viewer, closeSession, sessions, usage, `files.*`), `projects`, `keys`, `webhooks`, `billing`, plus `verifyWebhookSignature`, `pushSchedules`, `observeScheduler`, and computer-use dialect converters (`fromOpenAI`, `fromGemini`, `fromQwen`). The SDK's `create` type does not expose every `AgentCreate` field (`desktop`, `exposedPort`, `healthCheckPath`, `framework`, `useMaritimeLlm`); POST `/api/agents` directly when you need them, which is what Orion AI does.
 
 **Python** `maritime` ([PyPI](https://pypi.org/project/maritime/); stdlib only, Python 3.9+):
 
 ```python
 from maritime import Maritime
 m = Maritime()
-agent = m.agents.create("instinct-maria", image_name="ghcr.io/you/open-instinct-agent:0.1.0",
+agent = m.agents.create("instinct-maria", image_name="ghcr.io/you/orion-ai-agent:0.1.0",
                         env=[{"key": "INKBOX_API_KEY", "value": key, "secret": True}])
 reply = m.agents.chat(agent["id"], "hello", conversation_id="imsg_abc")
 ```
 
-The Python SDK has no `computers` resource. Prefer TypeScript for Open Instinct.
+The Python SDK has no `computers` resource. Prefer TypeScript for Orion AI.
 
 ### 3.10 Multi-tenant front door
 
-For a hosted Open Instinct that spawns one agent per person ([openapi.json](https://api.maritime.sh/openapi.json)):
+For a hosted Orion AI that spawns one agent per person ([openapi.json](https://api.maritime.sh/openapi.json)):
 
 ```
 PUT  /api/v1/end-users/{externalId}                {"displayName","metadata","tags"}
@@ -1001,7 +1001,7 @@ POST /api/v1/projects/{projectId}/messages         {"externalUserId","message","
 
 A project with `newChatPolicy: spawn` gives a dedicated agent per user. Outbound webhooks: `POST /api/v1/webhooks {url, events}` returns a `whsec_` secret once; deliveries carry `X-Maritime-Event`, `X-Maritime-Delivery`, `X-Maritime-Signature: sha256=<hmac>`. Signed inbound for sleeping agents: `PUT /api/agents/{id}/signed-webhook {path, scheme, secret}` yields `https://api.maritime.sh/w/{agent_id}/{path}`; the public schema accepts one scheme today, and it is not Inkbox's (see [DEPLOY-MARITIME.md](../DEPLOY-MARITIME.md)).
 
-Open Instinct's gateway uses the plain agents API with `externalId` rather than the end-users routes, so it works with any key that has `provision`, `deploy` and `secrets`. Plans and prices: [maritime.sh/pricing](https://maritime.sh/pricing).
+Orion AI's gateway uses the plain agents API with `externalId` rather than the end-users routes, so it works with any key that has `provision`, `deploy` and `secrets`. Plans and prices: [maritime.sh/pricing](https://maritime.sh/pricing).
 
 ---
 
@@ -1299,7 +1299,7 @@ Grouped by block. Each item names what to check before relying on it.
 
 **Pi**
 
-- The exact OpenClaw release where Pi packages were replaced by `@openclaw/agent-core` is unknown; the CHANGELOG on main does not say. Low impact, since Open Instinct uses Pi directly.
+- The exact OpenClaw release where Pi packages were replaced by `@openclaw/agent-core` is unknown; the CHANGELOG on main does not say. Low impact, since Orion AI uses Pi directly.
 - The native Anthropic catalog (context windows, pricing) is hydrated from pi.dev, not in git. Verify with `pi update --models` before pinning ids.
 - Whether `createAgentSession({ customTools })` accepts an `AgentTool[]` directly. The docs list it; the examples route through `pi.registerTool()`. Check `src/core/agent-session.ts`.
 - The exact option name `AgentSession.prompt()` wants to choose steer vs follow-up while a run is live.
@@ -1345,6 +1345,6 @@ Grouped by block. Each item names what to check before relying on it.
 - Uber Riders Full Access approval odds for an OSS personal agent.
 - Duffel Stays profit-share percentage and approval for a consumer-agent use case.
 - Stripe Issuing for agents preview criteria for a non-fintech operator.
-- Terms-of-service exposure when browser-automating Uber, DoorDash and Instacart with stored credentials. Instinct's ToS has the user authorize acting through their accounts; Open Instinct needs equivalent consent language.
+- Terms-of-service exposure when browser-automating Uber, DoorDash and Instacart with stored credentials. Instinct's ToS has the user authorize acting through their accounts; Orion AI needs equivalent consent language.
 - Whether a Maritime desktop can hold long-lived logged-in sessions (cookies, 2FA via Inkbox SMS) reliably, and the cost of an idle desktop-hour.
 - Privacy.com and Lithic pricing and ToS for automated card creation.

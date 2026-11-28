@@ -5,7 +5,7 @@
  * not the owner principal, whatever the policy says. The link goes to the owner;
  * tokens never appear anywhere.
  */
-import type { RegisteredTool, ToolContext, ToolResultLike, ToolSpec } from "@open-instinct/core";
+import type { RegisteredTool, ToolContext, ToolResultLike, ToolSpec } from "@orion-ai/core";
 import { Type } from "typebox";
 import { APPS_MANAGE } from "./capabilities.js";
 import type { ToolkitStatus } from "./composio.js";

@@ -1,4 +1,4 @@
-import type { RegisteredTool } from "@open-instinct/core";
+import type { RegisteredTool } from "@orion-ai/core";
 
 /** How the server picks a desktop. See docs/ARCHITECTURE.md, "Configuration". */
 export type ComputerMode = "auto" | "desktopd" | "maritime" | "none";

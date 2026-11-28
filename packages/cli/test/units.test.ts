@@ -8,7 +8,7 @@ import { modelSpecFor } from "../src/commands/deploy.js";
 import { appsWarning } from "../src/commands/dev.js";
 import { applyInitFlags, parseInitFlags, splitToolkits } from "../src/commands/init.js";
 import { buildAuthorizeUrl } from "../src/commands/payments.js";
-import { defaultConfig } from "@open-instinct/core";
+import { defaultConfig } from "@orion-ai/core";
 import { flattenStatus } from "../src/commands/status.js";
 import { parseUntil, parseCapabilities } from "../src/commands/trust.js";
 import { validateCron } from "../src/commands/schedules.js";

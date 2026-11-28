@@ -1,6 +1,6 @@
 # Keys you need, and how to get them
 
-Open Instinct is glue between four services and one model provider. You bring your own
+Orion AI is glue between four services and one model provider. You bring your own
 accounts. Nothing in this repository contains a key, and nothing you add should either:
 keys live in your shell environment or in `.instinct/secrets/` (mode 0600, ignored by git).
 
@@ -78,7 +78,7 @@ Variable: `MARITIME_API_KEY`
    and `secrets` (add `manage` only for a key that should also delete agents and mint keys;
    add `computers` if you want the hosted desktop MCP from outside a VM).
 3. `export MARITIME_API_KEY=mk_...`
-4. `pnpm instinct deploy --image ghcr.io/mariagorskikh/open-instinct-agent:latest`
+4. `pnpm instinct deploy --image ghcr.io/mariagorskikh/orion-ai-agent:latest`
 
 Creating an agent debits your Maritime wallet; a sleeping agent costs nothing. The image is
 public and needs no registry login. See [DEPLOY-MARITIME.md](DEPLOY-MARITIME.md).

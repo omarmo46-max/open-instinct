@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { isReservedHandle } from "@open-instinct/core";
+import { isReservedHandle } from "@orion-ai/core";
 
 export const HANDLE_RE = /^[a-z0-9-]{3,40}$/;
 export const E164_RE = /^\+[1-9]\d{6,14}$/;

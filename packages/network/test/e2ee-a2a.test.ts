@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { AgentKeyring, Identity, StateDir, type Principal, type RegisteredTool } from "@open-instinct/core";
+import { AgentKeyring, Identity, StateDir, type Principal, type RegisteredTool } from "@orion-ai/core";
 import { decodeE2ee, describeE2ee, e2eeA2aTools, e2eeFileData, type E2eeData } from "../src/e2ee-a2a.js";
 
 const OWNER: Principal = { kind: "owner", id: "owner", tier: "owner", displayName: "Owner" };

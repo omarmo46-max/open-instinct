@@ -11,7 +11,7 @@
  */
 import crypto from "node:crypto";
 import { Type } from "typebox";
-import type { AuditLog, InstinctConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@open-instinct/core";
+import type { AuditLog, InstinctConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@orion-ai/core";
 import { defineTool, textResult } from "./define.js";
 
 export const PARTNER_PROTOCOL_VERSION = "OPP/1";

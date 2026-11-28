@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Principal } from "@open-instinct/core";
-import { encodeOip, networkGuidance } from "@open-instinct/network";
+import type { Principal } from "@orion-ai/core";
+import { encodeOip, networkGuidance } from "@orion-ai/network";
 import { describeDataPart, promptExtraFor } from "../src/hooks.js";
 
 const owner: Principal = { kind: "owner", id: "owner", tier: "owner", displayName: "Maria" };

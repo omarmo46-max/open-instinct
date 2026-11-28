@@ -1,4 +1,4 @@
-import type { CalendarEvent, CalendarRead, MailItem, TriggerSource } from "@open-instinct/core";
+import type { CalendarEvent, CalendarRead, MailItem, TriggerSource } from "@orion-ai/core";
 
 /** The one thing the source needs from ComposioApps. Narrow so tests can stub it. */
 export interface AppRunner {

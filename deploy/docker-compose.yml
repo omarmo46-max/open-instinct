@@ -19,7 +19,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.agent
-    image: open-instinct-agent:local
+    image: orion-ai-agent:local
     env_file:
       - .env
     environment:
@@ -36,7 +36,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.gateway
-    image: open-instinct-gateway:local
+    image: orion-ai-gateway:local
     env_file:
       - .env
     profiles: ["gateway"]

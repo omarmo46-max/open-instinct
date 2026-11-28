@@ -4,9 +4,9 @@
  * a typed A2A data part for the model, and the prompt hook adds the network
  * guidance for the principal the agent is talking to.
  */
-import type { Channel, Principal } from "@open-instinct/core";
-import type { AgentKeyring } from "@open-instinct/core";
-import { decodeE2ee, decodeOip, describeE2ee, describeOip, networkGuidance } from "@open-instinct/network";
+import type { Channel, Principal } from "@orion-ai/core";
+import type { AgentKeyring } from "@orion-ai/core";
+import { decodeE2ee, decodeOip, describeE2ee, describeOip, networkGuidance } from "@orion-ai/network";
 
 /** One paragraph for a valid OIP/1 part; undefined for anything else so core falls back to JSON. */
 export function describeDataPart(data: Record<string, unknown>): string | undefined {

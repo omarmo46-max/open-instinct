@@ -1,6 +1,6 @@
 import { McpClient, StreamableHttpTransport } from "@earendil-works/pi-mcp";
 import type { CallToolResult, McpTransport, Tool } from "@earendil-works/pi-mcp";
-import type { RegisteredTool } from "@open-instinct/core";
+import type { RegisteredTool } from "@orion-ai/core";
 import { wrapMcpTools } from "./wrap.js";
 import type { McpToolSource } from "./wrap.js";
 
@@ -70,7 +70,7 @@ export class AtomicMailBackend implements McpToolSource {
   }
 
   private async openClient(): Promise<McpClient> {
-    const client = new McpClient({ name: "open-instinct", version: "0.1.0", requestTimeoutMs: this.requestTimeoutMs });
+    const client = new McpClient({ name: "orion-ai", version: "0.1.0", requestTimeoutMs: this.requestTimeoutMs });
     client.onClose(() => {
       // Let the next call reconnect instead of failing on a dead session.
       if (this.client === client) {

@@ -78,7 +78,7 @@ export function pdfPageCount(pdf: Buffer): number {
 }
 
 function pdfInfo(opts: PdfOptions): PDFKit.DocumentInfo {
-  const info: PDFKit.DocumentInfo = { Creator: "Open Instinct" };
+  const info: PDFKit.DocumentInfo = { Creator: "Orion AI" };
   if (opts.title) info.Title = opts.title;
   if (opts.author) info.Author = opts.author;
   return info;

@@ -1,4 +1,4 @@
-import type { Capability } from "@open-instinct/core";
+import type { Capability } from "@orion-ai/core";
 
 /**
  * The hosted Atomic Mail tools this package registers, and the capability each call needs.

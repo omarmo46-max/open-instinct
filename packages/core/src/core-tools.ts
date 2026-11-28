@@ -360,7 +360,7 @@ type FetchPublicResult = { ok: true; res: Response; target: URL; hops: string[] 
  */
 export async function fetchPublic(doFetch: typeof fetch, url: string, opts: FetchPublicOptions = {}): Promise<FetchPublicResult> {
   const headers = opts.headers ?? {
-    "user-agent": "open-instinct/0.1 (+https://github.com/mariagorskikh/open-instinct)",
+    "user-agent": "orion-ai/0.1 (+https://github.com/mariagorskikh/open-instinct)",
     accept: "text/html,application/xhtml+xml,text/plain,application/json;q=0.9,*/*;q=0.5",
   };
   const hops: string[] = [];
@@ -464,7 +464,7 @@ async function braveSearch(doFetch: typeof fetch, key: string, query: string, si
 
 export const YOU_KEYED_URL = "https://ydc-index.io/v1/search";
 export const YOU_KEYLESS_URL = "https://api.you.com/v1/agents/search";
-const YOU_USER_AGENT = "youdotcom-integration/mariagorskikh-open-instinct";
+const YOU_USER_AGENT = "youdotcom-integration/mariagorskikh-orion-ai";
 /** Longest Retry-After we wait out inside one tool call; anything longer fails with the wait in the message. */
 const YOU_MAX_RETRY_AFTER_S = 10;
 
@@ -518,7 +518,7 @@ async function duckDuckGoSearch(doFetch: typeof fetch, query: string, signal?: A
   url.searchParams.set("q", query);
   const res = await doFetch(url.toString(), {
     signal: signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { "user-agent": "Mozilla/5.0 (compatible; open-instinct/0.1)", accept: "text/html" },
+    headers: { "user-agent": "Mozilla/5.0 (compatible; orion-ai/0.1)", accept: "text/html" },
   });
   if (!res.ok) throw new Error(`DuckDuckGo search failed: HTTP ${res.status}`);
   return parseDuckDuckGoHtml(await res.text()).slice(0, SEARCH_RESULTS);

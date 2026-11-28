@@ -3,8 +3,8 @@
  * provision the agent's identity (iMessage on), mint its keys and store them
  * under <dataDir>/secrets/inkbox.json.
  */
-import { isReservedHandle, loadConfig, saveConfig, type InstinctConfig } from "@open-instinct/core";
-import { InkboxPlanLimitError } from "@open-instinct/inkbox";
+import { isReservedHandle, loadConfig, saveConfig, type InstinctConfig } from "@orion-ai/core";
+import { InkboxPlanLimitError } from "@orion-ai/inkbox";
 import { parse, str, requireStr, flag, type OptionSpec } from "../args.js";
 import type { CliContext } from "../context.js";
 import { CliError, UsageError } from "../io.js";
@@ -159,7 +159,7 @@ export async function runInit(ctx: CliContext, argv: string[]): Promise<number> 
     identity = await provisioner.provisionIdentity({
       handle: config.agent.handle,
       displayName: config.agent.name,
-      description: `Open Instinct for ${config.owner.name}`,
+      description: `Orion AI for ${config.owner.name}`,
       imessage: true,
       phone: flags.phoneNumber,
       reuseExisting: flags.useExisting || existing?.handle === config.agent.handle,
@@ -174,7 +174,7 @@ export async function runInit(ctx: CliContext, argv: string[]): Promise<number> 
     saveConfig(state, config);
   }
   const savedIdentity = existing?.identityId === identity.identityId ? existing : undefined;
-  const apiKey = savedIdentity?.apiKey ?? await provisioner.mintIdentityKey(identity.identityId, "open-instinct");
+  const apiKey = savedIdentity?.apiKey ?? await provisioner.mintIdentityKey(identity.identityId, "orion-ai");
   const secrets: InkboxSecrets = {
     handle: identity.handle,
     identityId: identity.identityId,

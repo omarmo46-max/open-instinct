@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { defineTool, textResult, wrapUntrusted, type RegisteredTool, type ToolResultLike } from "@open-instinct/core";
+import { defineTool, textResult, wrapUntrusted, type RegisteredTool, type ToolResultLike } from "@orion-ai/core";
 import { Type } from "typebox";
 import { SignupAccount } from "./account.js";
 import { AmpleAuth, DEFAULT_API_URL, type AmpleCredentials } from "./auth.js";

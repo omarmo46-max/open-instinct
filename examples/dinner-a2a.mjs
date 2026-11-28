@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Two Open Instincts plan a dinner over A2A, with no network and no API keys.
+ * Two Orion AI agents plan a dinner over A2A, with no network and no API keys.
  *
  *   pnpm -r build
  *   node examples/dinner-a2a.mjs
  *
  * Maria and Sam are partners. Each has an agent booted with the real server code
- * (`boot` from @open-instinct/server). Two things are stubbed:
+ * (`boot` from @orion-ai/server). Two things are stubbed:
  *
  *   - the model: Pi's faux provider plays back scripted tool calls and replies;
  *   - the transport: a fake `fetch` stands in for Inkbox. A JSON-RPC SendMessage

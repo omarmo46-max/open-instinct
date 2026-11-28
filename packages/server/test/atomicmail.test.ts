@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createModels, fauxProvider } from "@earendil-works/pi-ai";
 import type { StreamFn } from "@earendil-works/pi-agent-core";
-import type { OutboundMessage, Outbox, Principal } from "@open-instinct/core";
+import type { OutboundMessage, Outbox, Principal } from "@orion-ai/core";
 import { boot } from "../src/boot.js";
 
 const KEY = "am_test_key_0123456789";

@@ -1,4 +1,4 @@
-# Open Instinct agent image. One container = one person's agent.
+# Orion AI agent image. One container = one person's agent.
 # Satisfies the Maritime BYO contract: 0.0.0.0:$PORT, GET /health, POST /chat, /data, python3 on PATH.
 #
 # Port: the image sets no PORT. Maritime injects PORT=18789 for framework "custom" (8080 is

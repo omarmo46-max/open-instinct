@@ -1,6 +1,6 @@
 # Keenable
 
-`@open-instinct/keenable` adds two optional tools that use the Keenable search
+`@orion-ai/keenable` adds two optional tools that use the Keenable search
 API: `keenable_search` returns the top web results with page text, and
 `keenable_fetch` returns a public page as markdown.
 

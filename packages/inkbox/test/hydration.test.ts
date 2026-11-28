@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AgentIdentity } from "@inkbox/sdk";
-import type { InboundMessage } from "@open-instinct/core";
+import type { InboundMessage } from "@orion-ai/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseInkboxEvent } from "../src/events.js";
 import { InkboxInboundHydrator } from "../src/hydration.js";

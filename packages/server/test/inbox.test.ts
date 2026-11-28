@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { StateDir, defaultConfig, encodeEvent } from "@open-instinct/core";
+import { StateDir, defaultConfig, encodeEvent } from "@orion-ai/core";
 import { createHttpServer, type HttpApp } from "../src/http.js";
 
 const servers: ReturnType<typeof createHttpServer>[] = [];

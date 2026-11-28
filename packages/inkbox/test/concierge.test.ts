@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { Principal, RegisteredTool } from "@open-instinct/core";
+import type { Principal, RegisteredTool } from "@orion-ai/core";
 import { conciergeTools, checkMandate, readMandate, type Mandate } from "../src/concierge.js";
 
 const OWNER: Principal = { kind: "owner", id: "owner", tier: "owner", displayName: "Omar" };

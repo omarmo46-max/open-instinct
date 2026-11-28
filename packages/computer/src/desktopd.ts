@@ -7,9 +7,9 @@
  * We talk to the REST API directly instead of spawning the stdio MCP server: fewer moving
  * parts, no python subprocess to supervise, and a non-blocking takeover.
  */
-import type { RegisteredTool, ToolMeta, ToolResultLike } from "@open-instinct/core";
+import type { RegisteredTool, ToolMeta, ToolResultLike } from "@orion-ai/core";
 import type { Static } from "typebox";
-import { defineTool, textResult } from "@open-instinct/core";
+import { defineTool, textResult } from "@orion-ai/core";
 import {
   desktopdBatchToolResult,
   desktopdResultToContent,

@@ -2,8 +2,8 @@
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { fetchPublic, htmlToText } from "@open-instinct/core";
-import type { InboundMessage, Lookup } from "@open-instinct/core";
+import { fetchPublic, htmlToText } from "@orion-ai/core";
+import type { InboundMessage, Lookup } from "@orion-ai/core";
 import type { InkboxChannel } from "./channel.js";
 
 export const INBOUND_ATTACHMENT_LIMIT = 10;

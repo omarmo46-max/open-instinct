@@ -3,7 +3,7 @@
  * guessing. Built fresh for every prompt from what boot actually wired.
  */
 import { Type, type Static } from "@earendil-works/pi-ai";
-import { defineTool, type RegisteredTool, type ToolContext, type ToolResultLike } from "@open-instinct/core";
+import { defineTool, type RegisteredTool, type ToolContext, type ToolResultLike } from "@orion-ai/core";
 
 export interface SetupInput {
   inkbox?: { handle: string };

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Contact } from "@open-instinct/core";
-import { A2AStore, StateDir } from "@open-instinct/core";
+import type { Contact } from "@orion-ai/core";
+import { A2AStore, StateDir } from "@orion-ai/core";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

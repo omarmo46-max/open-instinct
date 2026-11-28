@@ -9,7 +9,7 @@ Short answers to the questions people ask first. Longer explanations live in
 ### 1. How is this different from Instinct?
 
 Instinct is a closed, invite-only product by Spear Street Technology. You cannot read its
-code, pick its model or see its permission rules. Open Instinct keeps the same shape (a
+code, pick its model or see its permission rules. Orion AI keeps the same shape (a
 phone number, its own computer, a trusted network of other agents) and opens the box. The
 code is MIT. The model is yours to choose. The tier table is a JSON file with tests. Memory
 is Markdown you can read. Every side effect is in an audit log. Background on Instinct:
@@ -18,7 +18,7 @@ is Markdown you can read. Every side effect is in an audit log. Background on In
 ### 2. How is this different from OpenClaw?
 
 OpenClaw is a general agent platform with its own gateway, many channels and a skills
-store. It needs a signed-in Mac for iMessage. Open Instinct is a narrower product: one agent
+store. It needs a signed-in Mac for iMessage. Orion AI is a narrower product: one agent
 per person, text-first, with a trust network between agents. It uses Pi, the same agent
 loop OpenClaw grew out of, and gets iMessage through Inkbox, so no Mac is involved.
 
@@ -26,7 +26,7 @@ loop OpenClaw grew out of, and gets iMessage through Inkbox, so no Mac is involv
 
 They are unrelated projects with similar names. Merit Systems' OpenInstinct is a Next.js
 app on Vercel with Postgres, a cloud browser from Kernel and an iMessage line from Linq.
-Open Instinct (this project, package scope `@open-instinct/*`) is a Node service that runs
+Orion AI (this project, package scope `@orion-ai/*`) is a Node service that runs
 one process per person on Maritime or on your own machine, uses Inkbox for identity and
 Pi for the agent loop, and adds the tiered trust network and the OIP/1 protocol between
 agents.
@@ -102,19 +102,19 @@ text from your phone. Your agent answers on iMessage.
 
 ### 11. What is the gateway and when do I need it?
 
-Only when you run Open Instinct for many people. The gateway is a signup page plus a
+Only when you run Orion AI for many people. The gateway is a signup page plus a
 stateless relay: it provisions one Inkbox identity and one Maritime agent per person and
 forwards their webhooks to the right agent. For one person, `instinct dev` or
 `instinct deploy` is enough. Details: [../packages/gateway/README.md](../packages/gateway/README.md).
 
 ## Trust and the network
 
-### 12. Can two Open Instincts coordinate with an Instinct user?
+### 12. Can two Orion AI agents coordinate with an Instinct user?
 
-Two Open Instincts talk to each other over A2A through Inkbox with the OIP/1 intents
+Two Orion AI agents talk to each other over A2A through Inkbox with the OIP/1 intents
 described in [PROTOCOL.md](PROTOCOL.md). An Instinct user's agent speaks a different,
 closed protocol, so the two agents cannot talk directly. The fallback is the same as for
-anyone without an agent: your Open Instinct texts or emails the human, offers the options
+anyone without an agent: your Orion AI texts or emails the human, offers the options
 in plain words, and reads their reply. A dinner still gets booked. It takes a few more
 messages.
 

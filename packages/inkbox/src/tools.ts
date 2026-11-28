@@ -6,8 +6,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Type } from "typebox";
-import { defineTool, normalizeHandle, normalizePhone, textResult } from "@open-instinct/core";
-import type { Contact, ContactStore, FileOutbox, InstinctConfig, OutboundFile, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@open-instinct/core";
+import { defineTool, normalizeHandle, normalizePhone, textResult } from "@orion-ai/core";
+import type { Contact, ContactStore, FileOutbox, InstinctConfig, OutboundFile, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@orion-ai/core";
 import type { CallOrigination, FileSend, InkboxChannel } from "./channel.js";
 import { CALL_ORIGINATIONS, parseConversationKey } from "./channel.js";
 

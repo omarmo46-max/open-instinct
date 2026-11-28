@@ -89,8 +89,8 @@ export class SignupAccount {
 
     const response = await fetchImpl(`${this.options.apiUrl}/v1/auth/signup`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "open-instinct/0.1" },
-      body: JSON.stringify({ name: this.options.name ?? "open-instinct", request_key: pending.requestKey }),
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "orion-ai/0.1" },
+      body: JSON.stringify({ name: this.options.name ?? "orion-ai", request_key: pending.requestKey }),
       signal: signal ?? AbortSignal.timeout(130_000),
     });
     // The body may hold credentials on success only; an error body is never echoed.
@@ -133,7 +133,7 @@ export class SignupAccount {
     try {
       const response = await fetchImpl(`${this.options.apiUrl}/v1/auth/claim`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json", "User-Agent": "open-instinct/0.1" },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json", "User-Agent": "orion-ai/0.1" },
         body: JSON.stringify({ email }),
         signal: signal ?? AbortSignal.timeout(30_000),
       });

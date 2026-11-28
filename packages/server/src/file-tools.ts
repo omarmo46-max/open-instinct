@@ -30,8 +30,8 @@ import {
   createReadTool,
   createWriteTool,
 } from "@earendil-works/pi-coding-agent";
-import { defineTool } from "@open-instinct/core";
-import type { Capability, RegisteredTool, ToolContext, ToolMeta, ToolResultLike } from "@open-instinct/core";
+import { defineTool } from "@orion-ai/core";
+import type { Capability, RegisteredTool, ToolContext, ToolMeta, ToolResultLike } from "@orion-ai/core";
 
 const READ: Capability[] = ["files.read"];
 const WRITE: Capability[] = ["files.write"];

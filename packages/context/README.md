@@ -1,6 +1,6 @@
 # Context.dev
 
-`@open-instinct/context` adds one optional `context_answers` tool. It uses the
+`@orion-ai/context` adds one optional `context_answers` tool. It uses the
 Context.dev Answers API to research current questions, read public URLs and return
 a structured answer with the source pages it used.
 

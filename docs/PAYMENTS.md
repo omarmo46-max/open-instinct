@@ -1,13 +1,13 @@
 # Payments with Stripe Link Agent Wallet
 
-Open Instinct pays for things with one-time cards from the owner's Stripe Link
+Orion AI pays for things with one-time cards from the owner's Stripe Link
 wallet. This page explains why Link is the right rail, how to register the OAuth
 client, which variables to set, what the owner sees, what the agent does with the
 card, how the spend policy fits in, what is not supported, and how to test.
 
 Code: [`packages/payments`](../packages/payments/README.md). Server wiring: [`packages/server`](../packages/server/README.md).
 
-(Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.)
+(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Link Agent Wallet is
 
@@ -72,7 +72,7 @@ and Stripe reviews applications on a rolling basis, every 3 to 5 days as of Octo
 3. Page two is the OAuth app itself:
    - Scopes: tick `agentic payments`. Only tick `financial insights` if you will use it;
      requesting a scope at login that was not approved here fails hard.
-   - Client type: `Confidential`. Open Instinct keeps the secret on the server, never in a
+   - Client type: `Confidential`. Orion AI keeps the secret on the server, never in a
      browser or on the phone. A public client triggers a longer security review.
    - Integration details: say the flow is authorization code with PKCE, started
      server-side, with one callback path, and that every purchase needs the owner's yes.
@@ -221,7 +221,7 @@ How the two approvals relate:
 
 | Check | Who runs it | When |
 |---|---|---|
-| Spend policy | Open Instinct, in `beforeToolCall` | Before `payment_request` runs |
+| Spend policy | Orion AI, in `beforeToolCall` | Before `payment_request` runs |
 | Link approval | Stripe Link, on the owner's phone | After the spend request exists |
 
 Both must pass. The spend policy can stop a request before Link ever sees it. Link
@@ -284,7 +284,7 @@ The package tests need no network at all:
 
 ```bash
 export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 22.20.0
-pnpm --filter @open-instinct/payments test
+pnpm --filter @orion-ai/payments test
 ```
 
 They cover PKCE, the authorize URL, the callback, token refresh with a fake clock, revoke,

@@ -74,7 +74,7 @@ Expected: `HTTP 204` for the first two, and `HTTP 401 {"error":"invalid signatur
 script exits non-zero when it gets anything else. A server started without a signing key answers `503`.
 
 Flags: `--url` (default `http://127.0.0.1:8080`), `--from`, `--text`, `--conversation`, `--key`, `--tamper`.
-The event shape matches what `parseInkboxEvent` in `@open-instinct/inkbox` expects; the signature
+The event shape matches what `parseInkboxEvent` in `@orion-ai/inkbox` expects; the signature
 construction matches its `computeInkboxSignature`.
 
 ## 3. Two agents plan a dinner over A2A
@@ -83,8 +83,8 @@ construction matches its `computeInkboxSignature`.
 node examples/dinner-a2a.mjs
 ```
 
-Maria and Sam are partners. Each has an Open Instinct booted with the real server code (`boot` from
-`@open-instinct/server`), a real policy engine, real contacts, a real audit log. Two things are stubbed:
+Maria and Sam are partners. Each has an Orion AI booted with the real server code (`boot` from
+`@orion-ai/server`), a real policy engine, real contacts, a real audit log. Two things are stubbed:
 
 | Stubbed | With |
 |---|---|
@@ -127,7 +127,7 @@ responses; swapping the faux provider for a real model is a one-line change in `
   `Authorization: Bearer <INSTINCT_CHAT_TOKEN>` when the server has one. Routes are listed in
   [packages/server/README.md](../packages/server/README.md).
 - To embed an agent in your own process, call `boot(env, { model, streamFn, outbox, fetchImpl })` and
-  feed `app.runtime.handleInbound(message)` the `InboundMessage` shape from `@open-instinct/core`.
+  feed `app.runtime.handleInbound(message)` the `InboundMessage` shape from `@orion-ai/core`.
   `dinner-a2a.mjs` does both.
 - The faux provider (`fauxProvider`, `fauxAssistantMessage`, `fauxToolCall` from
   `@earendil-works/pi-ai`) is how the smoke test and these examples run without a key.

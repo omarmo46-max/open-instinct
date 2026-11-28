@@ -3,7 +3,7 @@
  * image. The body mirrors the gateway's provisionUser step so a single-user
  * deploy and a multi-user deploy produce the same kind of agent.
  */
-import { loadConfig, type InstinctConfig } from "@open-instinct/core";
+import { loadConfig, type InstinctConfig } from "@orion-ai/core";
 import { parse, str, num, flag, type OptionSpec } from "../args.js";
 import type { CliContext } from "../context.js";
 import { CliError, fetchOf } from "../io.js";
@@ -117,10 +117,10 @@ export function buildCreateBody(input: DeployInput): CreateAgentBody {
     exposedPort: MARITIME_AGENT_PORT,
     healthCheckPath: "/health",
     desktop: input.desktop,
-    externalId: `open-instinct:${handle}`,
+    externalId: `orion-ai:${handle}`,
     initialEnvVars: vars,
     idleTtlSeconds: input.idleSeconds,
-    instructions: `Open Instinct for ${config.owner.name}. Personal agent reachable on iMessage as @${handle}.`,
+    instructions: `Orion AI for ${config.owner.name}. Personal agent reachable on iMessage as @${handle}.`,
   };
   if (input.maritimeLlm) body.useMaritimeLlm = true;
   return body;
@@ -129,7 +129,7 @@ export function buildCreateBody(input: DeployInput): CreateAgentBody {
 export async function runDeploy(ctx: CliContext, argv: string[]): Promise<number> {
   const { values } = parse("deploy", argv, deployOptions);
   const image = str(values, "image");
-  if (!image) throw new CliError("--image is required, e.g. --image ghcr.io/you/open-instinct-agent:latest");
+  if (!image) throw new CliError("--image is required, e.g. --image ghcr.io/you/orion-ai-agent:latest");
   const state = ctx.state();
   const config = loadConfig(state, ctx.env);
   const secrets = readSecrets(ctx.dataDir);

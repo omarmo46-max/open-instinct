@@ -1,10 +1,10 @@
 /**
- * Loader for @open-instinct/payments (Stripe Link agent wallet). The package is
+ * Loader for @orion-ai/payments (Stripe Link agent wallet). The package is
  * optional at runtime: when it is not installed, or the three env vars are missing,
  * the agent boots without payment tools. The contract below mirrors the package's
  * exports so this file typechecks on its own.
  */
-import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@open-instinct/core";
+import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
 
 export interface LinkWalletLike {
   authorizeUrl(): { url: string; state: string };
@@ -49,7 +49,7 @@ export function egpEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.EGP_WALLET?.trim() === "1";
 }
 
-export const PAYMENTS_PACKAGE = "@open-instinct/payments";
+export const PAYMENTS_PACKAGE = "@orion-ai/payments";
 export const LINK_CALLBACK_PATH = "/oauth/link/callback";
 
 export interface PaymentsEnv {

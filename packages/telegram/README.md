@@ -1,4 +1,4 @@
-# @open-instinct/telegram
+# @orion-ai/telegram
 
 A Telegram bot as a channel. People message the bot one to one and the agent answers in the
 same chat. It speaks the official [Bot API](https://core.telegram.org/bots/api) with `fetch`

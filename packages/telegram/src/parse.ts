@@ -1,11 +1,11 @@
 /**
- * Pure helpers: Telegram updates to Open Instinct messages, conversation keys, and message
+ * Pure helpers: Telegram updates to Orion AI messages, conversation keys, and message
  * splitting. No network here, so all of it is unit tested.
  *
  * Identity: the sender is the numeric Telegram user id (`from.id`), which Telegram itself
  * puts on every update. @usernames can be changed or released, so they are only display data.
  */
-import type { InboundMessage } from "@open-instinct/core";
+import type { InboundMessage } from "@orion-ai/core";
 
 export const CONVERSATION_PREFIX = "telegram:";
 export const ADDRESS_PREFIX = "telegram:";

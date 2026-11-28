@@ -7,7 +7,7 @@
  * request. It is never written to payments.json, the audit log or a message.
  */
 import { Type } from "typebox";
-import type { AuditLog, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir, ToolContext, ToolResultLike } from "@open-instinct/core";
+import type { AuditLog, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir, ToolContext, ToolResultLike } from "@orion-ai/core";
 import { defineTool, errorResult, textResult } from "./define.js";
 import type { Card, PaymentMethod, SpendRequest } from "./link-types.js";
 import type { LinkWallet } from "./wallet.js";

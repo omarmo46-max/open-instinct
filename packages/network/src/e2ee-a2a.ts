@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { Type } from "typebox";
-import type { AgentKeyring, AuditLog, ContactStore, Envelope, PeerBundle, Principal, RegisteredTool, ToolResultLike } from "@open-instinct/core";
+import type { AgentKeyring, AuditLog, ContactStore, Envelope, PeerBundle, Principal, RegisteredTool, ToolResultLike } from "@orion-ai/core";
 import { defineTool, textResult } from "./define.js";
 import type { A2aLike } from "./tools.js";
 

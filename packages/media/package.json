@@ -1,5 +1,5 @@
 {
-  "name": "@open-instinct/media",
+  "name": "@orion-ai/media",
   "version": "0.1.0",
   "description": "What people send as files: voice notes become text, PDFs, Word and text files become readable, pictures are left for the model to see",
   "license": "MIT",
@@ -26,7 +26,7 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@open-instinct/core": "workspace:*",
+    "@orion-ai/core": "workspace:*",
     "mammoth": "^1.13.0",
     "unpdf": "^2.2.2"
   },

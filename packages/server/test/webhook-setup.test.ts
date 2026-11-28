@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { StateDir } from "@open-instinct/core";
-import { DEFAULT_WEBHOOK_EVENTS } from "@open-instinct/inkbox";
+import { StateDir } from "@orion-ai/core";
+import { DEFAULT_WEBHOOK_EVENTS } from "@orion-ai/inkbox";
 import { ensureWebhookSubscription, readWebhookSecrets, writeWebhookSecrets } from "../src/webhook-setup.js";
 
 type Subscription = { id: string; url: string; eventTypes: string[] };

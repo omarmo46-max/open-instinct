@@ -1,4 +1,4 @@
-import type { Capability, Tier } from "@open-instinct/core";
+import type { Capability, Tier } from "@orion-ai/core";
 
 /** Local mirror of core's TIER_ORDER, highest first. */
 export const TIERS: readonly Tier[] = ["owner", "staff", "partner", "family", "friend", "contact", "stranger"];

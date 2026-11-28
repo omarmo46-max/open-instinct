@@ -1,6 +1,6 @@
 # An inbox through Atomic Mail
 
-Open Instinct can give the agent a second, optional inbox at Atomic Mail. This page
+Orion AI can give the agent a second, optional inbox at Atomic Mail. This page
 explains what Atomic Mail is, how to get a key, and what the agent may do with it.
 
 Code: [`packages/atomicmail`](../packages/atomicmail/README.md). Server wiring: [`packages/server`](../packages/server/README.md).

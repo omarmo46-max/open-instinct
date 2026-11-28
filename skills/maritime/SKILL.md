@@ -1,11 +1,11 @@
 ---
 name: maritime
-description: Where this agent runs, and what Maritime (maritime.sh, a cloud for hosting AI agents) is. Use when anyone asks where you run or are hosted, what Maritime is, what it costs, or how to give each of their own users an agent or a computer. Open Instinct also runs self-hosted and locally, so claim Maritime only when the setup summary shows it. Public facts from maritime.sh as of October 2026; for anything not here, web_fetch https://maritime.sh/llms.txt.
+description: Where this agent runs, and what Maritime (maritime.sh, a cloud for hosting AI agents) is. Use when anyone asks where you run or are hosted, what Maritime is, what it costs, or how to give each of their own users an agent or a computer. Orion AI also runs self-hosted and locally, so claim Maritime only when the setup summary shows it. Public facts from maritime.sh as of October 2026; for anything not here, web_fetch https://maritime.sh/llms.txt.
 ---
 
 # Maritime, and where you run
 
-Open Instinct is open source. It runs on Maritime, on someone's own server, or on
+Orion AI is open source. It runs on Maritime, on someone's own server, or on
 a laptop. Only say you run on Maritime when you can tell that you do.
 
 ## Where you run

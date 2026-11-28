@@ -12,7 +12,7 @@ import path from "node:path";
 import { createAssistantMessageEventStream, type AssistantMessageEvent, type Model } from "@earendil-works/pi-ai";
 import type { StreamFn } from "@earendil-works/pi-agent-core";
 import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
-import { OPENAI_COMPATIBLE_PROVIDER, resolveModel } from "@open-instinct/core";
+import { OPENAI_COMPATIBLE_PROVIDER, resolveModel } from "@orion-ai/core";
 
 export const CUSTOM_MODEL_FILE = "custom-model.json";
 export const DEFAULT_COOLDOWN_MS = 10 * 60_000;

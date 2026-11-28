@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InkboxProvisioner } from "@open-instinct/inkbox";
+import { InkboxProvisioner } from "@orion-ai/inkbox";
 import { DEFAULT_MARITIME_LLM_MODEL, MARITIME_AGENT_PORT, agentEnvFor, linkRedirectUriFor, maritimeCreateBody, provisionUser, webhookUrlFor } from "../src/provision.js";
 import { UserStore } from "../src/store.js";
 import { fakeInkbox, fakeMaritime, readyUser, tempDir } from "./helpers.js";

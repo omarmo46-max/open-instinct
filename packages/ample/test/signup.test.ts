@@ -68,7 +68,7 @@ function setup(api: ReturnType<typeof fakeAmple>, run?: RunCli, ownerEmail = "ma
       return { ...result, stdout: JSON.stringify({ status: "live", url: "https://party-acc-1.apps.ample.computer" }) };
     });
   const tools = ampleTools({
-    signup: { file, name: "open-instinct-maya", ...(ownerEmail ? { ownerEmail } : {}) },
+    signup: { file, name: "orion-ai-maya", ...(ownerEmail ? { ownerEmail } : {}) },
     workspaceDir: workspace,
     resolvePath: (p) => path.resolve(workspace, p),
     fetchImpl: api.fetchImpl as unknown as typeof fetch,
@@ -93,7 +93,7 @@ describe("an Ample account of the agent's own", () => {
 
     const signup = api.calls.find((c) => c.url.endsWith("/v1/auth/signup"))!;
     const body = JSON.parse(signup.body);
-    expect(body.name).toBe("open-instinct-maya");
+    expect(body.name).toBe("orion-ai-maya");
     expect(body.request_key).toMatch(/^[0-9a-f-]{36}$/);
     const claim = api.calls.find((c) => c.url.endsWith("/v1/auth/claim"))!;
     expect(claim.auth).toBe("Bearer signup-token-1");

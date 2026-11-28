@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { McpHttpError } from "@earendil-works/pi-mcp";
 import type { CallToolResult, Tool } from "@earendil-works/pi-mcp";
-import type { RegisteredTool } from "@open-instinct/core";
+import type { RegisteredTool } from "@orion-ai/core";
 import { INBOX_LABEL, describeCall, explainError, metaFor, parametersFor, toolNameFor, wrapMcpTool, wrapMcpTools } from "../src/wrap.js";
 import type { McpToolSource } from "../src/wrap.js";
 

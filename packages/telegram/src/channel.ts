@@ -14,7 +14,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@open-instinct/core";
+import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@orion-ai/core";
 import { noteDownloadFailure, saveInboundFile } from "./files.js";
 import { TELEGRAM_DOWNLOAD_MAX_BYTES, chatIdFromConversationKey, parseUpdate, splitText, type MediaInfo, type TgUpdate } from "./parse.js";
 

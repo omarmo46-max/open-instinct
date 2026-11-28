@@ -5,7 +5,7 @@
  * correct as the API evolves. The identity is fetched once and cached.
  */
 import { Inkbox, type AgentIdentity, type CallOrigin, type MailAttachmentInput } from "@inkbox/sdk";
-import type { InboundMessage, OutboundMessage, Outbox, Principal } from "@open-instinct/core";
+import type { InboundMessage, OutboundMessage, Outbox, Principal } from "@orion-ai/core";
 import { createRest } from "./http.js";
 
 export interface InkboxChannelOptions {

@@ -1,6 +1,6 @@
-# @open-instinct/atomicmail
+# @orion-ai/atomicmail
 
-An inbox of the agent's own for Open Instinct, through the Atomic Mail hosted MCP server. The
+An inbox of the agent's own for Orion AI, through the Atomic Mail hosted MCP server. The
 agent can read, search, send and reply from an address that belongs to it. Each tool is tagged
 with the capability the policy engine checks.
 
@@ -33,7 +33,7 @@ Nothing is written to disk. The key lives in the environment.
 ## Usage
 
 ```ts
-import { AtomicMailBackend, atomicMailGuidance } from "@open-instinct/atomicmail";
+import { AtomicMailBackend, atomicMailGuidance } from "@orion-ai/atomicmail";
 
 const mailbox = new AtomicMailBackend({ apiKey: process.env.ATOMIC_MAIL_API_KEY! });
 registry.registerMany(await mailbox.tools());
@@ -81,7 +81,7 @@ so a tool the server adds later stays off until someone tags it.
 ## Testing
 
 ```bash
-pnpm --filter @open-instinct/atomicmail test
+pnpm --filter @orion-ai/atomicmail test
 ```
 
 The tests run a fake MCP server over an in-memory transport, and one test checks the Bearer

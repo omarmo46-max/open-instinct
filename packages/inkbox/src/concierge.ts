@@ -6,8 +6,8 @@
  * `phone.call` capability, so an injected instruction cannot widen it. Plain `phone_call` is untouched and still asks every time.
  */
 import { Type } from "typebox";
-import { defineTool, textResult } from "@open-instinct/core";
-import type { AuditLog, InstinctConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@open-instinct/core";
+import { defineTool, textResult } from "@orion-ai/core";
+import type { AuditLog, InstinctConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@orion-ai/core";
 import { CALL_REASON_MAX, E164, VOICEMAIL_MESSAGE_MAX } from "./tools.js";
 import type { CallOrigination, InkboxChannel } from "./channel.js";
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { RegisteredTool } from "@open-instinct/core";
+import type { RegisteredTool } from "@orion-ai/core";
 import { createEgpRail, luhn, toPiasters, type AutomaticCardIssuer } from "../src/egp/index.js";
 import { NOW, ctxFor, fakeAudit, fakeOutbox, friend, isError, owner, tempState, testConfig, textOf } from "./helpers.js";
 

@@ -386,7 +386,7 @@ describe("C7 TOTP and step-up", () => {
     const s = generateTotpSecret();
     expect(base32Encode(base32Decode(s))).toBe(s);
     expect(() => base32Decode("not valid!")).toThrow();
-    expect(otpauthUri({ secret: s, account: "owner", issuer: "Open Instinct" })).toContain(`secret=${s}`);
+    expect(otpauthUri({ secret: s, account: "owner", issuer: "Orion AI" })).toContain(`secret=${s}`);
   });
   it("verifies within one step of drift and not outside it", () => {
     const now = new Date(1_700_000_000_000);

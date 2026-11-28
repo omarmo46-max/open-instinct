@@ -15,8 +15,8 @@ import type {
   RegisteredTool,
   ToolContext,
   ToolResultLike,
-} from "@open-instinct/core";
-import type { InkboxA2A, InkboxProvisioner } from "@open-instinct/inkbox";
+} from "@orion-ai/core";
+import type { InkboxA2A, InkboxProvisioner } from "@orion-ai/inkbox";
 import { ASSIGNABLE_TIERS, CAPABILITIES, TIERS, parseCapabilities } from "./capabilities.js";
 import { defineTool, textResult } from "./define.js";
 import { contactLine, lookupContact, slugify } from "./lookup.js";

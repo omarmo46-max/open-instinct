@@ -1,4 +1,4 @@
-# @open-instinct/web
+# @orion-ai/web
 
 The website: public pages, email accounts on MongoDB, and a dashboard that talks to each person's own agent.
 
@@ -8,8 +8,8 @@ The website: public pages, email accounts on MongoDB, and a dashboard that talks
 WEB_MONGODB_URI=mongodb+srv://...   # required in production
 WEB_SECRET_KEY=$(openssl rand -base64 32)   # required in production: encrypts API keys and tokens
 WEB_PUBLIC_URL=https://your-domain.com
-WEB_BRAND="Open Instinct"           # optional
-pnpm --filter @open-instinct/web build && pnpm --filter @open-instinct/web start
+WEB_BRAND="Orion AI"           # optional
+pnpm --filter @orion-ai/web build && pnpm --filter @orion-ai/web start
 ```
 
 Without `WEB_MONGODB_URI` it runs on in-memory storage for local trials (accounts are lost on restart).

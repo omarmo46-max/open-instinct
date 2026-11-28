@@ -1,5 +1,6 @@
 /** Public pages. Every page is its own route; the sign-in dialog is available on all of them. */
 import { esc, icon } from "./ui.js";
+import { HEAD_ICONS, logoImg } from "./brand.js";
 
 export interface PageCtx {
   brand: string;
@@ -45,11 +46,11 @@ export function layout(c: PageCtx, o: { title: string; desc?: string; body: stri
       <div class="tabs"><button type="button" data-tab="signup" class="on">Create account</button><button type="button" data-tab="login">Sign in</button></div>${authForms(c)}</div></dialog>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(o.title)} | ${esc(c.brand)}</title><meta name="description" content="${esc(o.desc ?? "A personal assistant you text or call, on your own terms.")}">
-<link rel="stylesheet" href="/assets/site.css"></head><body>
-<header class="hdr"><div class="wrap"><div class="left">${left}</div><a class="brand" href="/">${esc(c.brand)}</a><div class="right"><nav class="nav">${nav}</nav></div></div></header>
+${HEAD_ICONS}<link rel="stylesheet" href="/assets/site.css"></head><body>
+<header class="hdr"><div class="wrap"><div class="left">${left}</div><a class="brand" href="/">${logoImg()}${esc(c.brand)}</a><div class="right"><nav class="nav">${nav}</nav></div></div></header>
 <main>${o.body}</main>
 <footer class="ftr"><div class="wrap"><div class="grid">
-<div><a class="brand" href="/">${esc(c.brand)}</a><p class="small muted" style="margin-top:10px;max-width:280px">A personal assistant you text or call. It works through your apps, with your approval.</p></div>
+<div><a class="brand" href="/">${logoImg()}${esc(c.brand)}</a><p class="small muted" style="margin-top:10px;max-width:280px">A personal assistant you text or call. It works through your apps, with your approval.</p></div>
 <div><h4>Product</h4><a href="/features">Features</a><a href="/how-it-works">How it works</a></div>
 <div><h4>Trust</h4><a href="/security">Security</a><a href="/faq">FAQ</a></div>
 <div><h4>Legal</h4><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a></div>

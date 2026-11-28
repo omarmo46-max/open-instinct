@@ -1,7 +1,7 @@
 {
-  "name": "@open-instinct/keenable",
+  "name": "@orion-ai/keenable",
   "version": "0.1.0",
-  "description": "Web search and page fetch for Open Instinct through Keenable",
+  "description": "Web search and page fetch for Orion AI through Keenable",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,6 +15,6 @@
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": { "@open-instinct/core": "workspace:*", "typebox": "1.3.27" },
+  "dependencies": { "@orion-ai/core": "workspace:*", "typebox": "1.3.27" },
   "devDependencies": { "@types/node": "^22.15.0", "typescript": "^5.8.3", "vitest": "^3.2.4" }
 }

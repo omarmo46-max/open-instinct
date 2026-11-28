@@ -1,5 +1,5 @@
-import { encodeEvent } from "@open-instinct/core";
-import { parseRetryAfter, verifyInkboxSignature } from "@open-instinct/inkbox";
+import { encodeEvent } from "@orion-ai/core";
+import { parseRetryAfter, verifyInkboxSignature } from "@orion-ai/inkbox";
 import { type Logger, silentLogger } from "./logger.js";
 import { DEFAULT_MARITIME_BASE_URL } from "./provision.js";
 import type { UserRecord } from "./store.js";

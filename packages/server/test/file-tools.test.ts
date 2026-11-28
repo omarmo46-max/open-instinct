@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { ToolContext, ToolResultLike } from "@open-instinct/core";
+import type { ToolContext, ToolResultLike } from "@orion-ai/core";
 import { FILE_TOOL_CAPABILITIES, fileTools, resolveInsideWorkspace, shellEnvFor, workspacePathGuard } from "../src/file-tools.js";
 
 const ctx: ToolContext = {

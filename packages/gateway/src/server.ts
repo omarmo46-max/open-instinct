@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
-import type { InkboxProvisioner } from "@open-instinct/inkbox";
-import { DurableInbox, RetryAfterError } from "@open-instinct/inkbox";
+import type { InkboxProvisioner } from "@orion-ai/inkbox";
+import { DurableInbox, RetryAfterError } from "@orion-ai/inkbox";
 import { join } from "node:path";
 import { type SignupLimits, SlidingWindowLimiter, clientAddress, pendingCount, signupLimits } from "./limits.js";
 import { type Logger, consoleLogger } from "./logger.js";

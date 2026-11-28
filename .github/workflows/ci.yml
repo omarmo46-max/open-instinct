@@ -39,6 +39,6 @@ jobs:
           node-version: 22.20.0
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @open-instinct/core build
-      - run: pnpm --filter @open-instinct/inkbox build
+      - run: pnpm --filter @orion-ai/core build
+      - run: pnpm --filter @orion-ai/inkbox build
       - run: pnpm exec vitest run packages/inkbox/test/inbox.test.ts

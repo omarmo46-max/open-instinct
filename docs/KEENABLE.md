@@ -33,7 +33,7 @@ When the tools are present, the research skill says `keenable_search` and
 `web_search` and `web_fetch` flow is unchanged.
 
 Keenable receives the search query or the page URL, and the header
-`X-Keenable-Title: Open Instinct`. The key is sent only when it is set.
+`X-Keenable-Title: Orion AI`. The key is sent only when it is set.
 
 Both tools carry the existing `web.read` capability. `keenable_fetch` refuses
 private, loopback and metadata targets, like `web_fetch`. Results are wrapped as

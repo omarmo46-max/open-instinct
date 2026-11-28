@@ -1,10 +1,10 @@
-# @open-instinct/payments
+# @orion-ai/payments
 
-The agent's wallet. This package connects an Open Instinct agent to the owner's Stripe Link
+The agent's wallet. This package connects an Orion AI agent to the owner's Stripe Link
 account through Link Agent Wallet, the same rail Instinct uses, and exposes four tools:
 `payment_connect`, `payment_request`, `payment_status`, `payment_list`.
 
-(Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.)
+(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Link Agent Wallet is
 
@@ -92,7 +92,7 @@ When all three required variables are set and this package is installed, the ser
 ## Usage
 
 ```ts
-import { LinkWallet, paymentsTools, paymentsGuidance } from "@open-instinct/payments";
+import { LinkWallet, paymentsTools, paymentsGuidance } from "@orion-ai/payments";
 
 const wallet = new LinkWallet({
   state,                                   // core StateDir
@@ -199,7 +199,7 @@ disconnects the wallet locally; `revoke()` also tells Link.
 ## Testing
 
 ```
-pnpm --filter @open-instinct/payments test
+pnpm --filter @orion-ai/payments test
 ```
 
 Tests cover the PKCE helpers (verifier length and alphabet, the RFC 7636 S256 vector), the

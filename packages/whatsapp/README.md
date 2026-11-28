@@ -1,4 +1,4 @@
-# @open-instinct/whatsapp
+# @orion-ai/whatsapp
 
 The agent's own WhatsApp account as a channel. It joins the account as a linked device
 through [Baileys](https://github.com/WhiskeySockets/Baileys), WhatsApp Web's multi-device

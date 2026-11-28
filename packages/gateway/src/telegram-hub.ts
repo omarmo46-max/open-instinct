@@ -16,9 +16,9 @@
 import { randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
-import { TELEGRAM_LINK_EVENT, TELEGRAM_MESSAGE_EVENT, type InboundMessage } from "@open-instinct/core";
-import { DurableInbox, RetryAfterError } from "@open-instinct/inkbox";
-import { TelegramChannel } from "@open-instinct/telegram";
+import { TELEGRAM_LINK_EVENT, TELEGRAM_MESSAGE_EVENT, type InboundMessage } from "@orion-ai/core";
+import { DurableInbox, RetryAfterError } from "@orion-ai/inkbox";
+import { TelegramChannel } from "@orion-ai/telegram";
 import { SlidingWindowLimiter } from "./limits.js";
 import { type Logger, silentLogger } from "./logger.js";
 import type { RelayResult } from "./relay.js";

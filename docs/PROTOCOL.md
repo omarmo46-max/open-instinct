@@ -1,8 +1,8 @@
 # OIP/1: how two Instincts talk
 
-Open Instinct Protocol version 1 is a thin layer on top of A2A 1.0 as hosted by Inkbox. Plain
+Orion AI Protocol version 1 is a thin layer on top of A2A 1.0 as hosted by Inkbox. Plain
 text carries the request so any A2A agent can read it. A structured `data` part carries a typed
-intent so two Open Instincts can be precise.
+intent so two Orion AI agents can be precise.
 
 Analogy: the text part is the voicemail anyone can understand. The data part is the form attached
 to it, filled in the same way every time, so the other agent can act without guessing.
@@ -51,7 +51,7 @@ Two gates, both must pass:
    Unknown callers are `stranger`.
 
 Invitations (`invite_to_network`, or `instinct invite ... --handle <peer>`) set up gate 1 for both
-sides at once; accepting an Open Instinct invitation also sets the tier the inviter chose for gate 2.
+sides at once; accepting an Orion AI invitation also sets the tier the inviter chose for gate 2.
 
 ## Message shape
 
@@ -78,8 +78,8 @@ Every A2A message has two parts:
 ]
 ```
 
-The `text` is authoritative for a generic agent. The `data` is authoritative for an Open Instinct.
-When they disagree, the receiving Open Instinct trusts `data` and tells its owner. `on_behalf_of.display`
+The `text` is authoritative for a generic agent. The `data` is authoritative for an Orion AI.
+When they disagree, the receiving Orion AI trusts `data` and tells its owner. `on_behalf_of.display`
 names the human whose request this is. When a partner, family member or friend relays a request
 through someone else's Instinct, it names them, never that Instinct's owner, and the text starts with
 "From <name>, relayed by <owner>'s Instinct (not <owner>'s request)".

@@ -26,7 +26,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, randomKey: () =
   return {
     port: Number(env.WEB_PORT?.trim() || env.PORT?.trim() || 8090),
     publicUrl,
-    brand: env.WEB_BRAND?.trim() || "Open Instinct",
+    brand: env.WEB_BRAND?.trim() || "Orion AI",
     ...(env.WEB_MONGODB_URI?.trim() ? { mongoUri: env.WEB_MONGODB_URI.trim() } : {}),
     mongoDb: env.WEB_MONGODB_DB?.trim() || "instinct_web",
     secretKey,

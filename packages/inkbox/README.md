@@ -1,6 +1,6 @@
-# @open-instinct/inkbox
+# @orion-ai/inkbox
 
-The Inkbox adapter. Inkbox is the phone company for Open Instinct: it gives the
+The Inkbox adapter. Inkbox is the phone company for Orion AI: it gives the
 agent a handle, a mailbox, an iMessage line, an optional SMS number, and an
 agent-to-agent (A2A) endpoint. This package provides the pieces
 the rest of the system uses:
@@ -34,7 +34,7 @@ Two kinds of API key matter:
 - an **identity-scoped key** sees one identity only. The agent process runs with this key.
 
 ```ts
-import { InkboxProvisioner } from "@open-instinct/inkbox";
+import { InkboxProvisioner } from "@orion-ai/inkbox";
 
 const admin = new InkboxProvisioner({ adminApiKey: process.env.INKBOX_ADMIN_API_KEY! });
 const id = await admin.provisionIdentity({ handle: "maria-instinct", displayName: "Maria's Instinct", imessage: true });
@@ -127,8 +127,8 @@ events matter for the caller side of a conversation:
 Every delivery is signed. Verify before parsing:
 
 ```ts
-import { DurableInbox, InkboxInboundHydrator, parseInkboxEvent, verifyInkboxSignature } from "@open-instinct/inkbox";
-import type { InboundMessage } from "@open-instinct/core";
+import { DurableInbox, InkboxInboundHydrator, parseInkboxEvent, verifyInkboxSignature } from "@orion-ai/inkbox";
+import type { InboundMessage } from "@orion-ai/core";
 
 const hydrator = new InkboxInboundHydrator({ channel, mediaDir: state.path("workspace", "inbound") });
 const inbox = new DurableInbox<InboundMessage>({
@@ -257,7 +257,7 @@ files; any send that needs a wire then fails with a plain reason.
 ## Testing
 
 ```
-pnpm --filter @open-instinct/inkbox test
+pnpm --filter @orion-ai/inkbox test
 ```
 
 Tests use a recording fake `fetch`. The provisioner and A2A client take it as `fetchImpl`.

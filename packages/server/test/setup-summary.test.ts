@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appsNotConfiguredTool, setupSummaryFor } from "../src/setup-summary.js";
-import type { ToolContext } from "@open-instinct/core";
+import type { ToolContext } from "@orion-ai/core";
 
 describe("setup summary", () => {
   it("says plainly what is missing", () => {

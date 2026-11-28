@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { StateDir } from "@open-instinct/core";
+import type { StateDir } from "@orion-ai/core";
 import { ALL_TOOLKITS, APPS_STATE_FILE, ComposioApps, OPENAI_COMPLETIONS_TOOL_LIMIT, composioModeFor, normalizeToolkits, toolkitsWithoutAuthConfig, wantsAllToolkits, type ComposioClientLike, type ComposioSessionLike, type SessionCreateConfig } from "../src/composio.js";
 import type { McpToolSource } from "../src/wrap.js";
 

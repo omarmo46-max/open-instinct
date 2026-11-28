@@ -1,7 +1,7 @@
 {
-  "name": "@open-instinct/gateway",
+  "name": "@orion-ai/gateway",
   "version": "0.1.0",
-  "description": "Open Instinct gateway: multi-user relay from Inkbox webhooks to Maritime-hosted agents, plus signup and connect pages",
+  "description": "Orion AI gateway: multi-user relay from Inkbox webhooks to Maritime-hosted agents, plus signup and connect pages",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,7 +15,7 @@
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": { "@open-instinct/core": "workspace:*", "@open-instinct/inkbox": "workspace:*",
-    "@open-instinct/telegram": "workspace:*", "@inkbox/sdk": "^0.7.13", "maritime-sdk": "^0.9.0" },
+  "dependencies": { "@orion-ai/core": "workspace:*", "@orion-ai/inkbox": "workspace:*",
+    "@orion-ai/telegram": "workspace:*", "@inkbox/sdk": "^0.7.13", "maritime-sdk": "^0.9.0" },
   "devDependencies": { "@types/node": "^22.15.0", "typescript": "^5.8.3", "vitest": "^3.2.4" }
 }

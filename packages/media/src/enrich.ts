@@ -8,7 +8,7 @@
  *
  * Nothing here throws. A file that cannot be read becomes one honest line in the message.
  */
-import { isInside, wrapUntrusted, type InboundMessage } from "@open-instinct/core";
+import { isInside, wrapUntrusted, type InboundMessage } from "@orion-ai/core";
 import { DEFAULT_MAX_CHARS, documentKind, extractDocumentText } from "./documents.js";
 import type { Transcriber } from "./transcribe.js";
 

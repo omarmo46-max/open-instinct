@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/brand/wordmark.png" alt="Open Instinct" width="620"></p>
+<p align="center"><img src="docs/assets/brand/wordmark.png" alt="Orion AI" width="620"></p>
 
 <p align="center">An open-source personal agent you text. It has its own computer, does real tasks, and coordinates with the agents of the people you trust.<br>A from-scratch, documented clone of <a href="docs/research/INSTINCT.md">Instinct</a>, built so anyone can run one.</p>
 
@@ -69,7 +69,7 @@ pnpm instinct connect             # prints the number and the text to send: conn
 
 ```bash
 export MARITIME_API_KEY=mk_...    # maritime.sh, Settings, API keys
-pnpm instinct deploy --image ghcr.io/mariagorskikh/open-instinct-agent:latest
+pnpm instinct deploy --image ghcr.io/mariagorskikh/orion-ai-agent:latest
 ```
 
 For many people, run the [gateway](packages/gateway/README.md): a signup page that provisions an identity and an agent per person. Guide: [DEPLOY-MARITIME.md](docs/DEPLOY-MARITIME.md).

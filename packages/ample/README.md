@@ -1,11 +1,11 @@
-# @open-instinct/ample
+# @orion-ai/ample
 
-Web app deploys for Open Instinct through [Ample](https://ample.computer):
+Web app deploys for Orion AI through [Ample](https://ample.computer):
 `ample_deploy`, `ample_logs`, `ample_apps` and `ample_app_delete`. See
 [docs/AMPLE.md](../../docs/AMPLE.md).
 
 ```ts
-import { ampleTools } from "@open-instinct/ample";
+import { ampleTools } from "@orion-ai/ample";
 
 registry.registerMany(
   ampleTools({

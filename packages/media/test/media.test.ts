@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { renderMarkdownToPdf, type InboundMessage } from "@open-instinct/core";
+import { renderMarkdownToPdf, type InboundMessage } from "@orion-ai/core";
 import { Transcriber, transcriberFromEnv } from "../src/transcribe.js";
 import { documentKind, extractDocumentText } from "../src/documents.js";
 import { enrichInbound } from "../src/enrich.js";

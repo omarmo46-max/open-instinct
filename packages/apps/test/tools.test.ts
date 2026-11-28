@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { PolicyEngine, defaultPolicy } from "@open-instinct/core";
-import type { Principal, ToolContext } from "@open-instinct/core";
+import { PolicyEngine, defaultPolicy } from "@orion-ai/core";
+import type { Principal, ToolContext } from "@orion-ai/core";
 import { appsTools, describeStatus, type AppsLike } from "../src/tools.js";
 import { APPS_MANAGE } from "../src/capabilities.js";
 

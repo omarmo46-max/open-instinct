@@ -1,4 +1,4 @@
-import { defineTool, textResult, wrapUntrusted, type RegisteredTool, type ToolResultLike } from "@open-instinct/core";
+import { defineTool, textResult, wrapUntrusted, type RegisteredTool, type ToolResultLike } from "@orion-ai/core";
 import { Type } from "typebox";
 
 const DEFAULT_BASE_URL = "https://api.context.dev/v1";
@@ -43,7 +43,7 @@ function contextAnswersTool({ apiKey, baseUrl = DEFAULT_BASE_URL, fetchImpl = fe
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           Accept: "application/json",
-          "User-Agent": "open-instinct/0.1",
+          "User-Agent": "orion-ai/0.1",
         },
         body: JSON.stringify({ task, mode: mode ?? "fast", ...(json_format ? { json_format } : {}) }),
         signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),

@@ -5,7 +5,7 @@
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
-import type { StateDir } from "@open-instinct/core";
+import type { StateDir } from "@orion-ai/core";
 import { writeSecret, readSecret } from "../wallet.js";
 
 export const CARDS_FILE = "egp-cards.json";

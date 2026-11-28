@@ -1,8 +1,8 @@
 /**
  * WhatsApp wiring: when it is on, and how its replies are told apart from Inkbox's.
- * The channel itself lives in @open-instinct/whatsapp.
+ * The channel itself lives in @orion-ai/whatsapp.
  */
-import type { Outbox, OutboundMessage, Principal } from "@open-instinct/core";
+import type { Outbox, OutboundMessage, Principal } from "@orion-ai/core";
 
 /** On when WHATSAPP_ENABLED=1, or when the agent's WhatsApp number is set. */
 export function whatsappEnabled(env: NodeJS.ProcessEnv): boolean {

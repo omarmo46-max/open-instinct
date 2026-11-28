@@ -13,7 +13,7 @@ import {
   readPersona,
   resetPersona,
   writePersona,
-} from "@open-instinct/core";
+} from "@orion-ai/core";
 import { parse, type OptionSpec } from "../args.js";
 import type { CliContext } from "../context.js";
 import { CliError, UsageError } from "../io.js";

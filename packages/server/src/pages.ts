@@ -5,8 +5,8 @@
  */
 import crypto from "node:crypto";
 import { Type } from "typebox";
-import { defineTool, textResult } from "@open-instinct/core";
-import type { Principal, RegisteredTool, StateDir, ToolResultLike } from "@open-instinct/core";
+import { defineTool, textResult } from "@orion-ai/core";
+import type { Principal, RegisteredTool, StateDir, ToolResultLike } from "@orion-ai/core";
 
 export const PAGES_PREFIX = "/p/";
 const FILE = "pages.json";

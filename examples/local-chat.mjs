@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * A chat loop against a running Open Instinct server.
+ * A chat loop against a running Orion AI server.
  *
  * Start the server first, in another terminal:
  *   pnpm instinct dev

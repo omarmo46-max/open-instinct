@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Send a signed, fake Inkbox webhook to a running Open Instinct server.
+ * Send a signed, fake Inkbox webhook to a running Orion AI server.
  *
  * Inkbox signs every webhook: HMAC-SHA256 over "<request id>.<timestamp>.<raw body>"
  * with the identity's signing key, sent as `X-Inkbox-Signature: sha256=<hex>`.
@@ -87,7 +87,7 @@ if (res.status === 204) console.log("Accepted. Watch the server's terminal for t
 if (res.status === 503) console.log("The server has no signing key. Start it with INKBOX_SIGNING_KEY set.");
 process.exit(res.status === (args.tamper ? 401 : 204) ? 0 : 1);
 
-/** Same construction as @open-instinct/inkbox computeInkboxSignature and the Inkbox SDK. */
+/** Same construction as @orion-ai/inkbox computeInkboxSignature and the Inkbox SDK. */
 function sign(raw, reqId, ts, signingKey) {
   const secret = signingKey.startsWith("whsec_") ? signingKey.slice("whsec_".length) : signingKey;
   const mac = createHmac("sha256", secret).update(`${reqId}.${ts}.`).update(raw).digest("hex");

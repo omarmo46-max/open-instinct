@@ -1,6 +1,6 @@
 # Security
 
-Open Instinct is a personal agent with a phone number, a computer and the keys to your
+Orion AI is a personal agent with a phone number, a computer and the keys to your
 accounts. That is a lot of power in one process. This document says who can attack it, what
 stops them, and what does not.
 
@@ -8,7 +8,7 @@ Analogy: the agent is a new assistant who sits at a desk in your house. Visitors
 to the assistant. The assistant decides what to do. The house rules decide what the
 assistant may do for each visitor. This page is the house rules, written down.
 
-Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.
+Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 ## Table of contents
 

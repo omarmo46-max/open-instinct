@@ -18,7 +18,7 @@ import {
   type Channel,
   type PromptInput,
   type PromptLayer,
-} from "@open-instinct/core";
+} from "@orion-ai/core";
 import { flag, parse, str, type OptionSpec } from "../args.js";
 import { table } from "../ansi.js";
 import type { CliContext } from "../context.js";
@@ -40,7 +40,7 @@ export const SAMPLE_OWNER_TOOL_GROUPS = ["owner", "memory", "schedule", "web", "
 export type SkillsLoader = (env: NodeJS.ProcessEnv) => Promise<string | undefined>;
 
 async function defaultSkillsLoader(env: NodeJS.ProcessEnv): Promise<string | undefined> {
-  const server = await import("@open-instinct/server");
+  const server = await import("@orion-ai/server");
   // resolveSkillsDir expects a module at <package>/{src,dist}/x.js and looks for
   // <repo>/skills three levels up. This file is one level deeper, so hand it the parent.
   const dir = server.resolveSkillsDir({ env, packageUrl: new URL("..", import.meta.url).href });

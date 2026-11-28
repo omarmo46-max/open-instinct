@@ -1,8 +1,8 @@
-# Deploying Open Instinct on Maritime
+# Deploying Orion AI on Maritime
 
 This is the Instinct-shaped deployment. Each person gets their own agent in its own microVM, with a Linux desktop the agent can click on. The VM sleeps when nobody is talking to it and wakes when a message arrives.
 
-Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.
+Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) first if you are new to the project. The other deployment shapes (laptop with `instinct dev`, local Docker) are covered in [../packages/cli/README.md](../packages/cli/README.md) and [../deploy/docker-compose.yml](../deploy/docker-compose.yml).
 
@@ -47,8 +47,8 @@ The repository ships a GitHub Actions workflow, [.github/workflows/build-images.
 
 | Image | Dockerfile | Used by |
 |---|---|---|
-| `ghcr.io/<owner>/open-instinct-agent` | `deploy/Dockerfile.agent` | Maritime, one container per person |
-| `ghcr.io/<owner>/open-instinct-gateway` | `deploy/Dockerfile.gateway` | Railway or any host that runs the relay |
+| `ghcr.io/<owner>/orion-ai-agent` | `deploy/Dockerfile.agent` | Maritime, one container per person |
+| `ghcr.io/<owner>/orion-ai-gateway` | `deploy/Dockerfile.gateway` | Railway or any host that runs the relay |
 
 `<owner>` is your GitHub user or org, lowercased. The workflow runs on every push to `main`, on tags that start with `v`, and by hand through `workflow_dispatch`. It builds for `linux/amd64` and `linux/arm64`.
 
@@ -64,7 +64,7 @@ Steps:
 1. Fork or push the repository to GitHub.
 2. Push to `main`, or create a tag such as `v0.1.0`.
 3. Wait for the `build-images` workflow to finish.
-4. In the GitHub package settings, make `open-instinct-agent` public, or give Maritime a pull token. Maritime pulls the image when it creates the agent.
+4. In the GitHub package settings, make `orion-ai-agent` public, or give Maritime a pull token. Maritime pulls the image when it creates the agent.
 
 To build locally for a trial, use Docker Compose. It does not publish anything.
 
@@ -93,13 +93,13 @@ instinct init --name "Maria" --phone +14155550100 --email maria@example.com \
   --handle maria-instinct --timezone America/New_York
 
 # 2. Create the Maritime agent from the published image.
-instinct deploy --image ghcr.io/<owner>/open-instinct-agent:latest
+instinct deploy --image ghcr.io/<owner>/orion-ai-agent:latest
 
 # 3. Talk to it through Maritime. This wakes the VM.
 instinct chat "hello" --agent agt_...
 ```
 
-What `deploy` sends: `framework: "custom"`, `exposedPort: 18789`, `healthCheckPath: "/health"`, `desktop: true`, `externalId: "open-instinct:<handle>"`, `idleTtlSeconds` (default 900), and the env vars the agent needs. `INKBOX_*` come from `secrets/inkbox.json`. `ANTHROPIC_API_KEY`, `COMPOSIO_*`, `BRAVE_SEARCH_API_KEY` and the `LINK_*` set come from your shell. Secrets are flagged `isSecret` so Maritime encrypts them. The agent id is saved to `<dataDir>/maritime.json`.
+What `deploy` sends: `framework: "custom"`, `exposedPort: 18789`, `healthCheckPath: "/health"`, `desktop: true`, `externalId: "orion-ai:<handle>"`, `idleTtlSeconds` (default 900), and the env vars the agent needs. `INKBOX_*` come from `secrets/inkbox.json`. `ANTHROPIC_API_KEY`, `COMPOSIO_*`, `BRAVE_SEARCH_API_KEY` and the `LINK_*` set come from your shell. Secrets are flagged `isSecret` so Maritime encrypts them. The agent id is saved to `<dataDir>/maritime.json`.
 
 Flags you may want:
 
@@ -145,7 +145,7 @@ Any other host works the same way: run the gateway image, give it a persistent d
 | `GATEWAY_ALLOW_OPEN_SIGNUP` | no | `1` runs the form without an invite code, on purpose. |
 | `GATEWAY_TRUST_PROXY` | behind a proxy | `1` counts signups by the first `X-Forwarded-For` address. |
 | `GATEWAY_DATA_DIR` | no | Where `users.json` lives. Default `./.instinct-gateway`. Mount a volume. |
-| `INSTINCT_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/mariagorskikh/open-instinct-agent:latest`. Point it at your own. |
+| `INSTINCT_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/mariagorskikh/orion-ai-agent:latest`. Point it at your own. |
 | `INSTINCT_IDLE_TTL_SECONDS` | no | Idle seconds before a VM sleeps. Default 900. |
 | `ANTHROPIC_API_KEY` | no | Copied into each new agent as a secret. |
 | `INSTINCT_USE_MARITIME_LLM` | no | `1` uses Maritime's metered proxy instead of your key. |
@@ -229,7 +229,7 @@ Inkbox would then post straight to Maritime. Maritime verifies, wakes, and forwa
 | Seat plan | A computer or desktop agent takes one slot of a paid seat plan. Confirm the plan before the first screen action; an unentitled account gets `402 no_plan`. | Maritime billing |
 | Idle TTL | 900 seconds by default. `0` means always on and always billed. | `--idle`, `INSTINCT_IDLE_TTL_SECONDS` |
 | Wake time | About 1 to 3 seconds from snapshot | Maritime docs |
-| Reply budget | Maritime waits 30 s for `POST /chat`. The server answers within `INSTINCT_REPLY_BUDGET_MS` (default 20 s) and finishes long work in the background, sending the final text through Inkbox. | `@open-instinct/server` |
+| Reply budget | Maritime waits 30 s for `POST /chat`. The server answers within `INSTINCT_REPLY_BUDGET_MS` (default 20 s) and finishes long work in the background, sending the final text through Inkbox. | `@orion-ai/server` |
 | Agent creation | 30 creates per minute per key. Each create debits the Maritime wallet; a `402` shows the server's explanation. | Maritime agents API |
 | Metered LLM proxy | A per-user spend budget applies when `useMaritimeLlm` is on. Raise it with the LLM spend limit in Maritime. | Maritime LLM proxy |
 | Gateway signup caps | 5 accepted signups per client address per 10 minutes; at most 20 users provisioning or created in the last hour | gateway |

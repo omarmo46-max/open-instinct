@@ -88,7 +88,7 @@ skipped with a warning diagnostic.
 
 ## How the server loads skills
 
-At agent start `@open-instinct/server` (`packages/server/src/skills.ts`) loads
+At agent start `@orion-ai/server` (`packages/server/src/skills.ts`) loads
 every `SKILL.md` with Pi's `loadSkillsFromDir`, logs any diagnostics, and adds
 two things:
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PolicyEngine, defaultPolicy } from "@open-instinct/core";
-import type { Principal, Tier } from "@open-instinct/core";
+import { PolicyEngine, defaultPolicy } from "@orion-ai/core";
+import type { Principal, Tier } from "@orion-ai/core";
 import { APPS_MANAGE, CONTACTS_WRITE, PAYMENT_TOOLKITS, capabilitiesForSlug, sensitiveCapabilitiesForSlug, toolkitOfSlug, COMPOSIO_META_TOOLS } from "../src/capabilities.js";
 import { metaFor } from "../src/wrap.js";
 

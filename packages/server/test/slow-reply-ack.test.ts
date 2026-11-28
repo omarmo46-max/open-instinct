@@ -10,8 +10,8 @@ import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createModels, fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import type { StreamFn } from "@earendil-works/pi-agent-core";
-import { encodeEvent } from "@open-instinct/core";
-import type { OutboundMessage, Outbox } from "@open-instinct/core";
+import { encodeEvent } from "@orion-ai/core";
+import type { OutboundMessage, Outbox } from "@orion-ai/core";
 import { boot } from "../src/boot.js";
 import { closeInkboxInbox, createHttpServer } from "../src/http.js";
 

@@ -7,8 +7,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { Inkbox } from "@inkbox/sdk";
-import type { StateDir } from "@open-instinct/core";
-import { DEFAULT_WEBHOOK_EVENTS, InkboxProvisioner } from "@open-instinct/inkbox";
+import type { StateDir } from "@orion-ai/core";
+import { DEFAULT_WEBHOOK_EVENTS, InkboxProvisioner } from "@orion-ai/inkbox";
 
 export interface WebhookSecrets {
   identityId?: string;

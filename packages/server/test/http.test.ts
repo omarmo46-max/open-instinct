@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { encodeEvent, StateDir } from "@open-instinct/core";
-import type { HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry } from "@open-instinct/core";
+import { encodeEvent, StateDir } from "@orion-ai/core";
+import type { HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry } from "@orion-ai/core";
 import { ACK_TEXT, CHAT_TOKEN_HEADER, LINK_CALLBACK_EVENT, createHttpServer, listenTunnelServer, matchScheduleEntry, type HttpApp } from "../src/http.js";
 import { ChatReplyBuffer } from "../src/console-outbox.js";
 

@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { encodeEvent, loadConfig, StateDir } from "@open-instinct/core";
+import { encodeEvent, loadConfig, StateDir } from "@orion-ai/core";
 import { expect, it } from "vitest";
 import { closeInkboxInbox, createHttpServer, handleChat, type HttpApp } from "../src/http.js";
 

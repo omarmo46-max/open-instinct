@@ -1,6 +1,6 @@
-# Open Instinct: architecture
+# Orion AI: architecture
 
-Open Instinct is an open-source personal agent you text. Like Instinct, it has its
+Orion AI is an open-source personal agent you text. Like Instinct, it has its
 own computer, does real tasks for you, and can coordinate with the Instincts of
 people you trust. Unlike Instinct, you can read every line, run it yourself, pick
 the model, and see exactly what each person in your life is allowed to ask it.
@@ -8,7 +8,7 @@ the model, and see exactly what each person in your life is allowed to ask it.
 This document is the build contract. Every package below implements one box in
 the diagram and nothing else.
 
-(Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.)
+(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## Table of contents
 
@@ -78,21 +78,21 @@ agent's brain stem.
 ## Repository layout
 
 ```
-open-instinct/
+orion-ai/
   README.md                     start here
   CONTRIBUTING.md
   docs/                         this file, PERMISSIONS.md, PROTOCOL.md, BUILD-BRIEF.md, research/
   packages/
-    core/      @open-instinct/core      agent runtime: Pi loop, prompt builder, policy engine, approvals, memory, scheduler, audit, types
-    inkbox/    @open-instinct/inkbox    Inkbox adapter: provision identity, send iMessage/SMS/email, parse+verify webhooks, A2A REST and JSON-RPC
-    computer/  @open-instinct/computer  desktop tools: in-VM desktopd (REST) or hosted Computers MCP (HTTP)
-    apps/      @open-instinct/apps      Composio Tool Router: per-user session, MCP tools, connect links
-    network/   @open-instinct/network   trusted network: contacts, tiers, grants, invitations, OIP envelope, A2A tools
-    payments/  @open-instinct/payments  Stripe Link agent wallet: OAuth, spend requests, one-time cards, payment_* tools
-    ample/     @open-instinct/ample     web app deploys through the Ample CLI: ample_deploy, ample_logs, ample_apps, ample_app_delete
-    server/    @open-instinct/server    the agent process: /health, /chat, /schedules, webhook intake, Link callback, smoke test
-    gateway/   @open-instinct/gateway   multi-user relay + signup: Inkbox webhooks → Maritime agent; connect page with QR
-    cli/       @open-instinct/cli       `instinct` command: init, connect, dev, chat, status, deploy, invite, trust, schedules, payments
+    core/      @orion-ai/core      agent runtime: Pi loop, prompt builder, policy engine, approvals, memory, scheduler, audit, types
+    inkbox/    @orion-ai/inkbox    Inkbox adapter: provision identity, send iMessage/SMS/email, parse+verify webhooks, A2A REST and JSON-RPC
+    computer/  @orion-ai/computer  desktop tools: in-VM desktopd (REST) or hosted Computers MCP (HTTP)
+    apps/      @orion-ai/apps      Composio Tool Router: per-user session, MCP tools, connect links
+    network/   @orion-ai/network   trusted network: contacts, tiers, grants, invitations, OIP envelope, A2A tools
+    payments/  @orion-ai/payments  Stripe Link agent wallet: OAuth, spend requests, one-time cards, payment_* tools
+    ample/     @orion-ai/ample     web app deploys through the Ample CLI: ample_deploy, ample_logs, ample_apps, ample_app_delete
+    server/    @orion-ai/server    the agent process: /health, /chat, /schedules, webhook intake, Link callback, smoke test
+    gateway/   @orion-ai/gateway   multi-user relay + signup: Inkbox webhooks → Maritime agent; connect page with QR
+    cli/       @orion-ai/cli       `instinct` command: init, connect, dev, chat, status, deploy, invite, trust, schedules, payments
   skills/      SKILL.md playbooks the agent loads (onboarding, scheduling, dining, travel, rides, email-triage, research, purchases, files, daily-brief, trusted-network, maritime-computer, web-apps)
   examples/    local-chat.mjs, fake-inkbox-webhook.mjs, dinner-a2a.mjs (see examples/README.md)
   deploy/      Dockerfile.agent, Dockerfile.gateway, docker-compose.yml, entrypoint.sh, .env.example
@@ -197,7 +197,7 @@ policy engine checks. Groups:
 
 | Group | Tools | Source | Present when |
 |---|---|---|---|
-| messaging | `send_message` (reply on the current channel or to a contact: iMessage, SMS, email), `send_typing`, `react`, `send_file` (a workspace file as an attachment: iMessage and SMS up to 10 MB through the Inkbox media upload, email up to 25 MB; in the dashboard chat it returns a `maritime-file` block the dashboard renders as an attachment) | `@open-instinct/inkbox` | `INKBOX_API_KEY` and a handle are set; `send_file` is always present, chat-only without Inkbox |
+| messaging | `send_message` (reply on the current channel or to a contact: iMessage, SMS, email), `send_typing`, `react`, `send_file` (a workspace file as an attachment: iMessage and SMS up to 10 MB through the Inkbox media upload, email up to 25 MB; in the dashboard chat it returns a `maritime-file` block the dashboard renders as an attachment) | `@orion-ai/inkbox` | `INKBOX_API_KEY` and a handle are set; `send_file` is always present, chat-only without Inkbox |
 | owner | `ask_owner` (approval or question, with token), `notify_owner`, `audit_read` | `core` | always |
 | memory | `memory_read`, `memory_write`, `journal_append` | `core` | always |
 | schedule | `schedule_create`, `schedule_list`, `schedule_delete` | `core` | always |
@@ -205,13 +205,13 @@ policy engine checks. Groups:
 | files | `read`, `write`, `edit`, `bash`, `ls`, `grep`, scoped to `workspace/` | `pi-coding-agent` factories wrapped by `server` | always, owner only |
 | files | `create_pdf` (markdown to a real PDF under `workspace/`: headings, lists, tables, code, links, page numbers, `![caption](path)` images from the workspace) | `core` | always, owner only |
 | files | `image_generate` (a PNG from a prompt, saved under `workspace/`, through an OpenAI-compatible `/images/generations` endpoint) | `core` | always, owner only; needs `IMAGE_API_KEY` or `OPENAI_API_KEY` to do anything |
-| contacts and trust | `contacts_search`, `contacts_upsert`, `trust_set_tier`, `trust_grant`, `trust_revoke`, `trust_list` | `@open-instinct/network` | always |
-| network | `ask_instinct` (one contact, or several for a group plan), `reply_instinct`, `invite_to_network` | `@open-instinct/network` | always; A2A sends need Inkbox, invitations need `INKBOX_ADMIN_API_KEY` |
-| computer (in the VM) | `computer`, `computer_batch`, `request_takeover`, `takeover_status`, `computer_read_file`, `computer_write_file` | `@open-instinct/computer` over desktopd REST | `INSTINCT_COMPUTER` is `auto` or `desktopd` and desktopd answers |
-| computer (hosted) | the server's own names: `get_computer`, `computer`, `computer_batch`, `run_shell`, `read_file`, `write_file`, `request_takeover`, `takeover_status`, `close_computer` | `@open-instinct/computer` over MCP | `MARITIME_API_KEY` and no in-VM desktop |
-| apps | one `app_<slug>` tool per Composio tool (for example `app_googlecalendar_events_list`) | `@open-instinct/apps` over MCP | `COMPOSIO_API_KEY` is set |
-| files | `ample_deploy` (a workspace folder to a public URL), `ample_logs`, `ample_apps`, `ample_app_delete` | `@open-instinct/ample`, driving the `ample` CLI | `AMPLE_SIGNUP=1`, or `AMPLE_CLIENT_ID` and `AMPLE_CLIENT_SECRET` (or `AMPLE_TOKEN`) are set; owner only |
-| payments | `payment_connect`, `payment_request`, `payment_status`, `payment_list` | `@open-instinct/payments` | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET` and `STRIPE_PUBLISHABLE_KEY` are set |
+| contacts and trust | `contacts_search`, `contacts_upsert`, `trust_set_tier`, `trust_grant`, `trust_revoke`, `trust_list` | `@orion-ai/network` | always |
+| network | `ask_instinct` (one contact, or several for a group plan), `reply_instinct`, `invite_to_network` | `@orion-ai/network` | always; A2A sends need Inkbox, invitations need `INKBOX_ADMIN_API_KEY` |
+| computer (in the VM) | `computer`, `computer_batch`, `request_takeover`, `takeover_status`, `computer_read_file`, `computer_write_file` | `@orion-ai/computer` over desktopd REST | `INSTINCT_COMPUTER` is `auto` or `desktopd` and desktopd answers |
+| computer (hosted) | the server's own names: `get_computer`, `computer`, `computer_batch`, `run_shell`, `read_file`, `write_file`, `request_takeover`, `takeover_status`, `close_computer` | `@orion-ai/computer` over MCP | `MARITIME_API_KEY` and no in-VM desktop |
+| apps | one `app_<slug>` tool per Composio tool (for example `app_googlecalendar_events_list`) | `@orion-ai/apps` over MCP | `COMPOSIO_API_KEY` is set |
+| files | `ample_deploy` (a workspace folder to a public URL), `ample_logs`, `ample_apps`, `ample_app_delete` | `@orion-ai/ample`, driving the `ample` CLI | `AMPLE_SIGNUP=1`, or `AMPLE_CLIENT_ID` and `AMPLE_CLIENT_SECRET` (or `AMPLE_TOKEN`) are set; owner only |
+| payments | `payment_connect`, `payment_request`, `payment_status`, `payment_list` | `@orion-ai/payments` | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET` and `STRIPE_PUBLISHABLE_KEY` are set |
 
 MCP results are converted with `pi-mcp`'s `toLlmContent()`. Composio tool names get the `app_` prefix
 and are clipped to 64 characters. Computer tool names are the backend's own, so prompts written for

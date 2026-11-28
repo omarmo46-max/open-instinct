@@ -13,7 +13,7 @@ importers:
 
   .:
     devDependencies:
-      '@open-instinct/cli':
+      '@orion-ai/cli':
         specifier: workspace:*
         version: link:packages/cli
       '@types/node':
@@ -28,7 +28,7 @@ importers:
 
   packages/ample:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -53,7 +53,7 @@ importers:
       '@earendil-works/pi-mcp':
         specifier: ^1.0.1
         version: 1.0.1
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -75,7 +75,7 @@ importers:
       '@earendil-works/pi-mcp':
         specifier: ^1.0.1
         version: 1.0.1
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -97,13 +97,13 @@ importers:
       '@inkbox/sdk':
         specifier: ^0.7.13
         version: 0.7.13(patch_hash=d2cbc7120b5a1808aff1ca453d6bc5e6f3529755b63ce08ddacac64bcb416286)
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
-      '@open-instinct/inkbox':
+      '@orion-ai/inkbox':
         specifier: workspace:*
         version: link:../inkbox
-      '@open-instinct/server':
+      '@orion-ai/server':
         specifier: workspace:*
         version: link:../server
       maritime-sdk:
@@ -128,7 +128,7 @@ importers:
       '@earendil-works/pi-mcp':
         specifier: ^1.0.1
         version: 1.0.1
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -147,7 +147,7 @@ importers:
 
   packages/context:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -203,13 +203,13 @@ importers:
       '@inkbox/sdk':
         specifier: ^0.7.13
         version: 0.7.13(patch_hash=d2cbc7120b5a1808aff1ca453d6bc5e6f3529755b63ce08ddacac64bcb416286)
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
-      '@open-instinct/inkbox':
+      '@orion-ai/inkbox':
         specifier: workspace:*
         version: link:../inkbox
-      '@open-instinct/telegram':
+      '@orion-ai/telegram':
         specifier: workspace:*
         version: link:../telegram
       maritime-sdk:
@@ -231,7 +231,7 @@ importers:
       '@inkbox/sdk':
         specifier: ^0.7.13
         version: 0.7.13(patch_hash=d2cbc7120b5a1808aff1ca453d6bc5e6f3529755b63ce08ddacac64bcb416286)
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -250,7 +250,7 @@ importers:
 
   packages/keenable:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       typebox:
@@ -269,7 +269,7 @@ importers:
 
   packages/media:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       mammoth:
@@ -291,10 +291,10 @@ importers:
 
   packages/network:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
-      '@open-instinct/inkbox':
+      '@orion-ai/inkbox':
         specifier: workspace:*
         version: link:../inkbox
       typebox:
@@ -313,7 +313,7 @@ importers:
 
   packages/payments:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       '@stripe/link-sdk':
@@ -347,43 +347,43 @@ importers:
       '@inkbox/sdk':
         specifier: ^0.7.13
         version: 0.7.13(patch_hash=d2cbc7120b5a1808aff1ca453d6bc5e6f3529755b63ce08ddacac64bcb416286)
-      '@open-instinct/ample':
+      '@orion-ai/ample':
         specifier: workspace:*
         version: link:../ample
-      '@open-instinct/apps':
+      '@orion-ai/apps':
         specifier: workspace:*
         version: link:../apps
-      '@open-instinct/atomicmail':
+      '@orion-ai/atomicmail':
         specifier: workspace:*
         version: link:../atomicmail
-      '@open-instinct/computer':
+      '@orion-ai/computer':
         specifier: workspace:*
         version: link:../computer
-      '@open-instinct/context':
+      '@orion-ai/context':
         specifier: workspace:*
         version: link:../context
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
-      '@open-instinct/inkbox':
+      '@orion-ai/inkbox':
         specifier: workspace:*
         version: link:../inkbox
-      '@open-instinct/keenable':
+      '@orion-ai/keenable':
         specifier: workspace:*
         version: link:../keenable
-      '@open-instinct/media':
+      '@orion-ai/media':
         specifier: workspace:*
         version: link:../media
-      '@open-instinct/network':
+      '@orion-ai/network':
         specifier: workspace:*
         version: link:../network
-      '@open-instinct/payments':
+      '@orion-ai/payments':
         specifier: workspace:*
         version: link:../payments
-      '@open-instinct/telegram':
+      '@orion-ai/telegram':
         specifier: workspace:*
         version: link:../telegram
-      '@open-instinct/whatsapp':
+      '@orion-ai/whatsapp':
         specifier: workspace:*
         version: link:../whatsapp
       typebox:
@@ -402,7 +402,7 @@ importers:
 
   packages/telegram:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -434,7 +434,7 @@ importers:
 
   packages/whatsapp:
     dependencies:
-      '@open-instinct/core':
+      '@orion-ai/core':
         specifier: workspace:*
         version: link:../core
       '@whiskeysockets/baileys':

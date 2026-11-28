@@ -1,4 +1,4 @@
-import type { Contact, ContactStore } from "@open-instinct/core";
+import type { Contact, ContactStore } from "@orion-ai/core";
 import { normalizeAgentHandle } from "./principal.js";
 
 export function slugify(name: string): string {

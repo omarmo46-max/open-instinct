@@ -6,6 +6,7 @@ import type { WebConfig } from "./config.js";
 import { code6, hashPassword, open, safeEqual, seal, sha256, token, verifyPassword } from "./crypto.js";
 import type { Mailer } from "./mailer.js";
 import { activityPage, appsPage, approvalsPage, BACK_PATHS, channelsPage, memoryPage, notConnected, pagesPage, paymentsPage, peoplePage, schedulesPage, securityPage, skillsPage, unavailable, type SecCtx } from "./sections.js";
+import { FAVICON_PNG_B64, FAVICON_SVG, MARK_SVG, TOUCH_ICON_PNG_B64 } from "./brand.js";
 import { authPage, faq, features, home, how, layout, legal, messagePage, security, type PageCtx } from "./site.js";
 import type { CodePurpose, ModelConfig, Session, Store, User } from "./store.js";
 import { CSS, JS } from "./ui.js";
@@ -176,6 +177,12 @@ export function createWebServer(deps: WebDeps): http.Server {
     // static assets and health
     if (method === "GET" && path === "/assets/site.css") return send(res, 200, "text/css; charset=utf-8", CSS, { "cache-control": "public, max-age=3600" });
     if (method === "GET" && path === "/assets/site.js") return send(res, 200, "text/javascript; charset=utf-8", JS, { "cache-control": "public, max-age=3600" });
+    if (method === "GET" && (path === "/favicon.svg" || path === "/brand/mark.svg")) return send(res, 200, "image/svg+xml", path === "/favicon.svg" ? FAVICON_SVG : MARK_SVG, { "cache-control": "public, max-age=86400" });
+    if (method === "GET" && (path === "/favicon.png" || path === "/favicon.ico" || path === "/apple-touch-icon.png")) {
+      const b = Buffer.from(path === "/apple-touch-icon.png" ? TOUCH_ICON_PNG_B64 : FAVICON_PNG_B64, "base64");
+      res.writeHead(200, { "content-type": "image/png", "content-length": b.length, "x-content-type-options": "nosniff", "cache-control": "public, max-age=86400" });
+      return void res.end(b);
+    }
     if (method === "GET" && path === "/healthz") return json(200, { ok: true });
 
     // the agent reports model problems here

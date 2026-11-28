@@ -1,5 +1,5 @@
-import { defineTool, wrapUntrusted } from "@open-instinct/core";
-import type { RegisteredTool, ToolMeta, ToolResultLike } from "@open-instinct/core";
+import { defineTool, wrapUntrusted } from "@orion-ai/core";
+import type { RegisteredTool, ToolMeta, ToolResultLike } from "@orion-ai/core";
 import { McpHttpError, toLlmContent } from "@earendil-works/pi-mcp";
 import type { CallToolResult, Tool as McpTool } from "@earendil-works/pi-mcp";
 import { Type } from "typebox";
@@ -105,7 +105,7 @@ function toToolResult(tool: string, result: CallToolResult): ToolResultLike {
   };
 }
 
-/** Wrap one hosted tool as an Open Instinct tool. The tool must be in the capability table. */
+/** Wrap one hosted tool as an Orion AI tool. The tool must be in the capability table. */
 export function wrapMcpTool(source: McpToolSource, tool: McpTool): RegisteredTool {
   return defineTool({
     name: toolNameFor(tool.name),

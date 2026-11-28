@@ -1,7 +1,7 @@
 {
-  "name": "@open-instinct/web",
+  "name": "@orion-ai/web",
   "version": "0.1.0",
-  "description": "Open Instinct website: public pages, email accounts on MongoDB, and the dashboard that talks to each person's agent",
+  "description": "Orion AI website: public pages, email accounts on MongoDB, and the dashboard that talks to each person's agent",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

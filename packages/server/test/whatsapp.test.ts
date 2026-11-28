@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Outbox, OutboundMessage, Principal } from "@open-instinct/core";
+import type { Outbox, OutboundMessage, Principal } from "@orion-ai/core";
 import { ChannelRouter, whatsappEnabled } from "../src/whatsapp.js";
 
 function recorder() {

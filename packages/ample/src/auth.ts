@@ -78,7 +78,7 @@ export class AmpleAuth {
 
     const response = await this.fetchImpl(`${this.apiUrl}/oauth/token`, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", "User-Agent": "open-instinct/0.1" },
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", "User-Agent": "orion-ai/0.1" },
       body: new URLSearchParams({
         grant_type: "client_credentials",
         client_id: credentials.clientId,

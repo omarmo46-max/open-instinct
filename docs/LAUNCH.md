@@ -14,7 +14,7 @@ Repo: https://github.com/mariagorskikh/open-instinct
 
 ## One-line description
 
-Open Instinct: an open-source personal agent you text. Its own computer, a trusted network of other agents, and a permission table you can read.
+Orion AI: an open-source personal agent you text. Its own computer, a trusted network of other agents, and a permission table you can read.
 
 ## X: single post
 
@@ -28,7 +28,7 @@ MIT. Fork it. github.com/mariagorskikh/open-instinct
 
 1/ Instinct raised $1B for a personal agent you text. It is closed and invite-only.
 
-We open-sourced the whole thing. Open Instinct: a personal agent you text on iMessage, with its own computer and a trusted network of other agents.
+We open-sourced the whole thing. Orion AI: a personal agent you text on iMessage, with its own computer and a trusted network of other agents.
 
 github.com/mariagorskikh/open-instinct
 
@@ -48,7 +48,7 @@ github.com/mariagorskikh/open-instinct
 
 Instinct raised $1B this week for a personal agent you text. It books your dinners, checks you into flights, and talks to your spouse's agent to find a time. It is also closed, invite-only, and keeps your data.
 
-We built the open-source version and published it today: Open Instinct.
+We built the open-source version and published it today: Orion AI.
 
 What it is: a personal agent you reach on iMessage, SMS or email. It has its own computer (a Linux desktop in a microVM), it remembers, it schedules itself, and it coordinates with the agents of the people you trust.
 
@@ -64,7 +64,7 @@ github.com/mariagorskikh/open-instinct
 
 ## Show HN
 
-Title: Show HN: Open Instinct, an open-source personal agent you text
+Title: Show HN: Orion AI, an open-source personal agent you text
 
 Text:
 

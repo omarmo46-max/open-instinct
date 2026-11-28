@@ -1,8 +1,8 @@
-# Self-hosting Open Instinct
+# Self-hosting Orion AI
 
-This guide runs one Open Instinct agent on a machine you control. That can be your laptop, a home server, or a VPS. Nothing here needs Maritime hosting. The agent is one Node process, one data directory, and (optionally) one Inkbox identity so you can text it on iMessage.
+This guide runs one Orion AI agent on a machine you control. That can be your laptop, a home server, or a VPS. Nothing here needs Maritime hosting. The agent is one Node process, one data directory, and (optionally) one Inkbox identity so you can text it on iMessage.
 
-Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.
+Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 Analogy: the agent is a person who works from home. Inkbox is their phone line. The data directory is their filing cabinet. This guide sets up the home office.
 
@@ -45,7 +45,7 @@ pnpm install && pnpm -r build
 Run the CLI from inside the repo:
 
 ```bash
-pnpm --filter @open-instinct/cli exec instinct --help
+pnpm --filter @orion-ai/cli exec instinct --help
 ```
 
 Or link it so `instinct` is on your PATH:
@@ -103,7 +103,7 @@ instinct dev --tunnel
 Expected output:
 
 ```
-Open Instinct is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
+Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
   tunnel: https://maria-instinct.inkboxwire.com
   webhook: subscription whs_8f2 (new)
 ```
@@ -277,7 +277,7 @@ State lives outside the code, so an update never touches the data directory. Run
 
 ## The computer: none, or hosted
 
-Open Instinct can drive a Linux desktop: open a browser, click, type, read a page. On Maritime the desktop runs inside the agent's own VM. When you self-host there is no desktop next to the agent. You have two choices.
+Orion AI can drive a Linux desktop: open a browser, click, type, read a page. On Maritime the desktop runs inside the agent's own VM. When you self-host there is no desktop next to the agent. You have two choices.
 
 | Mode | Set | What happens |
 |---|---|---|

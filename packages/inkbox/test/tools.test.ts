@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, truncateSync
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ContactStore, PolicyEngine, StateDir, defaultConfig, defaultPolicy, type InstinctConfig, type OutboundMessage, type Principal, type ToolContext } from "@open-instinct/core";
+import { ContactStore, PolicyEngine, StateDir, defaultConfig, defaultPolicy, type InstinctConfig, type OutboundMessage, type Principal, type ToolContext } from "@orion-ai/core";
 import type { FileSend, InkboxChannel } from "../src/channel.js";
 import { messagingTools, phoneCallTool, resolveTarget, sendFileTool, type MessagingDeps } from "../src/tools.js";
 

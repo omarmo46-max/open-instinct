@@ -15,10 +15,10 @@ import http from "node:http";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID, timingSafeEqual } from "node:crypto";
-import { decodeEvent, saveConfig, systemTaskOf, telegramLinkOf, telegramMessageOf } from "@open-instinct/core";
-import type { AgentRuntime, HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry, Scheduler, StateDir } from "@open-instinct/core";
-import { DurableInbox, parseCallEnded, parseInkboxEvent, verifyInkboxSignature } from "@open-instinct/inkbox";
-import type { CallEndedEvent } from "@open-instinct/inkbox";
+import { decodeEvent, saveConfig, systemTaskOf, telegramLinkOf, telegramMessageOf } from "@orion-ai/core";
+import type { AgentRuntime, HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry, Scheduler, StateDir } from "@orion-ai/core";
+import { DurableInbox, parseCallEnded, parseInkboxEvent, verifyInkboxSignature } from "@orion-ai/inkbox";
+import type { CallEndedEvent } from "@orion-ai/inkbox";
 
 /** Replies the console outbox is holding for a chat conversation. */
 export interface ChatBuffer {
@@ -640,7 +640,7 @@ export function linkPage(message: string): string {
   const safe = message.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
   return (
     "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-    "<title>Open Instinct</title><style>body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:48px 16px;color:#111;background:#fff}" +
+    "<title>Orion AI</title><style>body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:48px 16px;color:#111;background:#fff}" +
     "main{max-width:420px;margin:0 auto}h1{font-size:20px;margin:0 0 12px}</style></head>" +
     `<body><main><h1>Link</h1><p>${safe}</p></main></body></html>`
   );

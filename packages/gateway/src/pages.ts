@@ -66,6 +66,7 @@ function layout(title: string, body: string, opts: { refreshSeconds?: number } =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cdefs%3E%3CclipPath id=%22c%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2231%22/%3E%3C/clipPath%3E%3C/defs%3E%3Crect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230B1B22%22/%3E%3Cg transform=%22translate(50 50) scale(.82) translate(-50 -50)%22%3E%3Cpath d=%22M86.82 34.37A40 40 0 1 1 65.63 13.18%22 fill=%22none%22 stroke=%22%23F4F8F8%22 stroke-width=%2210%22 stroke-linecap=%22round%22/%3E%3Cg clip-path=%22url(%23c)%22 fill=%22none%22 stroke-linecap=%22round%22%3E%3Cpath d=%22M85.21 28.79A14 14 0 0 1 57.27 30.01%22 stroke=%22%232DD4BF%22 stroke-width=%225%22/%3E%3Cpath d=%22M57.27 27.57A14 14 0 0 1 85.21 28.79%22 stroke=%22%232DD4BF%22 stroke-width=%225%22/%3E%3Cpath d=%22M76.83 55.20A27 27 0 0 1 53.86 49.47%22 stroke=%22%23F4F8F8%22 stroke-width=%224.6%22 opacity=%22.9%22/%3E%3Cpath d=%22M49.94 45.41A27 27 0 0 1 46.55 17.80%22 stroke=%22%23F4F8F8%22 stroke-width=%224.6%22 opacity=%22.9%22/%3E%3C/g%3E%3Ccircle cx=%2271.21%22 cy=%2228.79%22 r=%227.5%22 fill=%22%232DD4BF%22/%3E%3C/g%3E%3C/svg%3E">
 ${refresh}
 <title>${escapeHtml(title)}</title>
 <style>${CSS}</style>
@@ -73,11 +74,11 @@ ${refresh}
 <body>
 <div class="wrap">
 <header>
-  <a class="brand" href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M78 30 A34 34 0 1 1 62 22" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><circle cx="71" cy="25" r="6" fill="#0F766E"/></svg>Open Instinct</a>
+  <a class="brand" href="/"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><clipPath id="oc"><circle cx="50" cy="50" r="32.6"/></clipPath></defs><path d="M86.82 34.37A40 40 0 1 1 65.63 13.18" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><g clip-path="url(#oc)" fill="none" stroke-linecap="round"><path d="M85.21 28.79A14 14 0 0 1 57.27 30.01" stroke="#0F766E" stroke-width="3.2" opacity="1"/><path d="M57.27 27.57A14 14 0 0 1 85.21 28.79" stroke="#0F766E" stroke-width="3.2" opacity="1"/><path d="M79.76 52.28A25 25 0 0 1 54.48 47.37" stroke="currentColor" stroke-width="2.8" opacity="0.95"/><path d="M51.78 44.52A25 25 0 0 1 48.56 18.22" stroke="currentColor" stroke-width="2.8" opacity="0.95"/><path d="M78.70 64.00A36 36 0 0 1 54.31 60.57" stroke="currentColor" stroke-width="2.4" opacity="0.8"/><path d="M49.55 57.54A36 36 0 0 1 36.00 36.27" stroke="currentColor" stroke-width="2.4" opacity="0.8"/><path d="M35.26 30.67A36 36 0 0 1 41.37 8.66" stroke="currentColor" stroke-width="2.4" opacity="0.8"/></g><circle cx="71.21" cy="28.79" r="6" fill="#0F766E"/></svg>Orion AI</a>
   <nav><a href="${GITHUB_URL}" rel="noopener">GitHub</a></nav>
 </header>
 ${body}
-<footer>Open Instinct is open source (MIT). Your agent runs in its own VM; this page only sets it up. <a href="${GITHUB_URL}" rel="noopener">Read the code</a>.</footer>
+<footer>Orion AI is open source (MIT). Your agent runs in its own VM; this page only sets it up. <a href="${GITHUB_URL}" rel="noopener">Read the code</a>.</footer>
 </div>
 </body>
 </html>`;
@@ -122,7 +123,7 @@ export function renderLanding(opts: LandingOptions): string {
     : `<div class="card"><h2 style="margin-top:0">Signups are closed here</h2><p class="hint">This gateway only relays messages. To run your own, follow the README on GitHub.</p></div>`;
 
   return layout(
-    "Open Instinct",
+    "Orion AI",
     `<h1>A personal agent you text.</h1>
 <p class="lead">It has its own computer, does real tasks, and coordinates with the Instincts of the people you trust. Open source, yours to run.</p>
 <div class="grid three" style="margin-bottom:24px">

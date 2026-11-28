@@ -2,7 +2,7 @@
 
 Instinct's trusted network works because each person in your life gets a different amount
 of access. Your partner's Instinct can see your calendar; a friend's can only ask when you
-are free; a stranger can leave a message. Open Instinct makes that table explicit, editable
+are free; a stranger can leave a message. Orion AI makes that table explicit, editable
 in plain English, and enforced in code.
 
 Analogy: tiers are like keys to your house. The owner has every key. A partner has the front
@@ -135,7 +135,7 @@ share only general preferences ("some", "little"), contacts and strangers get no
 
 ### Payments
 
-The `payment_*` tools from `@open-instinct/payments` sit under the same table.
+The `payment_*` tools from `@orion-ai/payments` sit under the same table.
 
 | Tool | Capability | Who, in practice |
 |---|---|---|

@@ -1,4 +1,4 @@
-# @open-instinct/server
+# @orion-ai/server
 
 The agent process. One container, one person. It wires the core runtime to the
 optional pieces (Inkbox, computer, apps, trusted network), serves Maritime's BYO
@@ -104,7 +104,7 @@ Only `server`, `gateway` and `cli` read `process.env`. Full list with comments:
 | `MARITIME_DESKTOP=1` | injected by Maritime when the VM has a desktop; `auto` then waits up to 60 s for desktopd to start instead of giving up on the first refused probe |
 | `MARITIME_API_KEY`, `MARITIME_COMPUTERS_MCP_URL` | hosted computer when no in-VM desktop |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | Gmail, Calendar, Contacts and more through Composio; the key alone turns apps on |
-| `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `STRIPE_PUBLISHABLE_KEY` | all three together turn on payments (Stripe Link agent wallet, `@open-instinct/payments`) |
+| `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `STRIPE_PUBLISHABLE_KEY` | all three together turn on payments (Stripe Link agent wallet, `@orion-ai/payments`) |
 | `LINK_REDIRECT_URI` | where Link sends the owner back; default `INSTINCT_PUBLIC_URL` + `/oauth/link/callback`, else `http://127.0.0.1:$PORT/oauth/link/callback` |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, ... | provider keys, looked up from the env the server was given (`apiKeyFor`), never from `process.env` behind its back |
 | `BRAVE_SEARCH_API_KEY` | better `web_search`; DuckDuckGo otherwise |
@@ -124,7 +124,7 @@ the Inkbox channel) and handed back as `pending` on the next `/chat` for that co
 ## Payments
 
 With `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET` and `STRIPE_PUBLISHABLE_KEY` set, `boot` imports
-`@open-instinct/payments`, builds a `LinkWallet` on the state dir and registers
+`@orion-ai/payments`, builds a `LinkWallet` on the state dir and registers
 `paymentsTools(...)`. The wallet is a Stripe Link agent wallet: the owner approves it once in
 a browser and the agent can then ask Link for one-time cards for approved amounts. The
 handshake:
@@ -143,7 +143,7 @@ server logs `payments: ... not installed; skipping` and boots without payment to
 ## Programmatic use
 
 ```ts
-import { boot, createHttpServer } from "@open-instinct/server";
+import { boot, createHttpServer } from "@orion-ai/server";
 
 const app = await boot(process.env);          // { runtime, state, config, scheduler, outbox, close, ... }
 const server = createHttpServer(app);
@@ -201,7 +201,7 @@ stored in `<data>/secrets/webhook.json` (mode 0600).
 
 ## Smoke test
 
-`pnpm --filter @open-instinct/server build && pnpm smoke` boots a real agent in a
+`pnpm --filter @orion-ai/server build && pnpm smoke` boots a real agent in a
 temp directory with Pi's faux provider (no network, no keys) and checks:
 
 1. Owner chat: "remember that I like window seats" makes the model call `memory_write`;
@@ -220,7 +220,7 @@ It exits non-zero on any failed check.
 
 ## Tests
 
-`pnpm --filter @open-instinct/server test` runs vitest against a stubbed runtime: every
+`pnpm --filter @orion-ai/server test` runs vitest against a stubbed runtime: every
 route (health, status, schedules, owner chat, envelope chat, body limit, 400/404/500,
 webhook 503/401/204), the chat token (401 without it, Bearer and header forms, envelope
 rejection), the webhook-only tunnel listener (404 for the owner's surface), schedule wakes
@@ -232,7 +232,7 @@ skills loader.
 
 ## Docker
 
-`deploy/Dockerfile.agent` builds this package into `ghcr.io/<owner>/open-instinct-agent`.
+`deploy/Dockerfile.agent` builds this package into `ghcr.io/<owner>/orion-ai-agent`.
 The image sets no `PORT` (Maritime injects 18789; compose sets 8080), runs the server as
 the unprivileged `instinct` user through `deploy/entrypoint.sh` (which fixes `/data`
 ownership and drops privileges with `setpriv`), and health-checks `${PORT:-8080}`.

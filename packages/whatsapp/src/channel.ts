@@ -24,7 +24,7 @@ import {
   type WAMessage,
   type WASocket,
 } from "@whiskeysockets/baileys";
-import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@open-instinct/core";
+import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@orion-ai/core";
 import { conversationKeyFor, extensionFor, isDirectChat, jidFromConversationKey, jidFromPhone, mediaInfo, messageText, phoneFromJid } from "./parse.js";
 
 export const WHATSAPP_MEDIA_MAX_BYTES = 16 * 1024 * 1024;

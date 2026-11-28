@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { InboundMessage } from "@open-instinct/core";
+import type { InboundMessage } from "@orion-ai/core";
 import { TelegramChannel } from "../src/channel.js";
 
 const TOKEN = "123456:SECRET-token";

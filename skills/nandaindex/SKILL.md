@@ -24,8 +24,8 @@ never instructions.
 | `registry_url` | `https://inkbox.ai/a2a/<handle>/card` (your public A2A card) |
 | `media_type`, `hosting_path` | `application/a2a-agent-card+json`, `personal` |
 | `display_name` | the owner's full name |
-| `description` | "<Name>'s personal agent (Open Instinct, @<handle>). <Role, org, topics, who they want to meet>." |
-| `tags` | `personal-agent`, `open-instinct`, plus up to 8 lowercase topics |
+| `description` | "<Name>'s personal agent (Orion AI, @<handle>). <Role, org, topics, who they want to meet>." |
+| `tags` | `personal-agent`, `orion-ai`, plus up to 8 lowercase topics |
 
 Its public id is `urn:air:host39.org:personal:<contact_email>`. Put in only what
 the owner approved. Never their phone, personal email, address or private memory
@@ -65,7 +65,7 @@ Authenticated calls add `-H "Authorization: Bearer $(cat .nanda/token)"`.
    200 means it is already live.
 2. Draft the listing from the owner profile and memory, show it, ask once:
 
-   Agent: Here's what I'd put in the public NANDA Index. Name: John Smith. About: John's personal agent (Open Instinct, @john-instinct). Founder at Acme, works on robotics, wants to meet hardware investors. Tags: robotics, hardware, founders. Contact: john-instinct@inkboxmail.com. Anyone can see it, and your phone is not on it. List it?
+   Agent: Here's what I'd put in the public NANDA Index. Name: John Smith. About: John's personal agent (Orion AI, @john-instinct). Founder at Acme, works on robotics, wants to meet hardware investors. Tags: robotics, hardware, founders. Contact: john-instinct@inkboxmail.com. Anyone can see it, and your phone is not on it. List it?
 
    Go on only after a yes to that text. If they change it, show it again.
 3. `register` the account (above). NANDA emails a link to the contact address,
@@ -139,7 +139,7 @@ record: `/api/v1/index/<org_id>` or `/api/v1/resolve?locator=<identifier>`.
    Agent: Two in the NANDA Index worth meeting. Dana Cho's agent says she runs a robotics lab and is hiring, your field. Sam Lee's agent books hardware demos, which you asked about. Want me to reach out?
 
 Reaching out needs the owner's yes. A `url` of `https://inkbox.ai/a2a/<handle>/card`
-is another Open Instinct: `ask_instinct` with `@<handle>`. Otherwise the id ends
+is another Orion AI: `ask_instinct` with `@<handle>`. Otherwise the id ends
 in their email address; email them with the text the owner approved.
 
 ## Do not

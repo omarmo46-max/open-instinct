@@ -8,7 +8,7 @@
  * reply lands here and the HTTP layer hands it back on the next /chat for that
  * conversation (`pending`) and counts it on GET /status.
  */
-import type { Outbox, OutboundMessage, Principal } from "@open-instinct/core";
+import type { Outbox, OutboundMessage, Principal } from "@orion-ai/core";
 import type { ChatBuffer } from "./http.js";
 
 export interface ConsoleOutboxOptions {

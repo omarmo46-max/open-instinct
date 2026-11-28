@@ -1,9 +1,9 @@
-import { checkPublicTarget, defineTool, textResult, wrapUntrusted, type Lookup, type RegisteredTool, type ToolResultLike } from "@open-instinct/core";
+import { checkPublicTarget, defineTool, textResult, wrapUntrusted, type Lookup, type RegisteredTool, type ToolResultLike } from "@orion-ai/core";
 import { Type } from "typebox";
 
 const DEFAULT_BASE_URL = "https://api.keenable.ai/v1";
 /** Keenable asks keyless callers to name their app; it is the only identifier sent. */
-const APP_TITLE = "Open Instinct";
+const APP_TITLE = "Orion AI";
 const REQUEST_TIMEOUT_MS = 30_000;
 const SEARCH_RESULTS = 8;
 /** Keenable snippets are raw page text of a few thousand characters; eight of them would crowd the context. */
@@ -125,7 +125,7 @@ function endpoint(baseUrl: string, path: string): string {
 function headers(apiKey: string | undefined): Record<string, string> {
   return {
     Accept: "application/json",
-    "User-Agent": "open-instinct/0.1",
+    "User-Agent": "orion-ai/0.1",
     "X-Keenable-Title": APP_TITLE,
     ...(apiKey ? { "X-API-Key": apiKey } : {}),
   };

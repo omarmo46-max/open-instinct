@@ -1,4 +1,4 @@
-import type { Capability } from "@open-instinct/core";
+import type { Capability } from "@orion-ai/core";
 
 /**
  * Owner-only tag for the Composio meta tools and for toolkits this table does not

@@ -1,10 +1,10 @@
 # Inkbox: the agent's phone line
 
-Inkbox is the identity and communication layer Open Instinct uses. It gives an agent a handle, an email address, an iMessage presence, an optional phone number, and an endpoint other agents can call. Open Instinct does not run any of that itself. It asks Inkbox for an identity and listens for webhooks.
+Inkbox is the identity and communication layer Orion AI uses. It gives an agent a handle, an email address, an iMessage presence, an optional phone number, and an endpoint other agents can call. Orion AI does not run any of that itself. It asks Inkbox for an identity and listens for webhooks.
 
-Analogy: Inkbox is the phone company. Open Instinct is the person who answers the phone. The CLI signs the contract, and the server picks up when it rings.
+Analogy: Inkbox is the phone company. Orion AI is the person who answers the phone. The CLI signs the contract, and the server picks up when it rings.
 
-Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.
+Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 ## Contents
 
@@ -24,7 +24,7 @@ Open Instinct is unrelated to OpenInstinct, a separate project published by Meri
 
 ## What Inkbox is
 
-Inkbox (inkbox.ai) is a hosted service. Its API lives at `https://inkbox.ai/api/v1` and takes an `X-API-Key` header. It has SDKs for TypeScript (`@inkbox/sdk`), Python and Rust. Open Instinct sends messages through `@inkbox/sdk` and makes its other calls with plain `fetch`, so request shapes stay close to the API.
+Inkbox (inkbox.ai) is a hosted service. Its API lives at `https://inkbox.ai/api/v1` and takes an `X-API-Key` header. It has SDKs for TypeScript (`@inkbox/sdk`), Python and Rust. Orion AI sends messages through `@inkbox/sdk` and makes its other calls with plain `fetch`, so request shapes stay close to the API.
 
 Inkbox solves one hard problem for a personal agent: iMessage. Apple does not let a server own a phone number. Inkbox runs real iMessage lines and exposes them over an API. Without it, iMessage support needs a signed-in Mac that stays on.
 
@@ -60,7 +60,7 @@ The agent is one identity. You, the owner, are not an Inkbox identity. You are a
 | Admin key | the whole org | you, in your shell, as `INKBOX_ADMIN_API_KEY` | create identities, mint identity keys, create signing keys, subscribe webhooks, write contact rules, create invitations |
 | Identity-scoped key | one identity | the agent process, as `INKBOX_API_KEY` | send and receive on that identity only. Gets 403 on contact rules, domains and billing |
 
-The split matters. The admin key can read every identity in your org. The agent runs with the narrow key, so a bug or a prompt injection in the agent cannot reach anything but its own line. `instinct init` mints the identity key for you and stores it in `<dataDir>/secrets/inkbox.json`. The admin key is never written to disk by Open Instinct.
+The split matters. The admin key can read every identity in your org. The agent runs with the narrow key, so a bug or a prompt injection in the agent cannot reach anything but its own line. `instinct init` mints the identity key for you and stores it in `<dataDir>/secrets/inkbox.json`. The admin key is never written to disk by Orion AI.
 
 Inkbox shows a new key once. If you lose the identity key, mint another with the admin key and update the agent's environment.
 
@@ -98,7 +98,7 @@ Rules of the shared line:
 | The router explains its own commands | text it `help` to list or replace your connections |
 | Delivery falls back to SMS | if the recipient has no iMessage, the message goes as SMS and the result says `was_downgraded: true` |
 
-This is why Open Instinct's `send_message` tool with no `to` replies in the current conversation, and why the agent texts you proactively (schedules, A2A results) only after you have connected once.
+This is why Orion AI's `send_message` tool with no `to` replies in the current conversation, and why the agent texts you proactively (schedules, A2A results) only after you have connected once.
 
 ## Dedicated lines
 
@@ -114,7 +114,7 @@ A dedicated line is an iMessage-enabled phone number that belongs to one identit
 
 How you get one: `POST /imessage/numbers` with an `Idempotency-Key` header, or `claim_imessage_number: true` when creating the identity. `PATCH /identities/{handle}` with `imessage_number_id` attaches or swaps a line; `null` returns to the shared service.
 
-Open Instinct's provisioner does not claim a dedicated line. `init` creates a shared-line identity.
+Orion AI's provisioner does not claim a dedicated line. `init` creates a shared-line identity.
 `InkboxChannel` can address an existing shared-service connection with either its
 `conversationId` or its recipient's phone number in `to`. Sending by `to` does **not**
 itself require a dedicated line. Initiating contact with an unconnected recipient requires
@@ -166,7 +166,7 @@ Inkbox tells the agent about new messages by posting HTTP webhooks. There is no 
 
 ### Subscriptions
 
-A subscription is per identity and names a URL plus a list of event types. Open Instinct subscribes these nine:
+A subscription is per identity and names a URL plus a list of event types. Orion AI subscribes these nine:
 
 ```
 imessage.received, imessage.reaction_received, text.received, message.received,
@@ -231,7 +231,7 @@ that key to the file URL. Embedders using the adapter directly should run
 
 ### Signing keys
 
-Every identity should have a signing key. Until it does, Inkbox sends its webhooks unsigned, and the Open Instinct server answers 503 to any webhook it cannot verify.
+Every identity should have a signing key. Until it does, Inkbox sends its webhooks unsigned, and the Orion AI server answers 503 to any webhook it cannot verify.
 
 The key is created with `POST /identities/{handle}/signing-key` and shown once.
 Initialization and subscription setup first check whether the identity already has one.
@@ -248,7 +248,7 @@ How a webhook is checked:
 4. Compare in constant time. A mismatch is 401. A valid event is acknowledged only after
    its receipt is persisted, then handled in the background.
 
-The gateway and the server use the same `verifyInkboxSignature` function from `@open-instinct/inkbox`. Nothing reads a webhook body before the signature passes.
+The gateway and the server use the same `verifyInkboxSignature` function from `@orion-ai/inkbox`. Nothing reads a webhook body before the signature passes.
 
 To intentionally rotate during initialization, run `instinct init --rotate-signing-key`.
 If importing an identity not recorded locally, include `--use-existing`. Coordinate the
@@ -258,7 +258,7 @@ on `ensureSigningKey` for integrations managing their own setup.
 
 ## Contact rules and whitelist mode
 
-Inkbox decides who may reach an identity at all. Open Instinct decides what a person may ask once their message arrives. This section is the first of those two gates.
+Inkbox decides who may reach an identity at all. Orion AI decides what a person may ask once their message arrives. This section is the first of those two gates.
 
 ### Contact rules
 
@@ -269,9 +269,9 @@ A contact rule is `allow` or `block`, a match, and a direction.
 | iMessage and phone | `/imessage/identities/{handle}/contact-rules` | `exact_number` | allow `+14155550100`, direction `both` |
 | A2A | `/identities/{handle}/a2a/contact-rules` | `handle` | allow `sam-instinct`, direction `both` |
 
-Writing a rule needs the admin key. Open Instinct writes A2A rules in one place: `instinct invite <name> --handle <peer-handle>` calls `addContactRule(ourHandle, peerHandle, "both")`, so the peer's first task is admitted. A duplicate rule returns 409 and is treated as done.
+Writing a rule needs the admin key. Orion AI writes A2A rules in one place: `instinct invite <name> --handle <peer-handle>` calls `addContactRule(ourHandle, peerHandle, "both")`, so the peer's first task is admitted. A duplicate rule returns 409 and is treated as done.
 
-Open Instinct does not write iMessage contact rules. The agent's own policy handles who may ask for what, and the shared router already requires each human to connect on purpose.
+Orion AI does not write iMessage contact rules. The agent's own policy handles who may ask for what, and the shared router already requires each human to connect on purpose.
 
 ### Whitelist mode
 
@@ -282,11 +282,11 @@ Every identity has a filter mode per channel: `imessage_filter_mode`, `mail_inbo
 | `blacklist` | everyone may contact the identity unless a `block` rule names them | yes |
 | `whitelist` | nobody may contact the identity unless an `allow` rule names them | no |
 
-Open Instinct leaves the modes at their defaults. A stranger's message does arrive, but the policy engine places an unknown sender in the `stranger` tier: one short introduction, leave a message, rate limited. If you prefer that strangers never reach the agent at all, switch the identity's iMessage or mail filter to `whitelist` in the Inkbox console and add `allow` rules for the people you want. The agent needs no change. Fewer messages arrive, and the tiers still apply to the ones that do.
+Orion AI leaves the modes at their defaults. A stranger's message does arrive, but the policy engine places an unknown sender in the `stranger` tier: one short introduction, leave a message, rate limited. If you prefer that strangers never reach the agent at all, switch the identity's iMessage or mail filter to `whitelist` in the Inkbox console and add `allow` rules for the people you want. The agent needs no change. Fewer messages arrive, and the tiers still apply to the ones that do.
 
 The two gates compared:
 
-| | Inkbox contact rules | Open Instinct tiers |
+| | Inkbox contact rules | Orion AI tiers |
 |---|---|---|
 | Decides | whether a message or task is delivered | what the sender may ask for |
 | Lives in | Inkbox, per identity | `policy.json` and `contacts.json` in your data directory |
@@ -295,9 +295,9 @@ The two gates compared:
 
 ## A2A invitations and how our tiers sit on top
 
-A2A is how one Open Instinct talks to another. Every identity speaks A2A 1.0 JSON-RPC at `https://inkbox.ai/a2a/{handle}`. Inkbox stores the task, posts `a2a.task.created` to the worker, and relays each reply back to the caller as `a2a.sent_task.updated`.
+A2A is how one Orion AI talks to another. Every identity speaks A2A 1.0 JSON-RPC at `https://inkbox.ai/a2a/{handle}`. Inkbox stores the task, posts `a2a.task.created` to the worker, and relays each reply back to the caller as `a2a.sent_task.updated`.
 
-Open Instinct persists each outgoing task's originating conversation, so a peer's answer
+Orion AI persists each outgoing task's originating conversation, so a peer's answer
 returns to the person who asked. A peer's request for clarification can be continued with
 `ask_instinct` using that task's `taskId`; reusing only `contextId` groups a topic but starts
 a separate task. Worker-side `reply_instinct` takes its task from the current conversation,
@@ -315,7 +315,7 @@ Two identities in different orgs may talk only when both sides allow it. There a
 
 An invitation returns an id, a link, an `a2ai_` token and a handoff prompt the other person can paste into their own agent. The default expiry is seven days.
 
-`instinct invite` does both the Inkbox part and the Open Instinct part in one command:
+`instinct invite` does both the Inkbox part and the Orion AI part in one command:
 
 ```bash
 instinct invite "Sam Lee" --tier partner --email sam@example.com --handle sam-instinct
@@ -345,7 +345,7 @@ Inkbox plans cap identities, iMessage volume and unique recipients. From the Ink
 
 The messages API also mentions a ceiling of 100 iMessages per rolling 24 hours. Treat the exact shared-router number as something to confirm with Inkbox.
 
-How the limits show up in Open Instinct:
+How the limits show up in Orion AI:
 
 | Limit | What you see |
 |---|---|
@@ -372,7 +372,7 @@ POST https://inkbox.ai/api/v1/agent-signup/
 
 The response carries `api_key`, `email_address`, `agent_handle` and `claim_status`. The human gets a six-digit code by email and the agent posts it to `POST /api/v1/agent-signup/verify`. After that the identity is live and the key works like any identity-scoped key.
 
-Open Instinct does not automate this path yet. `instinct init` expects `INKBOX_ADMIN_API_KEY`. To use self-signup today:
+Orion AI does not automate this path yet. `instinct init` expects `INKBOX_ADMIN_API_KEY`. To use self-signup today:
 
 1. Call the two routes above with curl and keep the `api_key`.
 2. Run `instinct init --name <you> --phone +1... --handle <the handle Inkbox returned> --skip-inkbox`.
@@ -401,7 +401,7 @@ Without `INKBOX_API_KEY` and `INKBOX_AGENT_HANDLE` the agent still boots. Replie
 
 ## What the code does with all this
 
-The `@open-instinct/inkbox` package wraps the pieces above. The [package README](../packages/inkbox/README.md) has the API.
+The `@orion-ai/inkbox` package wraps the pieces above. The [package README](../packages/inkbox/README.md) has the API.
 
 | Part | Inkbox feature it uses | Called from |
 |---|---|---|

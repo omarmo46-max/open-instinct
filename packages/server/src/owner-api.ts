@@ -6,8 +6,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import type { ApprovalStore, AuditLog, ContactStore, InstinctConfig, MemoryStore, Scheduler } from "@open-instinct/core";
-import { readMandate } from "@open-instinct/inkbox";
+import type { ApprovalStore, AuditLog, ContactStore, InstinctConfig, MemoryStore, Scheduler } from "@orion-ai/core";
+import { readMandate } from "@orion-ai/inkbox";
 
 export interface OwnerApiDeps {
   config: InstinctConfig;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PERSONA, MemoryStore, StateDir } from "@open-instinct/core";
+import { DEFAULT_PERSONA, MemoryStore, StateDir } from "@orion-ai/core";
 import { editorCommand } from "../src/commands/persona.js";
 import { ownerPromptInput, renderLayerTable } from "../src/commands/prompt.js";
 import { makeContext } from "../src/context.js";

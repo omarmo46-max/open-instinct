@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Outbox, OutboundMessage } from "@open-instinct/core";
+import type { Outbox, OutboundMessage } from "@orion-ai/core";
 import { ChatAwareOutbox, ChatReplyBuffer, ConsoleOutbox } from "../src/console-outbox.js";
 
 const owner = { kind: "owner" as const, id: "owner", tier: "owner" as const, displayName: "M" };

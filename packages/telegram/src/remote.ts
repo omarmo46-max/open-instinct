@@ -5,7 +5,7 @@
  * write to the one chat its owner linked. Files people send are fetched through the gateway
  * too, on demand.
  */
-import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@open-instinct/core";
+import type { FileOutbox, InboundMessage, Outbox, OutboundFile, OutboundMessage } from "@orion-ai/core";
 import { noteDownloadFailure, saveInboundFile } from "./files.js";
 import { TELEGRAM_DOWNLOAD_MAX_BYTES, chatIdFromConversationKey, type MediaInfo, type MediaKind } from "./parse.js";
 

@@ -6,7 +6,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { InboundMessage } from "@open-instinct/core";
+import type { InboundMessage } from "@orion-ai/core";
 import { extensionFor, type MediaInfo } from "./parse.js";
 
 export function saveInboundFile(mediaDir: string, message: InboundMessage, media: MediaInfo, bytes: Buffer, remotePath?: string): void {

@@ -3,7 +3,7 @@
  * keeps the agent honest: a pool the owner sets, a per-purchase cap and a daily cap. Each card request
  * puts a hold on the pool; the hold becomes spend when the purchase is done, or is released if it fails.
  */
-import type { StateDir } from "@open-instinct/core";
+import type { StateDir } from "@orion-ai/core";
 import { cairoDay, fmtEgp } from "./money.js";
 
 export const BUDGET_FILE = "egp-budget.json";

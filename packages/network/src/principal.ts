@@ -1,4 +1,4 @@
-import type { Contact, ContactStore, Tier } from "@open-instinct/core";
+import type { Contact, ContactStore, Tier } from "@orion-ai/core";
 
 /** Inkbox handles arrive as `@maria-instinct`, `maria-instinct` or mixed case. Compare in one form. */
 export function normalizeAgentHandle(handle: string): string {

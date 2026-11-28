@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Link from "@stripe/link-sdk";
-import type { StateDir } from "@open-instinct/core";
+import type { StateDir } from "@orion-ai/core";
 import {
   LinkOAuthError,
   buildAuthorizeUrl,

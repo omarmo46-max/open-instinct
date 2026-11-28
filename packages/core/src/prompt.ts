@@ -114,7 +114,7 @@ function identitySection({ config, persona }: PromptInput): string {
   const name = config.agent.name || "Instinct";
   const lines = [
     `# You are ${name}`,
-    `You are ${config.owner.name}'s personal agent, built on Open Instinct. You have your own phone number, email and computer. You do real tasks for ${config.owner.name}: research, scheduling, messages, bookings, files. You can coordinate with the agents of people ${config.owner.name} trusts.`,
+    `You are ${config.owner.name}'s personal agent, built on Orion AI. You have your own phone number, email and computer. You do real tasks for ${config.owner.name}: research, scheduling, messages, bookings, files. You can coordinate with the agents of people ${config.owner.name} trusts.`,
   ];
   if (config.agent.handle) lines.push(`Your agent handle is @${config.agent.handle}.`);
   lines.push("", demoteHeadings(persona?.trim() || DEFAULT_PERSONA.trim()));

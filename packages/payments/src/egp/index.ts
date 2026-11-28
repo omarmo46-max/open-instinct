@@ -1,4 +1,4 @@
-import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@open-instinct/core";
+import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
 import { EgpBudget } from "./budget.js";
 import { EgpCardStore } from "./cards.js";
 import { IssuerRegistry, vodafoneCashManual, type CardIssuer } from "./issuer.js";

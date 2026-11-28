@@ -1,6 +1,6 @@
-# @open-instinct/computer
+# @orion-ai/computer
 
-The agent's computer. This package gives the Open Instinct runtime a set of desktop tools
+The agent's computer. This package gives the Orion AI runtime a set of desktop tools
 (`computer`, `computer_batch`, `request_takeover`, file read and write) backed by a persistent
 Linux desktop on Maritime. The model sees screenshots, clicks and types, and hands the keyboard
 to the owner when a step needs a human.
@@ -23,13 +23,13 @@ screenshot. The default frame is 1200x750 (physical 1280x800); every result repo
 height. Prompts written for one backend work on the other.
 
 Every tool carries `meta: { capabilities: ["computer.use"], group: "computer" }`. The policy
-engine in `@open-instinct/core` allows `computer.use` for the owner only, so a friend's Instinct
+engine in `@orion-ai/core` allows `computer.use` for the owner only, so a friend's Instinct
 can never drive the desktop, whatever it asks.
 
 ## Picking a backend
 
 ```ts
-import { detectComputer, computerGuidance } from "@open-instinct/computer";
+import { detectComputer, computerGuidance } from "@orion-ai/computer";
 
 const computer = await detectComputer({
   mode: config.computer.mode,              // "auto" | "desktopd" | "maritime" | "none"
@@ -123,7 +123,7 @@ own `read_file` and `write_file` tools do the same job.
 ## Testing
 
 ```
-pnpm --filter @open-instinct/computer test
+pnpm --filter @orion-ai/computer test
 ```
 
 The desktopd client is tested against a scripted `fetch`; the MCP backend against an in-memory
@@ -137,4 +137,4 @@ MCP server built on `@earendil-works/pi-mcp/testing`. Nothing touches the networ
 - Hosted tool names are kept verbatim. A `computer_` prefix would make the two backends diverge
   and break prompts that Maritime's own docs teach.
 - Tools are built with core's `defineTool` and `textResult`, so the shape is the one the
-  ToolRegistry expects by construction. Build core first (`pnpm --filter @open-instinct/core build`).
+  ToolRegistry expects by construction. Build core first (`pnpm --filter @orion-ai/core build`).

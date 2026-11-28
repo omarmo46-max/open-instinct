@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Principal, RegisteredTool } from "@open-instinct/core";
+import type { Principal, RegisteredTool } from "@orion-ai/core";
 import { PartnerRegistry, partnerTools, validateRequest, PARTNER_PROTOCOL_VERSION, type PartnerConnector } from "../src/partners.js";
 
 const OWNER: Principal = { kind: "owner", id: "owner", tier: "owner", displayName: "Omar" };

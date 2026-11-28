@@ -1,7 +1,7 @@
 {
-  "name": "@open-instinct/telegram",
+  "name": "@orion-ai/telegram",
   "version": "0.1.0",
-  "description": "Telegram channel for Open Instinct: a bot you message one to one (Bot API, long polling, no extra dependencies)",
+  "description": "Telegram channel for Orion AI: a bot you message one to one (Bot API, long polling, no extra dependencies)",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,6 +15,6 @@
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": { "@open-instinct/core": "workspace:*" },
+  "dependencies": { "@orion-ai/core": "workspace:*" },
   "devDependencies": { "@types/node": "^22.15.0", "typescript": "^5.8.3", "vitest": "^3.2.4" }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "open-instinct",
+  "name": "orion-ai",
   "version": "0.1.0",
   "private": true,
   "description": "Open-source Instinct: a personal agent you text on iMessage, with its own computer and a trusted network of other agents. Built on Pi, Inkbox, Maritime and Composio.",
@@ -14,14 +14,14 @@
     "typecheck": "pnpm run build && pnpm -r --filter \"./packages/*\" run typecheck",
     "test": "pnpm -r --filter \"./packages/*\" run test",
     "lint": "pnpm -r --filter \"./packages/*\" run lint",
-    "dev": "pnpm --filter @open-instinct/cli run dev",
-    "smoke": "pnpm --filter @open-instinct/server run smoke",
+    "dev": "pnpm --filter @orion-ai/cli run dev",
+    "smoke": "pnpm --filter @orion-ai/server run smoke",
     "clean": "pnpm -r --filter './packages/*' exec rm -rf dist",
     "instinct": "node packages/cli/dist/bin.js",
     "check": "pnpm run build && pnpm run test && pnpm run smoke"
   },
   "devDependencies": {
-    "@open-instinct/cli": "workspace:*",
+    "@orion-ai/cli": "workspace:*",
     "@types/node": "^22.15.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

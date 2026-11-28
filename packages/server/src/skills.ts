@@ -9,7 +9,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Type } from "@earendil-works/pi-ai";
 import { createSyntheticSourceInfo, loadSkillsFromDir, parseFrontmatter, type Skill } from "@earendil-works/pi-coding-agent";
-import { defineTool, textResult, type Principal, type RegisteredTool } from "@open-instinct/core";
+import { defineTool, textResult, type Principal, type RegisteredTool } from "@orion-ai/core";
 
 export interface ResolveSkillsDirOptions {
   explicit?: string;
@@ -102,7 +102,7 @@ export function loadSkillList(dirs: string | string[] | undefined, logger?: (m: 
 function loadSkillsIn(dir: string, logger?: (m: string) => void): Skill[] {
   if (!isDir(dir)) return [];
   try {
-    const { skills, diagnostics } = loadSkillsFromDir({ dir, source: "open-instinct" });
+    const { skills, diagnostics } = loadSkillsFromDir({ dir, source: "orion-ai" });
     for (const d of diagnostics) logger?.(`skill warning: ${JSON.stringify(d)}`);
     // load_skill looks skills up by lowercased name, so two names that differ only in case
     // would shadow each other. Keep the first and say so.
@@ -242,7 +242,7 @@ function readOwnerSkill(file: string, logger?: (m: string) => void): LoadedSkill
     description,
     filePath: file,
     baseDir,
-    sourceInfo: createSyntheticSourceInfo(file, { source: "open-instinct-owner", baseDir }),
+    sourceInfo: createSyntheticSourceInfo(file, { source: "orion-ai-owner", baseDir }),
     disableModelInvocation: fm["disable-model-invocation"] === true,
     origin: "owner",
     visibility: String(fm.visibility ?? "").trim().toLowerCase() === "public" ? "public" : "private",

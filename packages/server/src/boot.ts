@@ -58,21 +58,21 @@ import {
   resolveModel,
   resolveTriggers,
   scanCron,
-} from "@open-instinct/core";
-import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@open-instinct/core";
-import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, conciergeTools, messagingTools, sendFileTool, voiceInstructions } from "@open-instinct/inkbox";
-import type { CallEndedEvent, CallOrigination } from "@open-instinct/inkbox";
-import { enrichInbound, transcriberFromEnv } from "@open-instinct/media";
-import { GatewayTelegramChannel, TelegramChannel } from "@open-instinct/telegram";
-import { WhatsAppChannel } from "@open-instinct/whatsapp";
-import { computerGuidance, detectComputer } from "@open-instinct/computer";
-import type { ComputerBackend } from "@open-instinct/computer";
-import { ComposioApps, ComposioTriggerSource, DEFAULT_TOOLKITS, OPENAI_COMPLETIONS_TOOL_LIMIT, appsGuidance, appsTools, composioModeFor } from "@open-instinct/apps";
-import { ampleTools, type AmpleCredentials } from "@open-instinct/ample";
-import { AtomicMailBackend, atomicMailGuidance } from "@open-instinct/atomicmail";
-import { contextTools } from "@open-instinct/context";
-import { keenableTools } from "@open-instinct/keenable";
-import { networkTools, PartnerRegistry, partnerTools, e2eeA2aTools } from "@open-instinct/network";
+} from "@orion-ai/core";
+import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@orion-ai/core";
+import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, conciergeTools, messagingTools, sendFileTool, voiceInstructions } from "@orion-ai/inkbox";
+import type { CallEndedEvent, CallOrigination } from "@orion-ai/inkbox";
+import { enrichInbound, transcriberFromEnv } from "@orion-ai/media";
+import { GatewayTelegramChannel, TelegramChannel } from "@orion-ai/telegram";
+import { WhatsAppChannel } from "@orion-ai/whatsapp";
+import { computerGuidance, detectComputer } from "@orion-ai/computer";
+import type { ComputerBackend } from "@orion-ai/computer";
+import { ComposioApps, ComposioTriggerSource, DEFAULT_TOOLKITS, OPENAI_COMPLETIONS_TOOL_LIMIT, appsGuidance, appsTools, composioModeFor } from "@orion-ai/apps";
+import { ampleTools, type AmpleCredentials } from "@orion-ai/ample";
+import { AtomicMailBackend, atomicMailGuidance } from "@orion-ai/atomicmail";
+import { contextTools } from "@orion-ai/context";
+import { keenableTools } from "@orion-ai/keenable";
+import { networkTools, PartnerRegistry, partnerTools, e2eeA2aTools } from "@orion-ai/network";
 import { ChatAwareOutbox, ConsoleOutbox, type ChatReplyBuffer } from "./console-outbox.js";
 import { fileTools, resolveInsideWorkspace } from "./file-tools.js";
 import { makeDescribeDataPart, promptExtraFor } from "./hooks.js";
@@ -96,7 +96,7 @@ export interface BootOptions {
   skillsDir?: string;
   /** Override for tests. Default: real fetch. */
   fetchImpl?: typeof fetch;
-  /** Override for tests: the payments module to wire instead of importing @open-instinct/payments. */
+  /** Override for tests: the payments module to wire instead of importing @orion-ai/payments. */
   payments?: PaymentsModule;
 }
 
@@ -404,7 +404,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
           : {
               signup: {
                 file: state.path("secrets", "ample.json"),
-                name: `open-instinct-${config.agent.handle ?? "agent"}`,
+                name: `orion-ai-${config.agent.handle ?? "agent"}`,
                 ...(ownerEmail ? { ownerEmail } : {}),
               },
             }),
@@ -522,7 +522,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   if (payments) {
     const mod = opts.payments ?? (await loadPaymentsModule());
     if (!mod) {
-      log("payments: LINK_* set but @open-instinct/payments is not installed; skipping");
+      log("payments: LINK_* set but @orion-ai/payments is not installed; skipping");
     } else {
       const built = await safely(log, "payments", () => {
         const w = new mod.LinkWallet({
@@ -550,7 +550,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   if (egpEnabled(env)) {
     const mod = opts.payments ?? (await loadPaymentsModule());
     if (!mod?.createEgpRail) {
-      log("payments: EGP_WALLET=1 but this @open-instinct/payments build has no EGP rail; skipping");
+      log("payments: EGP_WALLET=1 but this @orion-ai/payments build has no EGP rail; skipping");
     } else {
       const publicUrl = (env.INSTINCT_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`).replace(/\/+$/, "");
       const rail = await safely(log, "egp", () => mod.createEgpRail!({ state, outbox, config, audit, publicUrl }));
@@ -613,7 +613,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   // Only tools built to type into a page may be given {{secret:...}} references.
   const takesSecrets = new Set(["computer", "computer_batch", ...(env.INSTINCT_SECRET_TOOLS ?? "").split(",").map((s) => s.trim()).filter(Boolean)]);
   registry.registerMany(registry.all().filter((t) => takesSecrets.has(t.spec.name)).map((t) => ({ spec: { ...t.spec, meta: { ...t.spec.meta, acceptsSecrets: true } } })));
-  registry.registerMany(securityTools({ audit, state, vault, stepUp, stepUpStore, op, keyring, pins, identity, registry, quarantined, issuer: "Open Instinct", rewrap: (t) => (broker.available() ? broker.wrap(t) : t) }));
+  registry.registerMany(securityTools({ audit, state, vault, stepUp, stepUpStore, op, keyring, pins, identity, registry, quarantined, issuer: "Orion AI", rewrap: (t) => (broker.available() ? broker.wrap(t) : t) }));
   // C5 on the wire: encrypted files and key exchange between agents over A2A (needs Inkbox A2A and a handle).
   registry.registerMany(e2eeA2aTools({ ...(a2a ? { a2a } : {}), keyring, contacts, audit, ...(inkbox ? { selfHandle: inkbox.handle } : {}), workspace: state.path("workspace") }));
   // C4: a tool whose description or schema changed since it was pinned is taken out of service until the owner accepts it.

@@ -1,9 +1,9 @@
 import type { Server } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { StateDir, defaultConfig } from "@open-instinct/core";
-import { createHttpServer, listenTunnelServer } from "@open-instinct/server";
-import type { HttpApp } from "@open-instinct/server";
-import { computeInkboxSignature } from "@open-instinct/inkbox";
+import { StateDir, defaultConfig } from "@orion-ai/core";
+import { createHttpServer, listenTunnelServer } from "@orion-ai/server";
+import type { HttpApp } from "@orion-ai/server";
+import { computeInkboxSignature } from "@orion-ai/inkbox";
 import { runDev } from "../src/commands/dev.js";
 import { makeContext } from "../src/context.js";
 import { tmpDir } from "./helpers.js";

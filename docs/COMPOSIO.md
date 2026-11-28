@@ -1,13 +1,13 @@
 # Apps through Composio
 
-Open Instinct reaches Gmail, Google Calendar, Google Contacts and, with
+Orion AI reaches Gmail, Google Calendar, Google Contacts and, with
 `COMPOSIO_TOOLKITS=all`, any of Composio's apps through Composio. This page explains
 what Composio is, how to get a key, how the owner connects an app from a text
 message, and what each tool is allowed to do.
 
 Code: [`packages/apps`](../packages/apps/README.md). Server wiring: [`packages/server`](../packages/server/README.md).
 
-(Open Instinct is unrelated to OpenInstinct, a separate project published by Merit Systems.)
+(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Composio is
 
@@ -43,7 +43,7 @@ in that case. Run `instinct init --name <you> --apps` and start again.
 
 ## One session per person
 
-A Composio session belongs to one user and one list of toolkits. Open Instinct
+A Composio session belongs to one user and one list of toolkits. Orion AI
 creates one session per agent, and one agent serves one owner. The user id is the
 agent's Inkbox handle.
 

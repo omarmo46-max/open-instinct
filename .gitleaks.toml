@@ -1,5 +1,5 @@
-# Open Instinct secret-scan rules. Default gitleaks rules plus the key shapes of the services we use.
-title = "open-instinct"
+# Orion AI secret-scan rules. Default gitleaks rules plus the key shapes of the services we use.
+title = "orion-ai"
 
 [extend]
 useDefault = true

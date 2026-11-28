@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { ToolContext, ToolResultLike } from "@open-instinct/core";
+import type { ToolContext, ToolResultLike } from "@orion-ai/core";
 import {
   LOAD_SKILL_TOOL,
   SKILL_FILE_MAX_BYTES,

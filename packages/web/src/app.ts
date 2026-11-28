@@ -1,6 +1,7 @@
 /** The signed-in dashboard. Each section is its own page. */
 import type { ModelConfig, User } from "./store.js";
 import { esc, icon } from "./ui.js";
+import { HEAD_ICONS, logoImg } from "./brand.js";
 
 export interface AppCtx {
   brand: string;
@@ -28,8 +29,8 @@ const NAV: Array<{ group: string; items: Array<{ href: string; label: string; ic
 export function shell(c: AppCtx, title: string, desc: string, body: string, notice?: string): string {
   const side = NAV.map((g) => `<div class="grp">${g.group}</div>${g.items.map((i) => `<a href="${i.href}"${c.path === i.href ? ' class="on"' : ""}>${icon(i.ic, 18)}${i.label}</a>`).join("")}`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>${esc(title)} | ${esc(c.brand)}</title><link rel="stylesheet" href="/assets/site.css"></head><body>
-<div class="app"><aside class="side"><a class="brand" href="/">${esc(c.brand)}</a>${side}</aside>
+<title>${esc(title)} | ${esc(c.brand)}</title>${HEAD_ICONS}<link rel="stylesheet" href="/assets/site.css"></head><body>
+<div class="app"><aside class="side"><a class="brand" href="/">${logoImg()}${esc(c.brand)}</a>${side}</aside>
 <div class="main"><div class="top"><span class="muted small">Dashboard</span><div class="who"><span>${esc(c.user.email)}</span>
 <form method="post" action="/logout"><input type="hidden" name="csrf" value="${esc(c.csrf)}"><button class="btn ghost sm" type="submit">Sign out</button></form></div></div>
 <div class="content"><h1>${esc(title)}</h1><p class="desc">${esc(desc)}</p>${notice ? `<div class="alert info"><b>Assistant:</b> ${esc(notice)}</div>` : ""}${body}</div></div></div><script src="/assets/site.js" defer></script></body></html>`;

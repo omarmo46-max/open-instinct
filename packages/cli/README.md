@@ -1,4 +1,4 @@
-# @open-instinct/cli
+# @orion-ai/cli
 
 The `instinct` command. It sets up your agent, runs it on your machine, deploys it to
 Maritime, connects your iMessage, and edits who in your life may ask it for what.
@@ -12,7 +12,7 @@ the agent's next message.
 ```bash
 # inside the monorepo
 pnpm install && pnpm -r build
-pnpm --filter @open-instinct/cli exec instinct --help
+pnpm --filter @orion-ai/cli exec instinct --help
 
 # or link it on your PATH
 cd packages/cli && pnpm link --global
@@ -94,7 +94,7 @@ a new iMessage thread from your agent appears.
 
 Runs the agent server in this process. No Docker, no Maritime. Loads `secrets/inkbox.json`
 into env, sets `PORT` and `INSTINCT_DATA_DIR`, then imports `boot` and `createHttpServer`
-from `@open-instinct/server`.
+from `@orion-ai/server`.
 
 ```
 instinct dev [--port 8080] [--host 127.0.0.1] [--tunnel] [--quiet]
@@ -139,13 +139,13 @@ name, owner, model, computer kind, connected apps, conversation counts, uptime.
 Creates one Maritime agent for you from a built image. The request body is the same one
 the gateway uses for multi-user signups, so both shapes produce the same kind of agent:
 `framework: "custom"`, `exposedPort: 18789`, `healthCheckPath: "/health"`, `desktop: true`,
-`externalId: "open-instinct:<handle>"`. Maritime injects `PORT=18789` for custom images; the
+`externalId: "orion-ai:<handle>"`. Maritime injects `PORT=18789` for custom images; the
 body sends the same number as `exposedPort` and as an explicit `PORT` env var so the port the
 server binds and the port Maritime forwards to are always the same. Local runs
 (`deploy/Dockerfile.agent`, `docker compose`) keep `PORT=8080`.
 
 ```
-instinct deploy --image ghcr.io/<you>/open-instinct-agent:<tag> [--name instinct-<handle>]
+instinct deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name instinct-<handle>]
                 [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]
 ```
 
@@ -290,7 +290,7 @@ Connect your iMessage
 
 # 2. Run it on your laptop with webhooks tunneled in.
 $ instinct dev --tunnel
-Open Instinct is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
+Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
   tunnel: https://maria-instinct.inkboxwire.com
   webhook: subscription whs_8f2 (new)
 
@@ -316,8 +316,8 @@ Scheduled sch_7a  0 8 * * 1-5  (America/New_York)  next 2026-10-05T12:00:00.000Z
 
 # 6. Move it to its own computer on Maritime.
 $ export MARITIME_API_KEY=mk_...
-$ instinct deploy --image ghcr.io/maria/open-instinct-agent:latest
-Creating Maritime agent instinct-maria-instinct from ghcr.io/maria/open-instinct-agent:latest ...
+$ instinct deploy --image ghcr.io/maria/orion-ai-agent:latest
+Creating Maritime agent instinct-maria-instinct from ghcr.io/maria/orion-ai-agent:latest ...
 Agent created: agt_01J...  (deploying)
   dashboard  https://maritime.sh/dashboard/agents/agt_01J...
   chat       instinct chat "hello" --agent agt_01J...
@@ -328,7 +328,7 @@ $ instinct chat "what did you do today" --agent agt_01J...
 ## Programmatic use
 
 ```ts
-import { runCli } from "@open-instinct/cli";
+import { runCli } from "@orion-ai/cli";
 
 const code = await runCli(["trust", "list"], { INSTINCT_DATA_DIR: "/tmp/agent" }, {
   stdout: (t) => process.stdout.write(t),
@@ -356,7 +356,7 @@ carry `fetchImpl`, `createProvisioner`, `importServer`, `connectTunnel` and
 ## Development
 
 ```bash
-pnpm --filter @open-instinct/cli test        # vitest; resolves sibling packages from source
-pnpm --filter @open-instinct/cli typecheck   # needs sibling dist (pnpm -r build first)
-pnpm --filter @open-instinct/cli dev         # tsx src/bin.ts dev
+pnpm --filter @orion-ai/cli test        # vitest; resolves sibling packages from source
+pnpm --filter @orion-ai/cli typecheck   # needs sibling dist (pnpm -r build first)
+pnpm --filter @orion-ai/cli dev         # tsx src/bin.ts dev
 ```

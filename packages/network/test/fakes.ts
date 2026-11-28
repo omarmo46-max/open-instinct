@@ -13,7 +13,7 @@ import type {
   RegisteredTool,
   Tier,
   ToolContext,
-} from "@open-instinct/core";
+} from "@orion-ai/core";
 import type { A2aLike, ProvisionerLike } from "../src/tools.js";
 import { phoneKey, slugify } from "../src/lookup.js";
 

@@ -5,7 +5,7 @@ it builds online. The owner texts "make a page for Maya's birthday with an RSVP
 form", the agent writes it in its workspace, deploys it and texts back a public
 HTTPS link. Ask for a change and it redeploys to the same link.
 
-`@open-instinct/ample` adds four tools, present only when `AMPLE_SIGNUP=1` or
+`@orion-ai/ample` adds four tools, present only when `AMPLE_SIGNUP=1` or
 an Ample credential is set:
 
 | Tool | What it does |

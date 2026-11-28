@@ -1,8 +1,8 @@
 /**
- * The slice of @open-instinct/inkbox the CLI uses, behind a factory so tests
+ * The slice of @orion-ai/inkbox the CLI uses, behind a factory so tests
  * can hand in a fake without HTTP. The default builds the real provisioner.
  */
-import { InkboxProvisioner } from "@open-instinct/inkbox";
+import { InkboxProvisioner } from "@orion-ai/inkbox";
 import type { CliIo } from "./io.js";
 
 export interface ProvisionerLike {

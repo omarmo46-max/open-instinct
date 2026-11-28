@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { RegisteredTool } from "@open-instinct/core";
+import type { RegisteredTool } from "@orion-ai/core";
 import type { CreateSpendRequestParams, LinkClientLike, PaymentMethod, SpendRequest } from "../src/link-types.js";
 import { MIN_CONTEXT_CHARS, PAYMENTS_FILE, buildContext, paymentsTools, pickPaymentMethod, readPayments, toCents } from "../src/tools.js";
 import { LinkWallet, TOKENS_FILE, writeSecret } from "../src/wallet.js";

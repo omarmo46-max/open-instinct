@@ -3,7 +3,7 @@
  * request, wait for the owner, pick up once, report the outcome. Budget rules run before anything is asked.
  */
 import { Type } from "typebox";
-import type { AuditLog, Capability, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir } from "@open-instinct/core";
+import type { AuditLog, Capability, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir } from "@orion-ai/core";
 import { defineTool, errorResult, textResult } from "../define.js";
 import { EgpBudget } from "./budget.js";
 import { CARD_TTL_MS, EgpCardStore } from "./cards.js";

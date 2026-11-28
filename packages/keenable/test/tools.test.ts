@@ -47,7 +47,7 @@ describe("keenable_search", () => {
     const [url, init] = fetchImpl.mock.calls[0]! as unknown as [string, RequestInit];
     expect(url).toBe("https://api.keenable.ai/v1/search/public");
     expect(init.method).toBe("POST");
-    expect(init.headers).toMatchObject({ "X-Keenable-Title": "Open Instinct", "Content-Type": "application/json" });
+    expect(init.headers).toMatchObject({ "X-Keenable-Title": "Orion AI", "Content-Type": "application/json" });
     expect(init.headers).not.toHaveProperty("X-API-Key");
     expect(JSON.parse(init.body as string)).toEqual({ query: "capital of France", max_results: 8 });
     expect(text(result)).toContain('<untrusted source="Keenable search results for capital of France">');
@@ -64,7 +64,7 @@ describe("keenable_search", () => {
 
     const [url, init] = fetchImpl.mock.calls[0]! as unknown as [string, RequestInit];
     expect(url).toBe("https://api.example.test/v1/search");
-    expect(init.headers).toMatchObject({ "X-API-Key": "secret-key", "X-Keenable-Title": "Open Instinct" });
+    expect(init.headers).toMatchObject({ "X-API-Key": "secret-key", "X-Keenable-Title": "Orion AI" });
     expect(JSON.parse(init.body as string)).toEqual({ query: "news", max_results: 8, site: "example.com", published_after: "2026-10-01" });
     expect(text(result)).toContain(`${"x".repeat(999)}…`);
     expect(text(result)).not.toContain("x".repeat(1_000));
@@ -129,7 +129,7 @@ describe("keenable_fetch", () => {
     const [url, init] = fetchImpl.mock.calls[0]! as unknown as [string, RequestInit];
     expect(url).toBe("https://api.keenable.ai/v1/fetch/public?url=https%3A%2F%2Fexample.com%2F");
     expect(init.method).toBe("GET");
-    expect(init.headers).toMatchObject({ "X-Keenable-Title": "Open Instinct" });
+    expect(init.headers).toMatchObject({ "X-Keenable-Title": "Orion AI" });
     expect(text(result)).toContain('<untrusted source="web page example.com via Keenable">');
     expect(text(result)).toContain("# Example Domain\nhttps://example.com/\n\nThis domain is for use in examples.");
   });
