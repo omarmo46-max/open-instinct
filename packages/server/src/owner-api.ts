@@ -124,7 +124,6 @@ export function createOwnerApi(d: OwnerApiDeps): OwnerApi {
         }
         case "channels":
           return ok({
-            web: true,
             inkbox: d.channels.inkboxHandle ? { handle: d.channels.inkboxHandle, imessage: true, sms: true, email: true, voice: Boolean(d.env.INKBOX_VOICE ?? true) } : null,
             telegram: d.channels.telegram,
             whatsapp: d.channels.whatsapp,

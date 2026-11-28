@@ -43,7 +43,6 @@ export function channelsPage(_c: SecCtx, d: Rec): string {
   const card = (name: string, on: boolean, detail: string, how: string) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${esc(name)}</h3>${on ? tag("On", "ok") : tag("Off")}</div><p>${esc(detail)}</p>${on ? "" : `<p class="small muted" style="margin-top:10px">${how}</p>`}</div>`;
   const ink = d.inkbox as Rec | null;
   return `<div class="cols c2" style="margin-top:0">
-${card("Web chat", true, "Talk to your assistant from this dashboard.", "")}
 ${card("iMessage, SMS, email and calls", Boolean(ink), ink ? `Your assistant's handle is ${ink.handle}. Message it, email it or call it.` : "Reach it by iMessage, SMS, email and phone.", "Set <code>INKBOX_API_KEY</code> and <code>INKBOX_AGENT_HANDLE</code> on your assistant.")}
 ${card("Telegram", Boolean(d.telegram), "Message your assistant in Telegram.", "Set <code>TELEGRAM_BOT_TOKEN</code> on your assistant.")}
 ${card("WhatsApp", Boolean(d.whatsapp), "Message your assistant in WhatsApp.", "Turn on WhatsApp in your assistant's settings.")}

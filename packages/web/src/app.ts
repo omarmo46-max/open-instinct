@@ -19,7 +19,7 @@ export const PROVIDERS: Record<string, { label: string; needsBaseUrl?: boolean; 
 };
 
 const NAV: Array<{ group: string; items: Array<{ href: string; label: string; ic: string }> }> = [
-  { group: "Workspace", items: [{ href: "/app", label: "Overview", ic: "home" }, { href: "/app/chat", label: "Chat", ic: "chat" }, { href: "/app/approvals", label: "Approvals", ic: "check" }, { href: "/app/activity", label: "Activity", ic: "clock" }] },
+  { group: "Workspace", items: [{ href: "/app", label: "Overview", ic: "home" }, { href: "/app/approvals", label: "Approvals", ic: "check" }, { href: "/app/activity", label: "Activity", ic: "clock" }] },
   { group: "Assistant", items: [{ href: "/app/apps", label: "Apps", ic: "apps" }, { href: "/app/channels", label: "Channels", ic: "phone" }, { href: "/app/people", label: "People", ic: "users" }, { href: "/app/schedules", label: "Schedules", ic: "clock" }, { href: "/app/memory", label: "Memory", ic: "data" }, { href: "/app/skills", label: "Skills", ic: "file" }, { href: "/app/pages", label: "Pages", ic: "globe" }] },
   { group: "Settings", items: [{ href: "/app/model", label: "AI model", ic: "cpu" }, { href: "/app/payments", label: "Payments", ic: "card" }, { href: "/app/security", label: "Security", ic: "shield" }, { href: "/app/connection", label: "Connection", ic: "link" }] },
   { group: "Account", items: [{ href: "/app/account", label: "Account", ic: "user" }, { href: "/app/data", label: "Data and privacy", ic: "lock" }] },
@@ -52,7 +52,6 @@ export function overview(c: AppCtx, model: ModelConfig | undefined, status: { re
   const steps: Array<[boolean, string, string, string]> = [
     [c.agentConnected, "Connect your assistant", "Add its address and access token.", "/app/connection"],
     [Boolean(model), "Add your own AI model (optional)", "Use your API key instead of the default model.", "/app/model"],
-    [Boolean(status?.reachable), "Send your first message", "Open the chat and ask for something.", "/app/chat"],
   ];
   const scalars = status?.data ? Object.entries(status.data).filter(([, v]) => ["string", "number", "boolean"].includes(typeof v)).slice(0, 8) : [];
   return `<div class="stat">
@@ -62,13 +61,6 @@ export function overview(c: AppCtx, model: ModelConfig | undefined, status: { re
 ${counts ? `<div class="stat"><a class="s" href="/app/approvals"><div class="l">Waiting for approval</div><div class="v">${esc(counts.pendingApprovals)}</div></a><a class="s" href="/app/people"><div class="l">People</div><div class="v">${esc(counts.people)}</div></a><a class="s" href="/app/schedules"><div class="l">Schedules</div><div class="v">${esc(counts.schedules)}</div></a><a class="s" href="/app/skills"><div class="l">Skills</div><div class="v">${esc(counts.skills)}</div></a><a class="s" href="/app/activity"><div class="l">Activity log</div><div class="v">${counts.auditChainOk ? '<span class="tag ok">Verified</span>' : '<span class="tag bad">Broken</span>'}</div></a></div>` : ""}
 <div class="panel"><div class="ph"><h3>Getting started</h3></div><div class="pb">${steps.map(([done, h, p, href]) => `<div class="step" style="margin-bottom:18px"><span class="n" style="${done ? "" : "background:#fff;color:var(--muted);border:1px solid var(--line2)"}">${done ? "&#10003;" : ""}</span><div><h3>${h}</h3><p>${p} <a href="${href}">${done ? "Review" : "Open"}</a></p></div></div>`).join("")}</div></div>
 ${c.agentConnected ? `<div class="panel"><div class="ph"><h3>Assistant status</h3></div><div class="pb">${status?.reachable ? (scalars.length ? `<dl class="kv">${scalars.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : '<p class="muted">The assistant is online.</p>') : alertBox("err", status?.error ?? "The assistant did not answer.")}</div></div>` : ""}`;
-}
-
-export function chatPage(c: AppCtx): string {
-  if (!c.agentConnected) return `<div class="alert info">Connect your assistant first. <a href="/app/connection">Open Connection</a></div>`;
-  return `<div class="chat"><div class="log" id="chat-log"><div class="msg ag">Hi. Ask me for something.</div></div>
-<form id="chat-form" data-csrf="${esc(c.csrf)}"><input type="text" name="message" placeholder="Message your assistant" autocomplete="off" maxlength="4000" required><button class="btn" type="submit">Send</button></form></div>
-<p class="hint">This conversation is not saved in the dashboard. Your assistant keeps its own memory.</p>`;
 }
 
 export function modelPage(c: AppCtx, m: ModelConfig | undefined, flash: Flash): string {

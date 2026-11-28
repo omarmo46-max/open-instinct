@@ -57,7 +57,7 @@ p{margin:0}.lead{font-size:20px;line-height:1.55;color:var(--ink2)}.muted{color:
 .card .ico{display:inline-flex;width:42px;height:42px;align-items:center;justify-content:center;border-radius:10px;background:var(--accent-soft);color:var(--accent);margin-bottom:16px}
 .step{display:flex;gap:16px}.step .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:650;font-size:15px}.step p{color:var(--ink2);margin-top:4px;font-size:15px}
 .band{background:var(--ink);color:#fff;padding:72px 0}.band h2{color:#fff}.band p{color:#d0d5dd;margin-top:12px;font-size:18px}.band .btn{margin-top:28px;background:#fff;color:var(--ink);border-color:#fff}
-/* chat preview */
+/* conversation preview on the home page */
 .phone{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px rgba(16,24,40,.12);padding:20px;max-width:440px;margin-left:auto}
 .phone .bar{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px;font-weight:600;font-size:15px}.dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
 .msg{max-width:84%;padding:10px 14px;border-radius:14px;font-size:15px;margin:8px 0;line-height:1.45}.msg.me{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:4px}.msg.ag{background:var(--soft);border:1px solid var(--line);border-bottom-left-radius:4px}
@@ -89,7 +89,6 @@ dialog{border:0;border-radius:14px;padding:0;width:min(440px,92vw);box-shadow:0 
 .content{padding:36px 32px 64px;max-width:980px}.content h1{font-size:28px;letter-spacing:-.02em}.content .desc{color:var(--muted);margin:8px 0 28px}.panel{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:24px}.panel>.ph{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.panel>.ph h3{font-size:16px}.panel>.pb{padding:22px}
 .kv{display:grid;grid-template-columns:200px 1fr;gap:12px 20px;font-size:15px}.kv dt{color:var(--muted)}.kv dd{margin:0;word-break:break-word}
 .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}.stat .s{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:#fff}.stat .s .l{font-size:13px;color:var(--muted)}.stat .s .v{font-size:20px;font-weight:650;margin-top:6px;letter-spacing:-.01em}
-.chat{display:flex;flex-direction:column;height:calc(100vh - 68px - 190px);min-height:340px}.chat .log{flex:1;overflow:auto;padding:20px;background:var(--soft);border:1px solid var(--line);border-radius:12px 12px 0 0}.chat form{display:flex;gap:10px;padding:12px;border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;background:#fff}.chat input{flex:1}
 .tbl{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14.5px}th{text-align:left;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0 12px 10px}td{padding:12px;border-top:1px solid var(--line);vertical-align:top}
 .inl{display:inline-block;margin:0 6px 4px 0}.inl select{height:36px;width:auto;margin-right:6px;font-size:14px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{display:inline-block}.pre{white-space:pre-wrap;word-break:break-word;background:var(--soft);border:1px solid var(--line);border-radius:var(--r);padding:14px;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0;max-height:420px;overflow:auto}code{background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px}input[type=number]{width:150px;height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);font:inherit;font-size:15px}
 @media(max-width:900px){.hero .grid,.c3,.c4,.c2,.feat,.ftr .grid{grid-template-columns:1fr}.hdr .wrap{grid-template-columns:auto 1fr}.nav{display:none}.hdr .right{gap:14px}.phone{margin:0}.app{grid-template-columns:1fr}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.stat{grid-template-columns:1fr}.kv{grid-template-columns:1fr}.top{padding:0 18px}.content{padding:24px 18px}.hero{padding:64px 0 48px}.sec{padding:56px 0}}
@@ -107,17 +106,5 @@ export const JS = `
     if(e.target===dlg){dlg.close()}
     var c=e.target.closest('[data-copy]');if(c&&navigator.clipboard){navigator.clipboard.writeText(c.dataset.copy);c.textContent='Copied'}
   });
-  var form=document.getElementById('chat-form');
-  if(form){
-    var log=document.getElementById('chat-log'),input=form.querySelector('input[name=message]'),btn=form.querySelector('button');
-    function add(cls,text){var d=document.createElement('div');d.className='msg '+cls;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
-    log.scrollTop=log.scrollHeight;
-    form.addEventListener('submit',function(e){
-      e.preventDefault();var text=input.value.trim();if(!text)return;input.value='';btn.disabled=true;add('me',text);var wait=add('ag','Working on it...');
-      fetch('/app/chat/send',{method:'POST',headers:{'content-type':'application/json','x-csrf-token':form.dataset.csrf},body:JSON.stringify({message:text})})
-        .then(function(r){return r.json()}).then(function(j){wait.textContent=j.reply||'No reply.'}).catch(function(){wait.textContent='Could not reach the server.'})
-        .then(function(){btn.disabled=false;input.focus();log.scrollTop=log.scrollHeight});
-    });
-  }
 })();
 `;

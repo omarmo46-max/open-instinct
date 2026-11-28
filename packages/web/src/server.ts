@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import { AgentClient, checkAgentUrl } from "./agent.js";
-import { accountPage, chatPage, connectionPage, dataPage, modelPage, overview, PROVIDERS, shell, type AppCtx, type Flash } from "./app.js";
+import { accountPage, connectionPage, dataPage, modelPage, overview, PROVIDERS, shell, type AppCtx, type Flash } from "./app.js";
 import type { WebConfig } from "./config.js";
 import { code6, hashPassword, open, safeEqual, seal, sha256, token, verifyPassword } from "./crypto.js";
 import type { Mailer } from "./mailer.js";
@@ -392,16 +392,6 @@ export function createWebServer(deps: WebDeps): http.Server {
         const counts = ctx.agentConnected && status?.reachable ? (await agent.owner(u.agentUrl!, agentToken(), "overview")).data : undefined;
         return html(200, shell(ctx, "Overview", `Welcome, ${u.name.split(" ")[0] ?? u.name}.`, overview(ctx, model, status, counts), takeReply(u.id)));
       }
-      if (method === "GET" && path === "/app/chat") return html(200, shell(ctx, "Chat", "Talk to your assistant from the browser.", chatPage(ctx)));
-      if (method === "POST" && path === "/app/chat/send") {
-        const message = String(jsonBody?.message ?? "").trim().slice(0, 4000);
-        if (!ctx.agentConnected) return json(400, { reply: "Connect your assistant first." });
-        if (!message) return json(400, { reply: "Write a message first." });
-        if (!limiter.allow(`ch:${u.id}`, 30, 60_000)) return json(429, { reply: "You are sending messages too quickly." });
-        const r = await agent.chat(u.agentUrl!, agentToken(), message, `web:${u.id}`);
-        return json(200, { reply: r.reply });
-      }
-
       if (method === "GET" && path === "/app/model") return html(200, shell(ctx, "AI model", "Use your own model key. The default model is the fallback.", modelPage(ctx, await store.getModel(u.id), flash)));
       if (method === "POST" && path === "/app/model") {
         const provider = f("provider");

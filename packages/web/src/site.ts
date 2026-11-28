@@ -93,7 +93,7 @@ export function home(c: PageCtx): string {
 <section class="sec"><div class="wrap"><h2>Everything you would hand to a human assistant</h2>
 <p class="sub">Connect the tools you already use. The assistant works inside them, with limits you set.</p>
 <div class="cols c3">
-${card("chat", "Talk the way you already do", "Message it on iMessage, SMS, Telegram or WhatsApp, email it, call it, or use the web chat.")}
+${card("chat", "Talk the way you already do", "Message it on iMessage, SMS, Telegram or WhatsApp, email it or call it.")}
 ${card("apps", "Works across your apps", "Gmail, Calendar, GitHub, Notion, Slack and hundreds more. You connect each one and can disconnect it at any time.")}
 ${card("phone", "Makes calls for you", "It can phone a restaurant or a clinic and report back. Each call needs your approval, or you can pre-approve specific numbers.")}
 ${card("card", "Pays within limits", "One-time cards with a budget you control, so a purchase never exceeds what you allowed.")}
@@ -117,7 +117,7 @@ ${card("clock", "Remembers and follows up", "It keeps context, sets reminders, r
 }
 
 const FEATURES: Array<{ id: string; ic: string; h: string; p: string; items: string[] }> = [
-  { id: "channels", ic: "chat", h: "Channels", p: "Reach your assistant where you already are.", items: ["iMessage, SMS, email and phone calls", "Telegram and WhatsApp", "Web chat and voice notes from your dashboard", "Several people can reach it, each with their own permissions"] },
+  { id: "channels", ic: "chat", h: "Channels", p: "Reach your assistant where you already are.", items: ["iMessage, SMS, email and phone calls", "Telegram and WhatsApp", "Several people can reach it, each with their own permissions"] },
   { id: "apps", ic: "apps", h: "Connected apps", p: "It acts inside the tools you use.", items: ["Gmail, Google Calendar, GitHub, Notion, Slack and many more", "You sign in to each app yourself; the assistant never sees your password", "Disconnect any app whenever you like", "Its own email address for tasks that need one"] },
   { id: "calls", ic: "phone", h: "Phone calls", p: "Let it make the calls you do not want to make.", items: ["A voice assistant phones a business and reports back", "Each call asks for your approval", "Or pre-approve exact numbers, purposes and hours with a standing mandate", "A summary arrives when the call ends"] },
   { id: "payments", ic: "card", h: "Payments", p: "Buy things without handing over your card.", items: ["One-time cards for each purchase", "A budget with per-purchase and daily limits", "You approve what goes beyond your rules", "Available methods depend on your country"] },
@@ -135,7 +135,7 @@ export function features(c: PageCtx): string {
 }
 
 export function how(c: PageCtx): string {
-  const steps: Array<[string, string]> = [["Create an account", "Sign up with your email address and confirm it with the 6-digit code we send."], ["Connect your assistant", "In the dashboard, add your assistant's address and access token under Connection. Your assistant runs on infrastructure you choose."], ["Link your channels and apps", "Choose how you want to reach it and connect Gmail, Calendar and other apps. You sign in to each one yourself."], ["Set your rules", "Decide who can message it, what it may do alone, and what needs your approval. Set spending limits if you use payments."], ["Start asking", "Message it or use the web chat. It does the work, asks when it needs a decision, and reports back."]];
+  const steps: Array<[string, string]> = [["Create an account", "Sign up with your email address and confirm it with the 6-digit code we send."], ["Connect your assistant", "In the dashboard, add your assistant's address and access token under Connection. Your assistant runs on infrastructure you choose."], ["Link your channels and apps", "Choose how you want to reach it and connect Gmail, Calendar and other apps. You sign in to each one yourself."], ["Set your rules", "Decide who can message it, what it may do alone, and what needs your approval. Set spending limits if you use payments."], ["Start asking", "Message it. It does the work, asks when it needs a decision, and reports back."]];
   return layout(c, { title: "How it works", body: `<section class="phead"><div class="wrap"><div class="eyebrow">How it works</div><h1>From sign-up to first task</h1><p class="lead">Setup takes a few minutes. You decide how much it can do on its own.</p></div></section>
 <section class="sec"><div class="wrap narrow"><div class="stack" style="--x:0">${steps.map(([h, p], i) => `<div class="step" style="margin-bottom:32px"><span class="n">${i + 1}</span><div><h3>${h}</h3><p>${p}</p></div></div>`).join("")}</div><p style="margin-top:12px"><a class="btn" href="/signup" data-auth="signup">Sign up now</a></p></div></section>` });
 }
@@ -162,7 +162,7 @@ export function pricing(c: PageCtx): string {
 export function faq(c: PageCtx): string {
   const q: Array<[string, string]> = [
     ["What is it?", "An assistant you message or call. It uses your apps and the web to complete tasks for you."],
-    ["How do I reach it?", "By iMessage, SMS, email, Telegram, WhatsApp, phone or the web chat in your dashboard, depending on what you connect."],
+    ["How do I reach it?", "By iMessage, SMS, email, Telegram, WhatsApp, or phone, depending on what you connect."],
     ["Can it use my Gmail or GitHub?", "Yes. You connect each app by signing in to it yourself, and you can disconnect it at any time."],
     ["Will it spend my money without asking?", "No. Payments follow a budget you set, and anything outside your rules asks for approval."],
     ["Can I use my own AI model?", "Yes. Add your API key in the dashboard. Your model is used while it works. If it stops, the default model takes over and you are told."],

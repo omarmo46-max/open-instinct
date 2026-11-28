@@ -189,8 +189,8 @@ describe("accounts", () => {
   });
 });
 
-describe("assistant connection and chat", () => {
-  it("refuses private addresses, plain http and bad tokens; connects a real one and chats", async () => {
+describe("assistant connection", () => {
+  it("refuses private addresses, plain http and bad tokens; connects a real one", async () => {
     const { c, csrf } = await signedIn();
     for (const url of ["http://agent.example.com", "https://127.0.0.1", "https://localhost", "https://evil.example.com", "https://10.1.2.3", "https://user:pw@agent.example.com"]) {
       expect((await c.post("/app/connection", { url, token: "tok-123" }, csrf)).status, url).toBe(400);
@@ -203,14 +203,18 @@ describe("assistant connection and chat", () => {
     const u = await env.store.userByEmail("omar@example.com");
     expect(u?.agentTokenSealed).not.toContain("tok-123");
     expect(open(KEY, u!.agentTokenSealed!)).toBe("tok-123");
-    const chat = await c.req("/app/chat/send", { method: "POST", headers: { "content-type": "application/json", "x-csrf-token": csrf }, body: JSON.stringify({ message: "hello" }) });
-    expect(await chat.json()).toEqual({ reply: "Done." });
-    expect(env.chats[0]).toContain('"message":"hello"');
   });
-  it("chat needs a connected assistant", async () => {
+  it("there is no chat page: the route, the menu entry, the script and the copy are gone", async () => {
     const { c, csrf } = await signedIn();
-    const r = await c.req("/app/chat/send", { method: "POST", headers: { "content-type": "application/json", "x-csrf-token": csrf }, body: JSON.stringify({ message: "hi" }) });
-    expect(r.status).toBe(400);
+    expect((await c.req("/app/chat")).status).toBe(404);
+    expect((await c.req("/app/chat/send", { method: "POST", headers: { "content-type": "application/json", "x-csrf-token": csrf }, body: "{}" })).status).toBe(404);
+    for (const path of ["/app", "/app/channels", "/app/account"]) expect(await (await c.req(path)).text(), path).not.toContain("/app/chat");
+    const js = await (await c.req("/assets/site.js")).text();
+    expect(js).not.toContain("chat-form");
+    expect(await (await c.req("/assets/site.css")).text()).not.toContain(".chat{");
+    const pub = [await (await c.req("/")).text(), await (await c.req("/features")).text(), await (await c.req("/faq")).text(), await (await c.req("/how-it-works")).text()].join(" ");
+    expect(pub.toLowerCase()).not.toContain("web chat");
+    expect((await c.post("/app/act", { message: "hi", back: "/app/people" }, csrf)).headers.get("location")).toContain("m=no-agent"); // actions still need an assistant
   });
 });
 

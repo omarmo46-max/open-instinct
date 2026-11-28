@@ -19,7 +19,7 @@ Emails (verification and reset codes) go to the server log until a mail transpor
 ## Pages
 
 Public: Home, Features, How it works, Security, Pricing, FAQ, Terms, Privacy, Log in / Sign up (a dialog on every page, plus its own pages).
-Dashboard (17 pages): Overview, Chat, Approvals, Activity, Apps, Channels, People, Schedules, Memory, Skills, Pages, AI model, Payments, Security, Connection, Account, Data and privacy.
+Dashboard (16 pages): Overview, Approvals, Activity, Apps, Channels, People, Schedules, Memory, Skills, Pages, AI model, Payments, Security, Connection, Account, Data and privacy.
 
 Every page shows the assistant's real state, read from its owner API (`GET /owner/<resource>`, behind the owner token, read-only, phones and emails masked, no secrets). Every change is sent to the assistant as a chat command (`POST /app/act`), so approvals, step-up codes and the permission policy apply exactly as in a text message; the assistant's reply is shown once on the next page. Connecting an app opens the app's own sign-in page.
 
@@ -27,7 +27,7 @@ Every page shows the assistant's real state, read from its owner API (`GET /owne
 
 1. In the dashboard open Connection and enter the agent's public https address and its `INSTINCT_CHAT_TOKEN`.
 2. The first time, the page shows a callback secret once. Put it on the agent as `INSTINCT_WEB_URL` and `INSTINCT_WEB_SECRET`.
-3. The dashboard then reads `/status`, sends chat messages to `/chat`, and hands model settings to `PUT /model`.
+3. The dashboard then reads `/status`, sends dashboard actions to `/chat` as commands, and hands model settings to `PUT /model`.
 
 ## Your own AI model
 
