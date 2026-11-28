@@ -23,7 +23,6 @@ const empty = (t: string) => `<p class="muted">${esc(t)}</p>`;
 const table = (heads: string[], rows: string[][]) => (rows.length ? `<div class="tbl"><table><thead><tr>${heads.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${x}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : "");
 const when = (v: unknown) => (typeof v === "string" && v ? esc(v.replace("T", " ").slice(0, 16)) + " UTC" : "&ndash;");
 const egp = (piasters: number) => `${(piasters / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })} EGP`;
-const askBox = (c: SecCtx, placeholder: string, label = "Send") => `<form method="post" action="/app/act">${hidden(c)}<input type="hidden" name="back" value="${esc(c.path)}"><label>Ask your assistant</label><div class="row"><input type="text" name="message" required maxlength="1000" placeholder="${esc(placeholder)}" style="flex:1;min-width:240px"><button class="btn" type="submit">${esc(label)}</button></div></form>`;
 
 export function appsPage(c: SecCtx, d: Rec): string {
   if (!d.configured) return panel("Connected apps", `<p>App connections are not set up on your assistant yet. Set <code>COMPOSIO_API_KEY</code> on it to connect Gmail, Calendar, GitHub, Notion, Slack and more.</p>`);
@@ -87,17 +86,17 @@ export function paymentsPage(c: SecCtx, d: Rec): string {
     : `<p class="muted">The Egyptian pound rail is off on your assistant. Set <code>EGP_WALLET=1</code> to turn it on.</p>`);
   const callBox = panel("Concierge calls", m.enabled
     ? `<dl class="kv"><dt>Numbers</dt><dd>${(m.numbers as Rec[]).map((n) => `${esc(n.label)} ${esc(n.number)}`).join("<br>") || "None"}</dd><dt>Purposes</dt><dd>${esc((m.purposes as string[]).join(", "))}</dd><dt>Hours</dt><dd>${m.startHour}:00 to ${m.endHour}:00</dd><dt>Limits</dt><dd>${m.maxCallsPerDay} a day, ${m.maxCallsPerNumberPerDay} per number</dd><dt>Ends</dt><dd>${when(m.expiresAt)}</dd></dl><p style="margin-top:16px">${act(c, "Switch off my concierge call mandate.", "Switch off")}</p>`
-    : `<p class="muted">No standing mandate. Each call asks for your approval.</p><p style="margin-top:14px">${askBox(c, "Let you call Cafe Nile (+20...) to book tables, 9am to 8pm, 2 calls a day", "Set up")}</p>`);
+    : `<p class="muted">No standing mandate. Each call asks for your approval.</p>`);
   return linkBox + egpBox + callBox;
 }
 
 export function schedulesPage(c: SecCtx, d: Rec): string {
   const rows = (d.schedules as Rec[]).map((s) => [`<b>${esc(s.name)}</b><div class="small muted">${esc(s.prompt)}</div>`, esc(s.cron ?? "One time"), esc(s.tz ?? ""), when(s.nextRunAt), s.system ? tag("Built in") : act(c, `Delete the schedule named "${s.name}".`, "Delete")]);
-  return panel("Reminders and routines", rows.length ? table(["Name", "When", "Time zone", "Next run", ""], rows) : empty("No schedules yet.")) + panel("Add one", askBox(c, "Remind me to review invoices every Monday at 9", "Add"));
+  return panel("Reminders and routines", rows.length ? table(["Name", "When", "Time zone", "Next run", ""], rows) : empty("No schedules yet."));
 }
 
 export function memoryPage(c: SecCtx, d: Rec): string {
-  return panel("What your assistant remembers", d.durable ? `<pre class="pre">${esc(d.durable)}</pre>` : empty("Nothing saved yet.")) + panel("Preferences", d.preferences ? `<pre class="pre">${esc(d.preferences)}</pre>` : empty("No preferences saved yet.")) + panel("Teach or forget", askBox(c, "Remember that I prefer morning meetings, or forget my old address", "Send"));
+  return panel("What your assistant remembers", d.durable ? `<pre class="pre">${esc(d.durable)}</pre>` : empty("Nothing saved yet.")) + panel("Preferences", d.preferences ? `<pre class="pre">${esc(d.preferences)}</pre>` : empty("No preferences saved yet."));
 }
 
 export function skillsPage(_c: SecCtx, d: Rec): string {
@@ -108,7 +107,7 @@ export function skillsPage(_c: SecCtx, d: Rec): string {
 export function pagesPage(c: SecCtx, d: Rec): string {
   if (!d.enabled) return panel("Shareable pages", `<p>Polls, sign-ups and RSVPs are off on your assistant. Set <code>INSTINCT_PAGES=1</code> to turn them on.</p>`);
   const rows = (d.pages as Rec[]).map((p) => [`<b>${esc(p.title)}</b>`, tag(String(p.kind)), String(p.responses), p.open ? tag("Open", "ok") : tag("Closed"), when(p.expiresAt), p.open ? act(c, `Close the page "${p.title}".`, "Close") : ""]);
-  return panel("Your pages", rows.length ? table(["Title", "Type", "Responses", "State", "Ends", ""], rows) : empty("No pages yet.")) + panel("Create one", askBox(c, "Make a poll: where should we eat Friday? Pizza, Sushi, Koshary", "Create"));
+  return panel("Your pages", rows.length ? table(["Title", "Type", "Responses", "State", "Ends", ""], rows) : empty("No pages yet."));
 }
 
 export function securityPage(_c: SecCtx, d: Rec): string {
