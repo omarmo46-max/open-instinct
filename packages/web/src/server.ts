@@ -5,6 +5,7 @@ import { accountPage, chatPage, connectionPage, dataPage, modelPage, overview, P
 import type { WebConfig } from "./config.js";
 import { code6, hashPassword, open, safeEqual, seal, sha256, token, verifyPassword } from "./crypto.js";
 import type { Mailer } from "./mailer.js";
+import { activityPage, appsPage, approvalsPage, BACK_PATHS, channelsPage, memoryPage, notConnected, pagesPage, paymentsPage, peoplePage, schedulesPage, securityPage, skillsPage, unavailable, type SecCtx } from "./sections.js";
 import { authPage, faq, features, home, how, layout, legal, messagePage, pricing, security, type PageCtx } from "./site.js";
 import type { CodePurpose, ModelConfig, Session, Store, User } from "./store.js";
 import { CSS, JS } from "./ui.js";
@@ -93,6 +94,13 @@ export function createWebServer(deps: WebDeps): http.Server {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const agent = new AgentClient(fetchImpl);
   const limiter = new RateLimiter(() => now().getTime());
+  /** The assistant's last answer to a dashboard action, shown once on the next page load. */
+  const replies = new Map<string, { text: string; at: number }>();
+  const takeReply = (id: string): string | undefined => {
+    const r = replies.get(id);
+    replies.delete(id);
+    return r && now().getTime() - r.at < 300_000 ? r.text : undefined;
+  };
   const dummyHash = "scrypt$AAAAAAAAAAAAAAAAAAAAAA==$" + Buffer.alloc(64).toString("base64");
   const ipOf = (req: http.IncomingMessage) => (config.trustProxy ? String(req.headers["x-forwarded-for"] ?? "").split(",")[0]!.trim() : "") || req.socket.remoteAddress || "?";
   const hmac = (s: string) => crypto.createHmac("sha256", config.secretKey).update(s).digest("base64url");
@@ -136,7 +144,7 @@ export function createWebServer(deps: WebDeps): http.Server {
       "x-content-type-options": "nosniff",
       "referrer-policy": "same-origin",
       "x-frame-options": "DENY",
-      "content-security-policy": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'",
+      "content-security-policy": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; form-action 'self' https:; base-uri 'none'",
       ...(config.secureCookies ? { "strict-transport-security": "max-age=31536000; includeSubDomains" } : {}),
       ...extra,
     });
@@ -381,7 +389,8 @@ export function createWebServer(deps: WebDeps): http.Server {
       if (method === "GET" && path === "/app") {
         const model = await store.getModel(u.id);
         const status = ctx.agentConnected ? await agent.status(u.agentUrl!, agentToken()) : undefined;
-        return html(200, shell(ctx, "Overview", `Welcome, ${u.name.split(" ")[0] ?? u.name}.`, overview(ctx, model, status)));
+        const counts = ctx.agentConnected && status?.reachable ? (await agent.owner(u.agentUrl!, agentToken(), "overview")).data : undefined;
+        return html(200, shell(ctx, "Overview", `Welcome, ${u.name.split(" ")[0] ?? u.name}.`, overview(ctx, model, status, counts), takeReply(u.id)));
       }
       if (method === "GET" && path === "/app/chat") return html(200, shell(ctx, "Chat", "Talk to your assistant from the browser.", chatPage(ctx)));
       if (method === "POST" && path === "/app/chat/send") {
@@ -490,6 +499,67 @@ export function createWebServer(deps: WebDeps): http.Server {
         await store.deleteUser(u.id);
         cookie("sid", "", 0);
         return html(200, messagePage({ ...pageCtx, signedIn: false }, "Account deleted", "Your account and saved settings were deleted.", { href: "/", label: "Back to home" }));
+      }
+
+      // sections that show the assistant's own state (read-only), plus actions sent to it as chat commands
+      const sc: SecCtx = { csrf: session.csrf, path };
+      const SECTIONS: Record<string, { title: string; desc: string; resource: string; query?: string; render: (c: SecCtx, d: any) => string }> = {
+        "/app/approvals": { title: "Approvals", desc: "Actions that are waiting for your decision.", resource: "approvals", render: approvalsPage },
+        "/app/activity": { title: "Activity", desc: "What your assistant has done, newest first.", resource: "activity", query: "?limit=150", render: activityPage },
+        "/app/apps": { title: "Apps", desc: "Connect the tools your assistant works in.", resource: "apps", render: appsPage },
+        "/app/channels": { title: "Channels", desc: "Where you and others can reach your assistant.", resource: "channels", render: channelsPage },
+        "/app/people": { title: "People", desc: "Who may message your assistant, and what they may ask for.", resource: "people", render: peoplePage },
+        "/app/schedules": { title: "Schedules", desc: "Reminders and routines your assistant runs.", resource: "schedules", render: schedulesPage },
+        "/app/memory": { title: "Memory", desc: "What your assistant remembers about you.", resource: "memory", render: memoryPage },
+        "/app/skills": { title: "Skills", desc: "Playbooks your assistant follows.", resource: "skills", render: skillsPage },
+        "/app/pages": { title: "Pages", desc: "Polls, sign-ups and RSVPs you can share.", resource: "pages", render: pagesPage },
+        "/app/payments": { title: "Payments", desc: "Budgets, cards and calls your assistant may use.", resource: "payments", render: paymentsPage },
+        "/app/security": { title: "Security", desc: "How your assistant and your data are protected.", resource: "security", render: securityPage },
+      };
+      const section = SECTIONS[path];
+      if (method === "GET" && section) {
+        if (!ctx.agentConnected) return html(200, shell(ctx, section.title, section.desc, notConnected));
+        const r = await agent.owner(u.agentUrl!, agentToken(), section.resource, section.query ?? "");
+        return html(200, shell(ctx, section.title, section.desc, r.ok ? section.render(sc, r.data) : unavailable(r.error ?? "Unavailable."), takeReply(u.id)));
+      }
+      const oneLine = (v: string, n = 200) => v.replace(/[\r\n\u0000-\u001f]+/g, " ").trim().slice(0, n);
+      const sendAct = async (message: string, back: string) => {
+        const target = BACK_PATHS.includes(back) ? back : "/app";
+        if (!ctx.agentConnected) return to(target, "no-agent");
+        if (!limiter.allow(`act:${u.id}`, 20, 60_000)) {
+          replies.set(u.id, { text: "You are sending commands too quickly. Try again in a minute.", at: now().getTime() });
+          return redirect(target);
+        }
+        const r = await agent.chat(u.agentUrl!, agentToken(), message, `web:${u.id}`);
+        replies.set(u.id, { text: r.reply.slice(0, 800), at: now().getTime() });
+        return redirect(target);
+      };
+      if (method === "POST" && path === "/app/act") {
+        const message = oneLine(f("message"), 1000);
+        return message ? sendAct(message, f("back")) : redirect("/app");
+      }
+      if (method === "POST" && path === "/app/people/tier") {
+        const tier = f("tier");
+        if (!["staff", "partner", "family", "friend", "contact", "stranger"].includes(tier)) return redirect("/app/people");
+        return sendAct(`Set ${oneLine(f("name"), 80)}'s trust level to ${tier}.`, "/app/people");
+      }
+      if (method === "POST" && path === "/app/people/add") {
+        const tier = f("tier");
+        if (!["staff", "partner", "family", "friend", "contact", "stranger"].includes(tier)) return redirect("/app/people");
+        return sendAct(`Add ${oneLine(f("name"), 80)} (${oneLine(f("contact"), 120)}) to my contacts as ${tier}.`, "/app/people");
+      }
+      if (method === "POST" && path === "/app/payments/egp") {
+        const n = (k: string) => Math.max(0, Math.min(100000, Math.round(Number(f(k)) || 0)));
+        return sendAct(`Turn on my Egyptian pound budget: set the total to ${n("budget")} EGP, ${n("perPurchase")} EGP per purchase and ${n("daily")} EGP per day (0 means no cap).`, "/app/payments");
+      }
+      if (method === "POST" && path === "/app/apps/connect") {
+        const toolkit = f("toolkit");
+        if (!ctx.agentConnected || !/^[a-z0-9_-]{2,60}$/i.test(toolkit)) return to("/app/apps", "no-agent");
+        const r = await agent.owner(u.agentUrl!, agentToken(), "apps/connect", `?toolkit=${encodeURIComponent(toolkit)}`);
+        const link = typeof r.data?.url === "string" ? r.data.url : "";
+        if (r.ok && /^https:\/\//.test(link)) return redirect(link);
+        replies.set(u.id, { text: r.error ?? "No sign-in link is available for that app.", at: now().getTime() });
+        return redirect("/app/apps");
       }
       return html(404, shell(ctx, "Not found", "That page does not exist.", '<p><a href="/app">Back to overview</a></p>'));
     }

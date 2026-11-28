@@ -34,6 +34,7 @@ export interface PaymentsToolDeps {
 export interface EgpRailLike {
   tools: RegisteredTool[];
   handleHttp(method: string, path: string, body: string): { status: number; html: string } | undefined;
+  status?(): unknown;
 }
 
 export interface PaymentsModule {

@@ -56,6 +56,8 @@ export interface HttpApp {
   /** Set when payments are configured. */
   wallet?: WalletCallback;
   /** The owner's own model and its fallback status (PUT/GET /model). */
+  /** Read-only state for the website dashboard (GET /owner/<resource>). */
+  ownerApi?: { handle(resource: string, query: URLSearchParams): Promise<{ status: number; body: unknown }> };
   customModel?: { apply(body: unknown): { ok: boolean; error?: string }; publicStatus(): unknown };
   /** Set when EGP_WALLET=1: serves the owner's private one-time card page. */
   /** Set when INSTINCT_PAGES=1: serves the public poll / sign-up / RSVP pages. */
@@ -441,6 +443,12 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     if (method === "GET" && (path === "/" || path === "/status")) return sendJson(res, 200, { ...statusJson(app), ...(inbox ? { inkboxInbox: inbox.queue.summary() } : {}) });
+    // Read-only owner state for the website dashboard. Changes go through chat, so approvals and step-up still apply.
+    if (app.ownerApi && method === "GET" && path.startsWith("/owner/")) {
+      const out = await app.ownerApi.handle(path.slice("/owner/".length), url.searchParams);
+      return sendJson(res, out.status, out.body);
+    }
+
     // Bring your own model: the website dashboard (or the owner) sets, switches off or removes it. The key never comes back out.
     if (app.customModel && path === "/model") {
       if (method === "GET") return sendJson(res, 200, app.customModel.publicStatus() ?? { enabled: false });

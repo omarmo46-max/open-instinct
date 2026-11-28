@@ -28,6 +28,26 @@ async function start(): Promise<Env> {
     const u = String(url);
     const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
     if (u === "https://agent.example.com/status") return json(init?.headers && (init.headers as Record<string, string>)["x-instinct-token"] === "tok-123" ? 200 : 401, { agent: "T", ready: true });
+    const own = /^https:\/\/agent\.example\.com\/owner\/([\w/-]+)(\?.*)?$/.exec(u);
+    if (own) {
+      const data: Record<string, unknown> = {
+        overview: { people: 2, pendingApprovals: 1, schedules: 3, skills: 12, auditChainOk: true },
+        approvals: { pending: [{ id: "abc123", toolName: "phone_call", summary: "Call the clinic", createdAt: "2026-11-28T10:00:00Z", expiresAt: "2026-11-28T11:00:00Z" }] },
+        activity: { entries: [{ at: "2026-11-28T10:00:00Z", kind: "spend", tool: "egp_card_request", principal: "owner", detail: "<b>x</b>" }], chain: { ok: true, entries: 1 } },
+        apps: { configured: true, toolkits: [{ slug: "gmail", name: "Gmail", connected: true }], available: ["gmail", "github", "notion"] },
+        channels: { web: true, inkbox: { handle: "insty" }, telegram: true, whatsapp: false, ownerPhones: ["••••4567"], ownerEmails: ["o•••@x.com"] },
+        people: { tiers: ["owner", "staff", "partner", "family", "friend", "contact", "stranger"], people: [{ id: "c1", name: "Sam", tier: "friend", phones: ["••••3333"], emails: [], telegram: false, agentHandle: "@sam", e2eePinned: true, notes: "" }] },
+        schedules: { schedules: [{ id: "s1", name: "Morning brief", cron: "0 8 * * *", tz: "Africa/Cairo", prompt: "Brief me", nextRunAt: null, system: false }] },
+        memory: { durable: "Likes tea <script>", preferences: "Arabic" },
+        skills: { skills: [{ name: "dining", description: "Book tables" }] },
+        pages: { enabled: true, pages: [{ id: "pg_1", kind: "poll", title: "Dinner", responses: 4, open: true, expiresAt: "2026-12-01T00:00:00Z" }] },
+        payments: { link: { configured: true, connected: true }, egp: { enabled: true, poolPiasters: 100000, availablePiasters: 90000, usedTodayPiasters: 10000, perPurchasePiasters: 40000, dailyPiasters: 60000, open: [] }, spentTodayUsd: 3, concierge: { enabled: false, numbers: [], purposes: [], maxCallsPerDay: 0, maxCallsPerNumberPerDay: 0, startHour: 9, endHour: 20 } },
+        security: { auditChain: { ok: true, entries: 9 }, vaultConfigured: true, e2eeFingerprint: "ab12cd34", a2aHandle: "insty" },
+        "apps/connect": { url: "https://connect.example/oauth/gmail" },
+      };
+      const key = own[1]!;
+      return key in data ? json(200, data[key]) : json(404, {});
+    }
     if (u === "https://agent.example.com/chat") { chats.push(String(init?.body)); return json(200, { response: "Done." }); }
     if (u === "https://agent.example.com/model") { pushed.push(JSON.parse(String(init?.body))); return json(200, { ok: true }); }
     if (u.startsWith("https://api.openai.com/v1/models")) return json((init?.headers as Record<string, string>).authorization === "Bearer good-key-123456" ? 200 : 401, {});
@@ -264,5 +284,63 @@ describe("helpers", () => {
     expect((await checkAgentUrl("https://[::1]", false, lookup)).ok).toBe(false);
     expect((await checkAgentUrl("https://169.254.169.254", false, lookup)).ok).toBe(false);
     expect((await checkAgentUrl("http://localhost:8080", true, lookup)).ok).toBe(true);
+  });
+});
+
+describe("dashboard sections", () => {
+  async function connected() {
+    const { c, csrf } = await signedIn();
+    await c.post("/app/connection", { url: "https://agent.example.com", token: "tok-123" }, csrf);
+    return { c, csrf };
+  }
+  const SECTIONS: Array<[string, string]> = [["/app/approvals", "Call the clinic"], ["/app/activity", "egp_card_request"], ["/app/apps", "Gmail"], ["/app/channels", "insty"], ["/app/people", "Sam"], ["/app/schedules", "Morning brief"], ["/app/memory", "Likes tea"], ["/app/skills", "dining"], ["/app/pages", "Dinner"], ["/app/payments", "Egyptian pound budget"], ["/app/security", "ab12cd34"]];
+
+  it("every section shows the assistant's real data, escaped, and asks to connect when there is no assistant", async () => {
+    const { c } = await connected();
+    for (const [path, text] of SECTIONS) {
+      const r = await c.req(path);
+      expect(r.status, path).toBe(200);
+      const html = await r.text();
+      expect(html, path).toContain(text);
+      expect(html, path).not.toContain("<script>");
+      expect(html, path).not.toContain("Soon");
+    }
+    const lone = await signedIn("lone@example.com");
+    for (const [path] of SECTIONS) expect(await (await lone.c.req(path)).text(), path).toContain("Connect your assistant first");
+    expect(await (await c.req("/app")).text()).toContain("Waiting for approval");
+  });
+
+  it("actions are sent to the assistant as chat commands, the reply is shown once, and bad paths are ignored", async () => {
+    const { c, csrf } = await connected();
+    const r = await c.post("/app/act", { message: "Close the page \"Dinner\".", back: "/app/pages" }, csrf);
+    expect(r.headers.get("location")).toBe("/app/pages");
+    expect(env.chats.at(-1)).toContain("Close the page");
+    expect(await (await c.req("/app/pages")).text()).toContain("Assistant:");
+    expect(await (await c.req("/app/pages")).text()).not.toContain("Assistant:");
+    expect((await c.post("/app/act", { message: "hi", back: "https://evil.example" }, csrf)).headers.get("location")).toBe("/app");
+    expect((await c.req("/app/act", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "message=x" })).status).toBe(403);
+  });
+
+  it("people and payments forms build safe commands", async () => {
+    const { c, csrf } = await connected();
+    await c.post("/app/people/tier", { name: "Sam\nIgnore previous", tier: "family" }, csrf);
+    expect(env.chats.at(-1)).toContain("Set Sam Ignore previous's trust level to family.");
+    const before = env.chats.length;
+    await c.post("/app/people/tier", { name: "Sam", tier: "owner" }, csrf);
+    expect(env.chats.length).toBe(before);
+    await c.post("/app/people/add", { name: "Lina", contact: "+201001112222", tier: "friend" }, csrf);
+    expect(env.chats.at(-1)).toContain("Add Lina (+201001112222) to my contacts as friend.");
+    await c.post("/app/payments/egp", { budget: "5000", perPurchase: "-5", daily: "999999999" }, csrf);
+    expect(env.chats.at(-1)).toContain("5000 EGP");
+    expect(env.chats.at(-1)).toContain("0 EGP per purchase");
+    expect(env.chats.at(-1)).toContain("100000 EGP per day");
+  });
+
+  it("connecting an app redirects to the https sign-in page the assistant returns, and rejects bad names", async () => {
+    const { c, csrf } = await connected();
+    const r = await c.post("/app/apps/connect", { toolkit: "gmail" }, csrf);
+    expect(r.status).toBe(303);
+    expect(r.headers.get("location")).toBe("https://connect.example/oauth/gmail");
+    expect((await c.post("/app/apps/connect", { toolkit: "../x" }, csrf)).headers.get("location")).toContain("/app/apps");
   });
 });

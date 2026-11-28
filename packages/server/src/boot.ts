@@ -79,6 +79,7 @@ import { makeDescribeDataPart, promptExtraFor } from "./hooks.js";
 import { appsNotConfiguredTool, setupSummaryFor } from "./setup-summary.js";
 import { createScheduleSync, type ScheduleSync } from "./maritime-schedules.js";
 import { CustomModelStore, createFailoverStreamFn } from "./custom-model.js";
+import { createOwnerApi } from "./owner-api.js";
 import { createPages } from "./pages.js";
 import { egpEnabled, loadPaymentsModule, paymentsEnv, type EgpRailLike, type LinkWalletLike, type PaymentsModule } from "./payments.js";
 import { createSkillCatalog, formatSkillsIndex, loadSkillTool, ownerSkillsDir, resolveSkillsDir, skillsFor } from "./skills.js";
@@ -102,6 +103,7 @@ export interface BootOptions {
 export interface BootResult {
   runtime: AgentRuntime;
   customModel?: CustomModelStore;
+  ownerApi?: import("./owner-api.js").OwnerApi;
   state: StateDir;
   config: InstinctConfig;
   scheduler: Scheduler;
@@ -781,6 +783,25 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     ...(wallet ? { wallet } : {}),
     ...(egp ? { egp } : {}),
     customModel,
+    ownerApi: createOwnerApi({
+      config,
+      env,
+      state,
+      contacts,
+      approvals,
+      audit,
+      scheduler,
+      memory,
+      apps,
+      wallet,
+      egpStatus: egp?.status ? () => egp!.status!() : undefined,
+      pagesSummary: pagesRail ? () => pagesRail!.summary() : undefined,
+      keyring,
+      vaultConfigured: Boolean(vault),
+      skillsDir,
+      channels: { inkboxHandle: inkbox?.handle, telegram: Boolean(telegram), whatsapp: Boolean(whatsapp) },
+      customModel,
+    }),
     ...(pagesRail ? { pages: pagesRail } : {}),
     ...(telegram ? { telegramOwnBot: true } : {}),
     ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),

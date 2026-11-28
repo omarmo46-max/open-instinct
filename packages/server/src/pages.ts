@@ -169,6 +169,8 @@ function results(p: Page, t: (typeof TEXT)["ar" | "en"]): string {
 
 export interface PagesRail {
   tools: RegisteredTool[];
+  /** For the dashboard: no responses, only counts. */
+  summary(): Array<{ id: string; kind: string; title: string; responses: number; open: boolean; expiresAt: string }>;
   handleHttp(method: string, path: string, body: string, client: string): { status: number; html: string } | undefined;
 }
 
@@ -224,5 +226,5 @@ export function createPages(o: { state: StateDir; publicUrl: string; now?: () =>
     execute: async ({ id }, ctx) => (!isOwner(ctx.principal) ? fail("Only the owner can close pages.") : store.close(id) ? textResult("Closed.") : fail("Unknown page.")),
   });
 
-  return { tools: [create, results_, close], handleHttp: (m, p, b, c) => handlePagesHttp(store, m, p, b, c) };
+  return { tools: [create, results_, close], summary: () => store.list().map((p) => ({ id: p.id, kind: p.kind, title: p.title, responses: p.responses.length, open: store.isOpen(p), expiresAt: p.expiresAt })), handleHttp: (m, p, b, c) => handlePagesHttp(store, m, p, b, c) };
 }

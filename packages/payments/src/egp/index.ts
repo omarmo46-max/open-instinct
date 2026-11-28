@@ -21,6 +21,8 @@ export interface EgpRail {
   tools: RegisteredTool[];
   /** Serves the owner's private card page. Returns undefined for paths that are not its own. */
   handleHttp(method: string, path: string, body: string): PageResult | undefined;
+  /** What the dashboard shows: budget, caps and open card requests. Never card data. */
+  status(): { enabled: boolean; poolPiasters: number; availablePiasters: number; usedTodayPiasters: number; perPurchasePiasters: number; dailyPiasters: number; open: Array<{ id: string; piasters: number; merchant: string; status: string }> };
 }
 
 export function createEgpRail(o: EgpRailOptions): EgpRail {
@@ -32,6 +34,19 @@ export function createEgpRail(o: EgpRailOptions): EgpRail {
   return {
     tools,
     handleHttp: (method, path, body) => (path.startsWith(EGP_PAGE_PREFIX) ? handleEgpCardPage(cards, method, path, body) : undefined),
+    status: () => {
+      cards.sweep();
+      const b = budget.get();
+      return {
+        enabled: b.enabled,
+        poolPiasters: b.poolPiasters,
+        availablePiasters: budget.available(b),
+        usedTodayPiasters: budget.usedToday(b),
+        perPurchasePiasters: b.perPurchasePiasters,
+        dailyPiasters: b.dailyPiasters,
+        open: cards.list().filter((r) => ["awaiting_card", "card_ready", "delivered"].includes(r.status)).map((r) => ({ id: r.id, piasters: r.piasters, merchant: r.merchant, status: r.status })),
+      };
+    },
   };
 }
 

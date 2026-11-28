@@ -83,4 +83,18 @@ describe("phase E boots and serves", () => {
     expect(off.status).toBe(200);
     expect(await (await fetch(base + "/model", { headers: { "x-instinct-token": "owner-token-123" } })).json()).toEqual({ enabled: false });
   });
+
+  it("owner API: needs the owner token and answers on the real boot", async () => {
+    const base = await start({}, { INSTINCT_CHAT_TOKEN: "owner-token-123" });
+    expect((await fetch(base + "/owner/overview")).status).toBe(401);
+    const h = { "x-instinct-token": "owner-token-123" };
+    for (const r of ["overview", "people", "approvals", "activity", "schedules", "memory", "skills", "pages", "apps", "channels", "payments", "security"]) {
+      const res = await fetch(`${base}/owner/${r}`, { headers: h });
+      expect(res.status, r).toBe(200);
+    }
+    expect((await fetch(base + "/owner/nope", { headers: h })).status).toBe(404);
+    const ov = (await (await fetch(base + "/owner/overview", { headers: h })).json()) as { owner: string; auditChainOk: boolean };
+    expect(ov.owner).toBe("Omar");
+    expect(ov.auditChainOk).toBe(true);
+  });
 });

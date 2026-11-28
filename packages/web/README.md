@@ -19,7 +19,9 @@ Emails (verification and reset codes) go to the server log until a mail transpor
 ## Pages
 
 Public: Home, Features, How it works, Security, Pricing, FAQ, Terms, Privacy, Log in / Sign up (a dialog on every page, plus its own pages).
-Dashboard: Overview, Chat, AI model, Connection, Account, Data and privacy. Apps, Channels, People, Payments and Activity are listed as "Soon".
+Dashboard (17 pages): Overview, Chat, Approvals, Activity, Apps, Channels, People, Schedules, Memory, Skills, Pages, AI model, Payments, Security, Connection, Account, Data and privacy.
+
+Every page shows the assistant's real state, read from its owner API (`GET /owner/<resource>`, behind the owner token, read-only, phones and emails masked, no secrets). Every change is sent to the assistant as a chat command (`POST /app/act`), so approvals, step-up codes and the permission policy apply exactly as in a text message; the assistant's reply is shown once on the next page. Connecting an app opens the app's own sign-in page.
 
 ## Connecting an agent
 

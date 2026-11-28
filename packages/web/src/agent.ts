@@ -93,6 +93,19 @@ export class AgentClient {
     }
   }
 
+  /** Read-only owner state (GET /owner/<resource>). */
+  async owner(base: string, token: string, resource: string, query = ""): Promise<{ ok: boolean; data?: any; error?: string }> {
+    try {
+      const r = await this.call(base, `/owner/${resource}${query}`, token);
+      if (r.status === 404) return { ok: false, error: "Your assistant needs to be updated to show this page." };
+      if (r.status === 401 || r.status === 403) return { ok: false, error: "The assistant rejected the token." };
+      if (r.status >= 400) return { ok: false, error: `The assistant answered with ${r.status}.` };
+      return { ok: true, data: r.json };
+    } catch {
+      return { ok: false, error: "The assistant did not answer." };
+    }
+  }
+
   /** Hand the agent a custom model config. The agent keeps it in its own state. */
   async pushModel(base: string, token: string, payload: unknown): Promise<boolean> {
     try {

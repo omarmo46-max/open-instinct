@@ -18,21 +18,21 @@ export const PROVIDERS: Record<string, { label: string; needsBaseUrl?: boolean; 
   compatible: { label: "OpenAI-compatible endpoint", needsBaseUrl: true, sample: "model-name" },
 };
 
-const NAV: Array<{ group: string; items: Array<{ href?: string; label: string; ic: string }> }> = [
-  { group: "Workspace", items: [{ href: "/app", label: "Overview", ic: "home" }, { href: "/app/chat", label: "Chat", ic: "chat" }] },
-  { group: "Assistant", items: [{ href: "/app/model", label: "AI model", ic: "cpu" }, { href: "/app/connection", label: "Connection", ic: "link" }] },
-  { group: "Coming next", items: [{ label: "Apps", ic: "apps" }, { label: "Channels", ic: "phone" }, { label: "People", ic: "users" }, { label: "Payments", ic: "card" }, { label: "Activity", ic: "clock" }] },
-  { group: "Account", items: [{ href: "/app/account", label: "Account", ic: "user" }, { href: "/app/data", label: "Data and privacy", ic: "data" }] },
+const NAV: Array<{ group: string; items: Array<{ href: string; label: string; ic: string }> }> = [
+  { group: "Workspace", items: [{ href: "/app", label: "Overview", ic: "home" }, { href: "/app/chat", label: "Chat", ic: "chat" }, { href: "/app/approvals", label: "Approvals", ic: "check" }, { href: "/app/activity", label: "Activity", ic: "clock" }] },
+  { group: "Assistant", items: [{ href: "/app/apps", label: "Apps", ic: "apps" }, { href: "/app/channels", label: "Channels", ic: "phone" }, { href: "/app/people", label: "People", ic: "users" }, { href: "/app/schedules", label: "Schedules", ic: "clock" }, { href: "/app/memory", label: "Memory", ic: "data" }, { href: "/app/skills", label: "Skills", ic: "file" }, { href: "/app/pages", label: "Pages", ic: "globe" }] },
+  { group: "Settings", items: [{ href: "/app/model", label: "AI model", ic: "cpu" }, { href: "/app/payments", label: "Payments", ic: "card" }, { href: "/app/security", label: "Security", ic: "shield" }, { href: "/app/connection", label: "Connection", ic: "link" }] },
+  { group: "Account", items: [{ href: "/app/account", label: "Account", ic: "user" }, { href: "/app/data", label: "Data and privacy", ic: "lock" }] },
 ];
 
-export function shell(c: AppCtx, title: string, desc: string, body: string): string {
-  const side = NAV.map((g) => `<div class="grp">${g.group}</div>${g.items.map((i) => (i.href ? `<a href="${i.href}"${c.path === i.href ? ' class="on"' : ""}>${icon(i.ic, 18)}${i.label}</a>` : `<span class="off">${icon(i.ic, 18)}${i.label}<span class="tag gray">Soon</span></span>`)).join("")}`).join("");
+export function shell(c: AppCtx, title: string, desc: string, body: string, notice?: string): string {
+  const side = NAV.map((g) => `<div class="grp">${g.group}</div>${g.items.map((i) => `<a href="${i.href}"${c.path === i.href ? ' class="on"' : ""}>${icon(i.ic, 18)}${i.label}</a>`).join("")}`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc(title)} | ${esc(c.brand)}</title><link rel="stylesheet" href="/assets/site.css"></head><body>
 <div class="app"><aside class="side"><a class="brand" href="/">${esc(c.brand)}</a>${side}</aside>
 <div class="main"><div class="top"><span class="muted small">Dashboard</span><div class="who"><span>${esc(c.user.email)}</span>
 <form method="post" action="/logout"><input type="hidden" name="csrf" value="${esc(c.csrf)}"><button class="btn ghost sm" type="submit">Sign out</button></form></div></div>
-<div class="content"><h1>${esc(title)}</h1><p class="desc">${esc(desc)}</p>${body}</div></div></div><script src="/assets/site.js" defer></script></body></html>`;
+<div class="content"><h1>${esc(title)}</h1><p class="desc">${esc(desc)}</p>${notice ? `<div class="alert info"><b>Assistant:</b> ${esc(notice)}</div>` : ""}${body}</div></div></div><script src="/assets/site.js" defer></script></body></html>`;
 }
 
 const alertBox = (kind: "err" | "ok" | "info", text?: string) => (text ? `<div class="alert ${kind}">${esc(text)}</div>` : "");
@@ -48,7 +48,7 @@ function modelTag(m?: ModelConfig): string {
   return '<span class="tag warn">Not tested</span>';
 }
 
-export function overview(c: AppCtx, model: ModelConfig | undefined, status: { reachable: boolean; error?: string; data?: Record<string, unknown> } | undefined): string {
+export function overview(c: AppCtx, model: ModelConfig | undefined, status: { reachable: boolean; error?: string; data?: Record<string, unknown> } | undefined, counts?: Record<string, any>): string {
   const steps: Array<[boolean, string, string, string]> = [
     [c.agentConnected, "Connect your assistant", "Add its address and access token.", "/app/connection"],
     [Boolean(model), "Add your own AI model (optional)", "Use your API key instead of the default model.", "/app/model"],
@@ -59,6 +59,7 @@ export function overview(c: AppCtx, model: ModelConfig | undefined, status: { re
 <div class="s"><div class="l">Assistant</div><div class="v">${c.agentConnected ? (status?.reachable ? '<span class="tag ok">Online</span>' : '<span class="tag bad">Unreachable</span>') : '<span class="tag gray">Not connected</span>'}</div></div>
 <div class="s"><div class="l">AI model</div><div class="v">${model ? `${esc(PROVIDERS[model.provider]?.label ?? model.provider)} ${modelTag(model)}` : modelTag()}</div></div>
 <div class="s"><div class="l">Account</div><div class="v"><span class="tag ok">Verified</span></div></div></div>
+${counts ? `<div class="stat"><a class="s" href="/app/approvals"><div class="l">Waiting for approval</div><div class="v">${esc(counts.pendingApprovals)}</div></a><a class="s" href="/app/people"><div class="l">People</div><div class="v">${esc(counts.people)}</div></a><a class="s" href="/app/schedules"><div class="l">Schedules</div><div class="v">${esc(counts.schedules)}</div></a><a class="s" href="/app/skills"><div class="l">Skills</div><div class="v">${esc(counts.skills)}</div></a><a class="s" href="/app/activity"><div class="l">Activity log</div><div class="v">${counts.auditChainOk ? '<span class="tag ok">Verified</span>' : '<span class="tag bad">Broken</span>'}</div></a></div>` : ""}
 <div class="panel"><div class="ph"><h3>Getting started</h3></div><div class="pb">${steps.map(([done, h, p, href]) => `<div class="step" style="margin-bottom:18px"><span class="n" style="${done ? "" : "background:#fff;color:var(--muted);border:1px solid var(--line2)"}">${done ? "&#10003;" : ""}</span><div><h3>${h}</h3><p>${p} <a href="${href}">${done ? "Review" : "Open"}</a></p></div></div>`).join("")}</div></div>
 ${c.agentConnected ? `<div class="panel"><div class="ph"><h3>Assistant status</h3></div><div class="pb">${status?.reachable ? (scalars.length ? `<dl class="kv">${scalars.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : '<p class="muted">The assistant is online.</p>') : alertBox("err", status?.error ?? "The assistant did not answer.")}</div></div>` : ""}`;
 }
