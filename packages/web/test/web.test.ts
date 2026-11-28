@@ -106,7 +106,7 @@ async function signedIn(email = "omar@example.com"): Promise<{ c: Client; csrf: 
 describe("public site", () => {
   it("serves every public page with the sign-up button at the top left, English only", async () => {
     const c = new Client(env.base);
-    for (const p of ["/", "/features", "/how-it-works", "/security", "/pricing", "/faq", "/terms", "/privacy", "/login", "/signup"]) {
+    for (const p of ["/", "/features", "/how-it-works", "/security", "/faq", "/terms", "/privacy", "/login", "/signup"]) {
       const r = await c.req(p);
       expect(r.status, p).toBe(200);
       const html = await r.text();

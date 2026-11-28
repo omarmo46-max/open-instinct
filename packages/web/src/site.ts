@@ -8,7 +8,7 @@ export interface PageCtx {
   path: string;
 }
 
-const NAV: Array<[string, string]> = [["/features", "Features"], ["/security", "Security"], ["/pricing", "Pricing"], ["/faq", "FAQ"]];
+const NAV: Array<[string, string]> = [["/features", "Features"], ["/security", "Security"], ["/faq", "FAQ"]];
 
 function authForms(c: PageCtx, o: { error?: string; email?: string } = {}, active: "signup" | "login" = "signup"): string {
   const err = o.error ? `<div class="alert err">${esc(o.error)}</div>` : "";
@@ -50,7 +50,7 @@ export function layout(c: PageCtx, o: { title: string; desc?: string; body: stri
 <main>${o.body}</main>
 <footer class="ftr"><div class="wrap"><div class="grid">
 <div><a class="brand" href="/">${esc(c.brand)}</a><p class="small muted" style="margin-top:10px;max-width:280px">A personal assistant you text or call. It works through your apps, with your approval.</p></div>
-<div><h4>Product</h4><a href="/features">Features</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a></div>
+<div><h4>Product</h4><a href="/features">Features</a><a href="/how-it-works">How it works</a></div>
 <div><h4>Trust</h4><a href="/security">Security</a><a href="/faq">FAQ</a></div>
 <div><h4>Legal</h4><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Policy</a></div>
 </div><div class="base"><span>&copy; ${new Date().getFullYear()} ${esc(c.brand)}</span><span>All rights reserved.</span></div></div></footer>
@@ -152,11 +152,6 @@ export function security(c: PageCtx): string {
   return layout(c, { title: "Security", body: `<section class="phead"><div class="wrap"><div class="eyebrow">Security</div><h1>Built so you stay in charge</h1><p class="lead">An assistant that acts for you needs strong limits. These are ours.</p></div></section>
 <section class="sec"><div class="wrap"><div class="cols c3" style="margin-top:0">${items.map(([i, h, p]) => card(i, h, p)).join("")}</div>
 <div class="card" style="margin-top:32px"><h3>Your account and your model key</h3><p>Passwords are hashed with scrypt. API keys and tokens you add are encrypted at rest and are never shown again after you save them. You can delete your account and data at any time from the dashboard.</p></div></div></section>` });
-}
-
-export function pricing(c: PageCtx): string {
-  return layout(c, { title: "Pricing", body: `<section class="phead"><div class="wrap"><div class="eyebrow">Pricing</div><h1>Pricing</h1><p class="lead">Plans have not been published yet.</p></div></section>
-<section class="sec"><div class="wrap narrow"><div class="card"><h3>Early access</h3><p>Create an account to get started. You can bring your own AI model key, so you pay your model provider directly for usage. We will announce plans before any charge and you will be able to review them first.</p><p style="margin-top:20px"><a class="btn" href="/signup" data-auth="signup">Sign up now</a></p></div></div></section>` });
 }
 
 export function faq(c: PageCtx): string {

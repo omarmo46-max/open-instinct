@@ -6,7 +6,7 @@ import type { WebConfig } from "./config.js";
 import { code6, hashPassword, open, safeEqual, seal, sha256, token, verifyPassword } from "./crypto.js";
 import type { Mailer } from "./mailer.js";
 import { activityPage, appsPage, approvalsPage, BACK_PATHS, channelsPage, memoryPage, notConnected, pagesPage, paymentsPage, peoplePage, schedulesPage, securityPage, skillsPage, unavailable, type SecCtx } from "./sections.js";
-import { authPage, faq, features, home, how, layout, legal, messagePage, pricing, security, type PageCtx } from "./site.js";
+import { authPage, faq, features, home, how, layout, legal, messagePage, security, type PageCtx } from "./site.js";
 import type { CodePurpose, ModelConfig, Session, Store, User } from "./store.js";
 import { CSS, JS } from "./ui.js";
 
@@ -259,7 +259,6 @@ export function createWebServer(deps: WebDeps): http.Server {
         "/features": () => features(pageCtx),
         "/how-it-works": () => how(pageCtx),
         "/security": () => security(pageCtx),
-        "/pricing": () => pricing(pageCtx),
         "/faq": () => faq(pageCtx),
         "/terms": () => legal(pageCtx, "terms"),
         "/privacy": () => legal(pageCtx, "privacy"),
