@@ -5,7 +5,7 @@ Last updated after **Phase E**. Phases A, B1 to B5, C1 to C8, D and E are done. 
 
 ## Rename: Instinct to Orion (done)
 
-Everything the owner or a tester can see now says Orion: the `orion` command, `ORION_*` settings, the `.orion` state folder, `@orion-ai/*`, tool names `ask_orion` / `reply_orion`, the `X-Orion-Token` header, and the agent's own name. Old `INSTINCT_*` settings still work: `applyLegacyEnv` (core) copies them to `ORION_*` at start. State written to `.instinct` by an older run is not migrated (move the folder to `.orion`). The repo URL still says `open-instinct` until the GitHub repository is renamed. `docs/research/` and this file still discuss the competitor by name on purpose; keep them out of anything testers see.
+Everything the owner or a tester can see now says Orion: the `orion` command, `ORION_*` settings, the `.orion` state folder, `@orion-ai/*`, tool names `ask_orion` / `reply_orion`, the `X-Orion-Token` header, and the agent's own name. Old `INSTINCT_*` settings still work: `applyLegacyEnv` (core) copies them to `ORION_*` at start. State written to `.instinct` by an older run is not migrated (move the folder to `.orion`). The GitHub repository is now `omarmo46-max/orion-ai` (renamed from the old name; GitHub redirects the old URL). `docs/research/` and this file still discuss the competitor by name on purpose; keep them out of anything testers see.
 
 ## The project in one paragraph
 

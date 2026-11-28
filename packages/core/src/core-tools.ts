@@ -360,7 +360,7 @@ type FetchPublicResult = { ok: true; res: Response; target: URL; hops: string[] 
  */
 export async function fetchPublic(doFetch: typeof fetch, url: string, opts: FetchPublicOptions = {}): Promise<FetchPublicResult> {
   const headers = opts.headers ?? {
-    "user-agent": "orion-ai/0.1 (+https://github.com/omarmo46-max/open-instinct)",
+    "user-agent": "orion-ai/0.1 (+https://github.com/omarmo46-max/orion-ai)",
     accept: "text/html,application/xhtml+xml,text/plain,application/json;q=0.9,*/*;q=0.5",
   };
   const hops: string[] = [];

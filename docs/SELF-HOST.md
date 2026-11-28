@@ -37,7 +37,7 @@ The machine needs outbound HTTPS only. No inbound ports, no domain, no TLS certi
 ## Install
 
 ```bash
-git clone https://github.com/omarmo46-max/open-instinct && cd open-orion
+git clone https://github.com/omarmo46-max/orion-ai && cd orion-ai
 pnpm install && pnpm -r build
 ```
 

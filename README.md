@@ -47,7 +47,7 @@ Node 22.19+ and pnpm 10. You bring your own keys; [KEYS.md](docs/KEYS.md) lists 
 **On your laptop, no phone number yet**
 
 ```bash
-git clone https://github.com/omarmo46-max/open-instinct && cd open-orion
+git clone https://github.com/omarmo46-max/orion-ai && cd orion-ai
 nvm use && corepack enable        # if corepack needs permissions: npm install -g pnpm@10
 pnpm install && pnpm build
 export ANTHROPIC_API_KEY=sk-ant-...
