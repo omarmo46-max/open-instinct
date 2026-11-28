@@ -2,7 +2,7 @@
 
 Copy, paste, post. Attach `docs/assets/brand/wordmark.png` or `docs/assets/screenshots/imessage-mock.png`
 to every post; the architecture drawing (`docs/assets/brand/architecture.png`) works as a second image.
-Repo: https://github.com/mariagorskikh/open-instinct
+Repo: https://github.com/omarmo46-max/open-instinct
 
 ## Before you post (10 minutes)
 
@@ -22,7 +22,7 @@ Instinct just raised $1B for a personal agent you text.
 
 We think the future is many specialized agents, not one. So we built the open-source version: a personal agent you text on iMessage, with its own computer and a trusted network of other agents.
 
-MIT. Fork it. github.com/mariagorskikh/open-instinct
+MIT. Fork it. github.com/omarmo46-max/open-instinct
 
 ## X: thread
 
@@ -30,7 +30,7 @@ MIT. Fork it. github.com/mariagorskikh/open-instinct
 
 We open-sourced the whole thing. Orion AI: a personal agent you text on iMessage, with its own computer and a trusted network of other agents.
 
-github.com/mariagorskikh/open-instinct
+github.com/omarmo46-max/open-instinct
 
 2/ How it works, in one picture. You text a number. Inkbox gives the agent that number, an email and an agent-to-agent endpoint. A small gateway wakes your agent, which lives in its own microVM on Maritime with a Linux desktop.
 
@@ -60,7 +60,7 @@ Why open: Instinct is one company's view of a very personal product. We see a wo
 
 Nine packages, 725 tests, Docker images, and a guide for every key. MIT license.
 
-github.com/mariagorskikh/open-instinct
+github.com/omarmo46-max/open-instinct
 
 ## Show HN
 
@@ -80,7 +80,7 @@ Honest caveats: the live iMessage path and the Maritime deploy are beta, tested 
 
 It is MIT. Fork it, point it at your own services, add a channel, add a tier, add voice. Let me know what you think, tell me what is wrong, and let's build on top of it together. A personal agent should be something everyone can own.
 
-https://github.com/mariagorskikh/open-instinct
+https://github.com/omarmo46-max/open-instinct
 
 ## Honest caveats to keep handy
 

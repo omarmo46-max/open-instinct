@@ -6,7 +6,7 @@ import { type GatewayServer, createGateway } from "./server.js";
 import { TelegramHub } from "./telegram-hub.js";
 import { UserStore } from "./store.js";
 
-export const DEFAULT_AGENT_IMAGE = "ghcr.io/mariagorskikh/orion-ai-agent:latest";
+export const DEFAULT_AGENT_IMAGE = "ghcr.io/omarmo46-max/orion-ai-agent:latest";
 
 export interface GatewayEnv {
   /** TELEGRAM_BOT_TOKEN: one Telegram bot for every agent this gateway runs. Unset: no Telegram front door. */

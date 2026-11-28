@@ -392,7 +392,7 @@ describe("web tools", () => {
     expect(url.searchParams.get("query")).toBe("open instinct");
     expect(calls[0]!.init?.method).toBeUndefined();
     const headers = calls[0]!.init?.headers as Record<string, string>;
-    expect(headers["user-agent"]).toBe("youdotcom-integration/mariagorskikh-orion-ai");
+    expect(headers["user-agent"]).toBe("youdotcom-integration/orion-ai");
     expect(headers["x-api-key"]).toBeUndefined();
     expect(out).toContain("1. Y0\n   https://y0.test/\n   first snippet");
     expect(out).toContain("8. Y7");

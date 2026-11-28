@@ -39,7 +39,7 @@ p{margin:0}.lead{font-size:20px;line-height:1.55;color:var(--ink2)}.muted{color:
 .hdr{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line)}
 .hdr .wrap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:68px;gap:16px}
 .hdr .left{display:flex;align-items:center;gap:18px}.hdr .right{display:flex;align-items:center;justify-content:flex-end;gap:26px}
-.brand{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:19px;letter-spacing:-.02em;color:var(--ink)}.brand .mk{width:26px;height:26px;flex:none}.brand:hover{color:var(--ink)}
+.brand{white-space:nowrap;display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:19px;letter-spacing:-.02em;color:var(--ink)}.brand .mk{width:26px;height:26px;flex:none}.brand:hover{color:var(--ink)}
 .nav{display:flex;gap:26px}.nav a,.hdr .right a,.link{color:var(--ink2);font-size:15px;font-weight:500}.nav a:hover,.nav a.on,.hdr .right a:hover{color:var(--ink)}
 .nav a.on{box-shadow:0 2px 0 var(--accent);padding-bottom:3px}
 /* buttons */

@@ -47,7 +47,7 @@ Node 22.19+ and pnpm 10. You bring your own keys; [KEYS.md](docs/KEYS.md) lists 
 **On your laptop, no phone number yet**
 
 ```bash
-git clone https://github.com/mariagorskikh/open-instinct && cd open-instinct
+git clone https://github.com/omarmo46-max/open-instinct && cd open-instinct
 nvm use && corepack enable        # if corepack needs permissions: npm install -g pnpm@10
 pnpm install && pnpm build
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -69,7 +69,7 @@ pnpm instinct connect             # prints the number and the text to send: conn
 
 ```bash
 export MARITIME_API_KEY=mk_...    # maritime.sh, Settings, API keys
-pnpm instinct deploy --image ghcr.io/mariagorskikh/orion-ai-agent:latest
+pnpm instinct deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest
 ```
 
 For many people, run the [gateway](packages/gateway/README.md): a signup page that provisions an identity and an agent per person. Guide: [DEPLOY-MARITIME.md](docs/DEPLOY-MARITIME.md).

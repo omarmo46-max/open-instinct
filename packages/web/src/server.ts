@@ -6,7 +6,7 @@ import type { WebConfig } from "./config.js";
 import { code6, hashPassword, open, safeEqual, seal, sha256, token, verifyPassword } from "./crypto.js";
 import type { Mailer } from "./mailer.js";
 import { activityPage, appsPage, approvalsPage, BACK_PATHS, channelsPage, memoryPage, notConnected, pagesPage, paymentsPage, peoplePage, schedulesPage, securityPage, skillsPage, unavailable, type SecCtx } from "./sections.js";
-import { FAVICON_PNG_B64, FAVICON_SVG, MARK_SVG, TOUCH_ICON_PNG_B64 } from "./brand.js";
+import { FAVICON_PNG_B64, FAVICON_SVG, MARK_SVG, OG_PNG_B64, PUBLIC_PATHS, TOUCH_ICON_PNG_B64, WEBMANIFEST } from "./brand.js";
 import { authPage, faq, features, home, how, layout, legal, messagePage, security, type PageCtx } from "./site.js";
 import type { CodePurpose, ModelConfig, Session, Store, User } from "./store.js";
 import { CSS, JS } from "./ui.js";
@@ -183,6 +183,14 @@ export function createWebServer(deps: WebDeps): http.Server {
       res.writeHead(200, { "content-type": "image/png", "content-length": b.length, "x-content-type-options": "nosniff", "cache-control": "public, max-age=86400" });
       return void res.end(b);
     }
+    if (method === "GET" && path === "/robots.txt") return send(res, 200, "text/plain; charset=utf-8", `User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nDisallow: /login\nDisallow: /signup\n\nSitemap: ${config.publicUrl}/sitemap.xml\n`, { "cache-control": "public, max-age=3600" });
+    if (method === "GET" && path === "/sitemap.xml") return send(res, 200, "application/xml; charset=utf-8", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${PUBLIC_PATHS.map((p) => `  <url><loc>${config.publicUrl}${p === "/" ? "" : p}</loc></url>`).join("\n")}\n</urlset>\n`, { "cache-control": "public, max-age=3600" });
+    if (method === "GET" && path === "/site.webmanifest") return send(res, 200, "application/manifest+json; charset=utf-8", WEBMANIFEST(config.brand), { "cache-control": "public, max-age=86400" });
+    if (method === "GET" && path === "/og-image.png") {
+      const b = Buffer.from(OG_PNG_B64, "base64");
+      res.writeHead(200, { "content-type": "image/png", "content-length": b.length, "x-content-type-options": "nosniff", "cache-control": "public, max-age=86400" });
+      return void res.end(b);
+    }
     if (method === "GET" && path === "/healthz") return json(200, { ok: true });
 
     // the agent reports model problems here
@@ -222,7 +230,7 @@ export function createWebServer(deps: WebDeps): http.Server {
       csrf = token(24);
       cookie("pcsrf", csrf, 3600 * 8);
     }
-    const pageCtx: PageCtx = { brand: config.brand, csrf, signedIn: Boolean(user), path };
+    const pageCtx: PageCtx = { brand: config.brand, csrf, signedIn: Boolean(user), path, publicUrl: config.publicUrl };
 
     let form: URLSearchParams | undefined;
     let jsonBody: Record<string, unknown> | undefined;

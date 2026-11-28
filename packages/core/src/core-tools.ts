@@ -360,7 +360,7 @@ type FetchPublicResult = { ok: true; res: Response; target: URL; hops: string[] 
  */
 export async function fetchPublic(doFetch: typeof fetch, url: string, opts: FetchPublicOptions = {}): Promise<FetchPublicResult> {
   const headers = opts.headers ?? {
-    "user-agent": "orion-ai/0.1 (+https://github.com/mariagorskikh/open-instinct)",
+    "user-agent": "orion-ai/0.1 (+https://github.com/omarmo46-max/open-instinct)",
     accept: "text/html,application/xhtml+xml,text/plain,application/json;q=0.9,*/*;q=0.5",
   };
   const hops: string[] = [];
@@ -464,7 +464,7 @@ async function braveSearch(doFetch: typeof fetch, key: string, query: string, si
 
 export const YOU_KEYED_URL = "https://ydc-index.io/v1/search";
 export const YOU_KEYLESS_URL = "https://api.you.com/v1/agents/search";
-const YOU_USER_AGENT = "youdotcom-integration/mariagorskikh-orion-ai";
+const YOU_USER_AGENT = "youdotcom-integration/orion-ai";
 /** Longest Retry-After we wait out inside one tool call; anything longer fails with the wait in the message. */
 const YOU_MAX_RETRY_AFTER_S = 10;
 

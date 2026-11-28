@@ -145,7 +145,7 @@ Any other host works the same way: run the gateway image, give it a persistent d
 | `GATEWAY_ALLOW_OPEN_SIGNUP` | no | `1` runs the form without an invite code, on purpose. |
 | `GATEWAY_TRUST_PROXY` | behind a proxy | `1` counts signups by the first `X-Forwarded-For` address. |
 | `GATEWAY_DATA_DIR` | no | Where `users.json` lives. Default `./.instinct-gateway`. Mount a volume. |
-| `INSTINCT_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/mariagorskikh/orion-ai-agent:latest`. Point it at your own. |
+| `INSTINCT_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/omarmo46-max/orion-ai-agent:latest`. Point it at your own. |
 | `INSTINCT_IDLE_TTL_SECONDS` | no | Idle seconds before a VM sleeps. Default 900. |
 | `ANTHROPIC_API_KEY` | no | Copied into each new agent as a secret. |
 | `INSTINCT_USE_MARITIME_LLM` | no | `1` uses Maritime's metered proxy instead of your key. |

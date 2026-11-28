@@ -78,7 +78,7 @@ Variable: `MARITIME_API_KEY`
    and `secrets` (add `manage` only for a key that should also delete agents and mint keys;
    add `computers` if you want the hosted desktop MCP from outside a VM).
 3. `export MARITIME_API_KEY=mk_...`
-4. `pnpm instinct deploy --image ghcr.io/mariagorskikh/orion-ai-agent:latest`
+4. `pnpm instinct deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest`
 
 Creating an agent debits your Maritime wallet; a sleeping agent costs nothing. The image is
 public and needs no registry login. See [DEPLOY-MARITIME.md](DEPLOY-MARITIME.md).

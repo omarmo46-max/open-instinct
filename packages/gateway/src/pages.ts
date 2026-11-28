@@ -1,6 +1,6 @@
 import type { UserRecord } from "./store.js";
 
-export const GITHUB_URL = "https://github.com/mariagorskikh/open-instinct";
+export const GITHUB_URL = "https://github.com/omarmo46-max/open-instinct";
 
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);

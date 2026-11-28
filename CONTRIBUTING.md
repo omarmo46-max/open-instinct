@@ -43,7 +43,7 @@ One topic per pull request. Run `pnpm check` before opening it. Describe the use
 ## How pull requests are handled
 
 - CI runs typecheck, build, all tests and the smoke test on every PR (`.github/workflows/ci.yml`). A red run is not reviewed until it is green.
-- `.github/CODEOWNERS` names who reviews what. Inkbox and the network package are reviewed by @dimavrem22; everything else by @mariagorskikh. Expect a first response within a week.
+- `.github/CODEOWNERS` names who reviews what. Everything is reviewed by @omarmo46-max. Expect a first response within a week.
 - Small PRs merge fast. A PR that adds a provider should add one package, one doc, one line in `docs/KEYS.md`, and nothing else. Split anything that touches another package's behaviour into its own PR so the owner of that package can review it on its own.
 - Inkbox stays the default channel and Maritime the default host. New providers are welcome as options; they do not replace defaults or rewrite the README around themselves.
 - Vendor contributions are welcome. If you work for the company whose service you are adding, say so in the PR. We read the code the same way either way.

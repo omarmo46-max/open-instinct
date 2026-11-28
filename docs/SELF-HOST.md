@@ -38,7 +38,7 @@ The machine needs outbound HTTPS only. No inbound ports, no domain, no TLS certi
 ## Install
 
 ```bash
-git clone https://github.com/mariagorskikh/open-instinct && cd open-instinct
+git clone https://github.com/omarmo46-max/open-instinct && cd open-instinct
 pnpm install && pnpm -r build
 ```
 

@@ -36,7 +36,7 @@ Validation: phone must normalize to E.164 (`+14155550123`; a bare 10-digit US nu
 | `GATEWAY_PUBLIC_URL` | yes in production | The https URL Inkbox can reach, e.g. `https://instinct.example.com`. Used for webhook subscriptions and connect links. Defaults to `http://localhost:<PORT>` with a warning |
 | `MARITIME_API_KEY` | yes | `mk_...` key with permission to create agents and call `/chat` |
 | `INKBOX_ADMIN_API_KEY` | for signup | Org-wide Inkbox key used to create identities, mint identity-scoped keys, signing keys and webhook subscriptions. Without it the gateway runs in relay-only mode and the signup form is replaced by a notice |
-| `INSTINCT_AGENT_IMAGE` | no | Image built from `deploy/Dockerfile.agent`. Default `ghcr.io/mariagorskikh/orion-ai-agent:latest` |
+| `INSTINCT_AGENT_IMAGE` | no | Image built from `deploy/Dockerfile.agent`. Default `ghcr.io/omarmo46-max/orion-ai-agent:latest` |
 | `GATEWAY_SIGNUP_SECRET` | yes when signup is on | Invite code. The form shows an "Invite code" field and `/api/signup` rejects requests without the exact value. With `INKBOX_ADMIN_API_KEY` set and no secret, the gateway refuses to start unless `GATEWAY_ALLOW_OPEN_SIGNUP=1` |
 | `GATEWAY_ALLOW_OPEN_SIGNUP` | no | `1` runs the signup form without an invite code, on purpose. Every signup bills your Maritime wallet and Inkbox plan, so the gateway logs a warning at boot and relies on the rate limits below |
 | `GATEWAY_TRUST_PROXY` | no | `1` counts signups by the first `X-Forwarded-For` address instead of the socket address. Set it behind Railway, Fly or a reverse proxy you run; never on a host reachable directly |
@@ -145,7 +145,7 @@ const server = createGateway({
   store: new UserStore("/data"),
   publicUrl: "https://instinct.example.com",
   inkbox: new InkboxProvisioner({ adminApiKey: process.env.INKBOX_ADMIN_API_KEY! }),
-  maritime: { apiKey: process.env.MARITIME_API_KEY!, agentImage: "ghcr.io/mariagorskikh/orion-ai-agent:latest" },
+  maritime: { apiKey: process.env.MARITIME_API_KEY!, agentImage: "ghcr.io/omarmo46-max/orion-ai-agent:latest" },
   signupSecret: process.env.GATEWAY_SIGNUP_SECRET,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 });

@@ -7,6 +7,7 @@ export interface PageCtx {
   csrf: string;
   signedIn: boolean;
   path: string;
+  publicUrl?: string;
 }
 
 const NAV: Array<[string, string]> = [["/features", "Features"], ["/security", "Security"], ["/faq", "FAQ"]];
@@ -46,7 +47,7 @@ export function layout(c: PageCtx, o: { title: string; desc?: string; body: stri
       <div class="tabs"><button type="button" data-tab="signup" class="on">Create account</button><button type="button" data-tab="login">Sign in</button></div>${authForms(c)}</div></dialog>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(o.title)} | ${esc(c.brand)}</title><meta name="description" content="${esc(o.desc ?? "A personal assistant you text or call, on your own terms.")}">
-${HEAD_ICONS}<link rel="stylesheet" href="/assets/site.css"></head><body>
+${HEAD_ICONS}<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(c.brand)}"><meta property="og:title" content="${esc(o.title)} | ${esc(c.brand)}"><meta property="og:description" content="${esc(o.desc ?? "A personal assistant you text or call, on your own terms.")}"><meta property="og:image" content="${esc(c.publicUrl ?? "")}/og-image.png"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/assets/site.css"></head><body>
 <header class="hdr"><div class="wrap"><div class="left">${left}</div><a class="brand" href="/">${logoImg()}${esc(c.brand)}</a><div class="right"><nav class="nav">${nav}</nav></div></div></header>
 <main>${o.body}</main>
 <footer class="ftr"><div class="wrap"><div class="grid">
