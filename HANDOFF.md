@@ -110,6 +110,14 @@ Details in `docs/PHASE-E.md`.
 
 `network/src/e2ee-a2a.ts`: encrypted files and key exchange now travel over A2A as one data part (`e2ee: "1"`). Tools `e2ee_share_keys_a2a` and `e2ee_send_file_a2a` (owner only, files up to 2 MB, inside the workspace). The receiver (`server/src/hooks.ts`, `makeDescribeDataPart`) decrypts a file from a pinned peer into `workspace/received/` and tells the model it is untrusted; unpinned, forged or changed files are not opened. Keys that arrive are never trusted on sight: the owner confirms the fingerprint, then `e2ee_pin_peer`. Tested end to end with two agents (`network/test/e2ee-a2a.test.ts`). E5 is also checked through the real boot and HTTP (`server/test/phase-e-boot.test.ts`).
 
+## Website (`packages/web`) and custom model fallback
+
+English only, light theme, MongoDB accounts, email verification codes, 14 pages (see `packages/web/README.md`). Public pages are separate routes; the "Sign up now" button is at the top left and opens a dialog with Create account and Sign in. Dashboard: Overview, Chat, AI model, Connection, Account, Data and privacy. Apps, Channels, People, Payments and Activity are marked "Soon": they need new owner endpoints on the agent first.
+
+Bring your own model: the dashboard stores the key encrypted and sends it to the agent (`PUT /model`). `server/src/custom-model.ts` wraps the model stream: the custom model is used while it works; when it fails before any output the same turn goes to the default model, the owner is told once, and the dashboard shows "Stopped"; it retries after 10 minutes and says when it is back. Tests: `web/test/web.test.ts`, `server/test/custom-model.test.ts`, `server/test/phase-e-boot.test.ts`.
+
+Not verified live: MongoDB (tests use an in-memory store with the same interface), a real mail transport (codes are logged), real provider keys, and the visual design in a browser.
+
 ## Not done yet (in order the user asked)
 
 | Phase | Items |

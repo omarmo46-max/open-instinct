@@ -1,0 +1,36 @@
+# @open-instinct/web
+
+The website: public pages, email accounts on MongoDB, and a dashboard that talks to each person's own agent.
+
+## Run
+
+```
+WEB_MONGODB_URI=mongodb+srv://...   # required in production
+WEB_SECRET_KEY=$(openssl rand -base64 32)   # required in production: encrypts API keys and tokens
+WEB_PUBLIC_URL=https://your-domain.com
+WEB_BRAND="Open Instinct"           # optional
+pnpm --filter @open-instinct/web build && pnpm --filter @open-instinct/web start
+```
+
+Without `WEB_MONGODB_URI` it runs on in-memory storage for local trials (accounts are lost on restart).
+Optional: `WEB_PORT` (default 8090), `WEB_TRUST_PROXY=1` behind a proxy, `WEB_ALLOW_PRIVATE_AGENTS=1` for local development only.
+Emails (verification and reset codes) go to the server log until a mail transport is plugged into `Mailer`.
+
+## Pages
+
+Public: Home, Features, How it works, Security, Pricing, FAQ, Terms, Privacy, Log in / Sign up (a dialog on every page, plus its own pages).
+Dashboard: Overview, Chat, AI model, Connection, Account, Data and privacy. Apps, Channels, People, Payments and Activity are listed as "Soon".
+
+## Connecting an agent
+
+1. In the dashboard open Connection and enter the agent's public https address and its `INSTINCT_CHAT_TOKEN`.
+2. The first time, the page shows a callback secret once. Put it on the agent as `INSTINCT_WEB_URL` and `INSTINCT_WEB_SECRET`.
+3. The dashboard then reads `/status`, sends chat messages to `/chat`, and hands model settings to `PUT /model`.
+
+## Your own AI model
+
+The owner adds a provider, a model name and an API key (Anthropic, OpenAI, Google, OpenRouter, or an OpenAI-compatible endpoint). The key is tested, encrypted (AES-256-GCM) and sent to the agent. The agent (`packages/server/src/custom-model.ts`) uses it while it works. If it fails before producing output, the same turn is answered by the default model, the owner is told, and the dashboard shows "Stopped". After 10 minutes it tries the owner's model again, and says when it is back.
+
+## Security notes
+
+Passwords: scrypt. Sessions: random cookie (hash stored), HttpOnly, SameSite=Lax, 14 days. CSRF token on every POST. Rate limits on sign-up, sign-in, codes, chat and key tests. Codes: 6 digits, hashed, 10 minutes, 5 attempts. The agent address a user types is fetched by this server, so it must be https and must not resolve to a private address (DNS rebinding is not fully covered: run this server where it cannot reach your internal network). Strict CSP: scripts only from the site itself.

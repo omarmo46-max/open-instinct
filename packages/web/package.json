@@ -1,0 +1,22 @@
+{
+  "name": "@open-instinct/web",
+  "version": "0.1.0",
+  "description": "Open Instinct website: public pages, email accounts on MongoDB, and the dashboard that talks to each person's agent",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "bin": { "instinct-web": "./dist/main.js" },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=22.19.0" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": { "mongodb": "^6.10.0" },
+  "devDependencies": { "@types/node": "^22.15.0", "typescript": "^5.8.3", "vitest": "^3.2.4" }
+}

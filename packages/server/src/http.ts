@@ -55,6 +55,8 @@ export interface HttpApp {
   location?: { ingest(body: unknown): Promise<{ ok: boolean; events: number; fired: number; error?: string }> };
   /** Set when payments are configured. */
   wallet?: WalletCallback;
+  /** The owner's own model and its fallback status (PUT/GET /model). */
+  customModel?: { apply(body: unknown): { ok: boolean; error?: string }; publicStatus(): unknown };
   /** Set when EGP_WALLET=1: serves the owner's private one-time card page. */
   /** Set when INSTINCT_PAGES=1: serves the public poll / sign-up / RSVP pages. */
   pages?: { handleHttp(method: string, path: string, body: string, client: string): { status: number; html: string } | undefined };
@@ -439,6 +441,17 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     if (method === "GET" && (path === "/" || path === "/status")) return sendJson(res, 200, { ...statusJson(app), ...(inbox ? { inkboxInbox: inbox.queue.summary() } : {}) });
+    // Bring your own model: the website dashboard (or the owner) sets, switches off or removes it. The key never comes back out.
+    if (app.customModel && path === "/model") {
+      if (method === "GET") return sendJson(res, 200, app.customModel.publicStatus() ?? { enabled: false });
+      if (method === "PUT") {
+        const raw = await readBody(req, 8192);
+        if (raw === undefined) return sendJson(res, 413, { error: "body too large" });
+        const out = app.customModel.apply(parseJson(raw));
+        return sendJson(res, out.ok ? 200 : 400, out.ok ? { ok: true } : { error: out.error });
+      }
+    }
+
     if (method === "GET" && path === "/schedules") return sendJson(res, 200, app.scheduler.toMaritimeSchedules());
     // `instinct payments connect | status`. Owner surface: the authorize URL starts a flow this server completes.
     if (method === "GET" && path === "/oauth/link/start") {

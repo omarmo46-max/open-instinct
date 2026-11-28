@@ -25,7 +25,7 @@ describe("phase E boots and serves", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  async function start(extra: NodeJS.ProcessEnv) {
+  async function start(extra: NodeJS.ProcessEnv, httpEnv: NodeJS.ProcessEnv = {}) {
     const faux = fauxProvider({ provider: "faux", models: [{ id: "faux-1" }] });
     const models = createModels();
     models.setProvider(faux.provider);
@@ -34,7 +34,7 @@ describe("phase E boots and serves", () => {
       { INSTINCT_DATA_DIR: dir, INSTINCT_OWNER_NAME: "Omar", INSTINCT_OWNER_PHONE: "+14155550000", INSTINCT_AGENT_NAME: "T", INSTINCT_MODEL: "faux/faux-1", INSTINCT_COMPUTER: "none", INSTINCT_SKILLS_DIR: join(dir, "none"), INSTINCT_PUBLIC_URL: "https://agent.example", ...extra } as NodeJS.ProcessEnv,
       { model: faux.getModel("faux-1"), streamFn, logger: () => {} },
     );
-    const server = createHttpServer(app, { env: {} });
+    const server = createHttpServer(app, { env: httpEnv });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
     close = () => new Promise((r) => server.close(() => r()));
     return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -65,5 +65,22 @@ describe("phase E boots and serves", () => {
   it("E6 and E1/E2 tools are registered by default; phone_call is still there", async () => {
     await start({ INKBOX_API_KEY: "ik", INKBOX_AGENT_HANDLE: "t-instinct", INKBOX_BASE_URL: "https://inkbox.test" }).catch(() => undefined);
     expect(names()).toEqual(expect.arrayContaining(["partner_list", "partner_request", "partner_confirm"]));
+  });
+
+  it("custom model: PUT /model needs the owner token, stores the key privately and never returns it", async () => {
+    const base = await start({}, { INSTINCT_CHAT_TOKEN: "owner-token-123" });
+    const body = JSON.stringify({ enabled: true, provider: "openai", model: "gpt-4.1", apiKey: "sk-private-key-123456" });
+    expect((await fetch(base + "/model", { method: "PUT", body })).status).toBe(401);
+    const ok = await fetch(base + "/model", { method: "PUT", body, headers: { "x-instinct-token": "owner-token-123" } });
+    expect(ok.status).toBe(200);
+    const got = await fetch(base + "/model", { headers: { "x-instinct-token": "owner-token-123" } });
+    const text = await got.text();
+    expect(JSON.parse(text)).toMatchObject({ enabled: true, provider: "openai", model: "gpt-4.1", status: "active" });
+    expect(text).not.toContain("sk-private-key");
+    const bad = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ provider: "nope", model: "m", apiKey: "sk-private-key-123456" }), headers: { "x-instinct-token": "owner-token-123" } });
+    expect(bad.status).toBe(400);
+    const off = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ remove: true }), headers: { "x-instinct-token": "owner-token-123" } });
+    expect(off.status).toBe(200);
+    expect(await (await fetch(base + "/model", { headers: { "x-instinct-token": "owner-token-123" } })).json()).toEqual({ enabled: false });
   });
 });

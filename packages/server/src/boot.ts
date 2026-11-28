@@ -78,6 +78,7 @@ import { fileTools, resolveInsideWorkspace } from "./file-tools.js";
 import { makeDescribeDataPart, promptExtraFor } from "./hooks.js";
 import { appsNotConfiguredTool, setupSummaryFor } from "./setup-summary.js";
 import { createScheduleSync, type ScheduleSync } from "./maritime-schedules.js";
+import { CustomModelStore, createFailoverStreamFn } from "./custom-model.js";
 import { createPages } from "./pages.js";
 import { egpEnabled, loadPaymentsModule, paymentsEnv, type EgpRailLike, type LinkWalletLike, type PaymentsModule } from "./payments.js";
 import { createSkillCatalog, formatSkillsIndex, loadSkillTool, ownerSkillsDir, resolveSkillsDir, skillsFor } from "./skills.js";
@@ -100,6 +101,7 @@ export interface BootOptions {
 
 export interface BootResult {
   runtime: AgentRuntime;
+  customModel?: CustomModelStore;
   state: StateDir;
   config: InstinctConfig;
   scheduler: Scheduler;
@@ -628,6 +630,24 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
 
   // eslint-disable-next-line prefer-const
   let runtime: AgentRuntime;
+  // Bring your own model, with automatic fallback to the default (see custom-model.ts). The dashboard hands the
+  // key over with PUT /model; this wraps the stream so a failing key never breaks a turn.
+  const customModel = new CustomModelStore(state.root);
+  const webUrl = env.INSTINCT_WEB_URL?.trim().replace(/\/+$/, "");
+  const webSecret = env.INSTINCT_WEB_SECRET?.trim();
+  const failoverStream = createFailoverStreamFn(
+    opts.streamFn ?? (streamSimple as StreamFn),
+    customModel,
+    {
+      notifyOwner: (text) => runtime.notifyOwner(text, "model"),
+      report: async (status, error) => {
+        if (!webUrl || !webSecret) return;
+        await (opts.fetchImpl ?? fetch)(`${webUrl}/api/agent/model-event`, { method: "POST", headers: { authorization: `Bearer ${webSecret}`, "content-type": "application/json" }, body: JSON.stringify({ status, ...(error ? { error } : {}) }), signal: AbortSignal.timeout(8000) });
+      },
+    },
+    { log },
+  );
+
   runtime = new AgentRuntime({
     ...(security ? { security } : {}),
     onOwnerActivity: (at) => habits.record(at),
@@ -645,7 +665,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     a2aStore,
     ...(a2a ? { loadA2ATask: (taskId: string) => a2a.getTask(taskId) } : {}),
     skillsPrompt,
-    streamFn: opts.streamFn ?? (streamSimple as StreamFn),
+    streamFn: failoverStream,
     getApiKey: (provider: string) => apiKeyFor(provider, env),
     // Core cannot import the network package; the server bridges OIP and the network guidance.
     describeData: makeDescribeDataPart({ keyring, workspace: state.path("workspace") }),
@@ -760,6 +780,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     ...(locationService ? { location: locationService } : {}),
     ...(wallet ? { wallet } : {}),
     ...(egp ? { egp } : {}),
+    customModel,
     ...(pagesRail ? { pages: pagesRail } : {}),
     ...(telegram ? { telegramOwnBot: true } : {}),
     ...(gatewayNotices ? { onGatewayTelegram: (_kind: "message" | "link", telegramId: string) => gatewayNotices.notify(telegramId) } : {}),
