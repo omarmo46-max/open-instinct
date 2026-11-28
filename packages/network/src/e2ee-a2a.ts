@@ -99,7 +99,7 @@ export function e2eeA2aTools(d: E2eeA2aDeps): RegisteredTool[] {
   const share = defineTool({
     name: "e2ee_share_keys_a2a",
     label: "Send my encryption keys to a contact's agent",
-    description: "Send this agent's public encryption keys to a contact's Instinct over A2A so they can send encrypted files. The contact must have an agent handle. They are not trusted until each side confirms the fingerprint and pins the other's keys. Owner only.",
+    description: "Send this agent's public encryption keys to a contact's Orion over A2A so they can send encrypted files. The contact must have an agent handle. They are not trusted until each side confirms the fingerprint and pins the other's keys. Owner only.",
     parameters: Type.Object({ contact: Type.String({ description: "Contact id, name handle or agent handle" }) }),
     meta: { capabilities: ["trust.manage"], group: "network", describe: (a: unknown) => `share encryption keys with ${(a as { contact?: string })?.contact ?? ""}` },
     execute: async ({ contact }, ctx) => {

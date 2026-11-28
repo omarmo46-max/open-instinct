@@ -11,7 +11,7 @@ export interface Run {
 }
 
 export function tmpDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "instinct-cli-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "orion-cli-"));
 }
 
 export function makeIo(extra: Partial<CliIo> = {}): { io: CliIo; out: () => string; err: () => string } {

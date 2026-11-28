@@ -25,8 +25,8 @@ Every page shows the assistant's real state, read from its owner API (`GET /owne
 
 ## Connecting an agent
 
-1. In the dashboard open Connection and enter the agent's public https address and its `INSTINCT_CHAT_TOKEN`.
-2. The first time, the page shows a callback secret once. Put it on the agent as `INSTINCT_WEB_URL` and `INSTINCT_WEB_SECRET`.
+1. In the dashboard open Connection and enter the agent's public https address and its `ORION_CHAT_TOKEN`.
+2. The first time, the page shows a callback secret once. Put it on the agent as `ORION_WEB_URL` and `ORION_WEB_SECRET`.
 3. The dashboard then reads `/status`, sends dashboard actions to `/chat` as commands, and hands model settings to `PUT /model`.
 
 ## Your own AI model

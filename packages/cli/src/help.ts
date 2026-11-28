@@ -22,11 +22,11 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "init",
         usage: "init --name <you> [--phone +1...] [--email ...] [--handle <handle>] [--model provider/id] [--apps] [--toolkits a,b]",
         summary: "Write config.json and, with INKBOX_ADMIN_API_KEY, provision the agent's iMessage identity.",
-        example: 'instinct init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-instinct',
+        example: 'orion init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-orion',
         flags: [
           "--timezone America/New_York",
           "--city \"San Francisco\"",
-          "--agent-name \"Maria's Instinct\"",
+          "--agent-name \"Maria's Orion\"",
           "--phone-number (also buy an SMS line)",
           "--skip-inkbox",
           "--use-existing (explicitly import an existing Inkbox identity instead of choosing a free handle)",
@@ -39,7 +39,7 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "connect",
         usage: "connect",
         summary: "Print the router number and `connect @handle` text; save the QR to <dataDir>/connect-qr.png.",
-        example: "instinct connect",
+        example: "orion connect",
       },
     ],
   },
@@ -50,19 +50,19 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "dev",
         usage: "dev [--port 8080] [--host 127.0.0.1] [--tunnel] [--quiet]",
         summary: "Run the agent server in this process. --tunnel opens an Inkbox tunnel so iMessage reaches it.",
-        example: "instinct dev --port 8080 --tunnel",
+        example: "orion dev --port 8080 --tunnel",
       },
       {
         name: "chat",
         usage: 'chat "<message>" [--url http://127.0.0.1:8080] [--agent <maritimeAgentId>] [--conversation <id>]',
-        summary: "Send one message to a running agent, locally or through api.maritime.sh. Local calls send INSTINCT_CHAT_TOKEN when set; --agent uses MARITIME_API_KEY.",
-        example: 'instinct chat "what is on my calendar tomorrow"',
+        summary: "Send one message to a running agent, locally or through api.maritime.sh. Local calls send ORION_CHAT_TOKEN when set; --agent uses MARITIME_API_KEY.",
+        example: 'orion chat "what is on my calendar tomorrow"',
       },
       {
         name: "status",
         usage: "status [--url http://127.0.0.1:8080]",
-        summary: "Show what a running server reports on GET /. Sends INSTINCT_CHAT_TOKEN when set.",
-        example: "instinct status",
+        summary: "Show what a running server reports on GET /. Sends ORION_CHAT_TOKEN when set.",
+        example: "orion status",
       },
     ],
   },
@@ -71,12 +71,12 @@ export const HELP_GROUPS: HelpGroup[] = [
     entries: [
       {
         name: "deploy",
-        usage: "deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name instinct-<handle>] [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]",
+        usage: "deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name orion-<handle>] [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]",
         summary: "Create the Maritime agent (own microVM with a desktop) from a built image. Needs MARITIME_API_KEY.",
-        example: "instinct deploy --image ghcr.io/maria/orion-ai-agent:latest",
+        example: "orion deploy --image ghcr.io/maria/orion-ai-agent:latest",
         flags: [
-          "--maritime-llm (no model key of your own: Maritime injects its metered OpenAI-compatible proxy; INSTINCT_MODEL becomes openai-compatible/<model>)",
-          "--model <id> (proxy model with --maritime-llm, default gpt-5.4 or INSTINCT_MARITIME_MODEL; otherwise overrides config.model.primary)",
+          "--maritime-llm (no model key of your own: Maritime injects its metered OpenAI-compatible proxy; ORION_MODEL becomes openai-compatible/<model>)",
+          "--model <id> (proxy model with --maritime-llm, default gpt-5.4 or ORION_MARITIME_MODEL; otherwise overrides config.model.primary)",
           "LINK_CLIENT_ID, LINK_CLIENT_SECRET, LINK_REDIRECT_URI, STRIPE_PUBLISHABLE_KEY in env are copied into the agent when LINK_CLIENT_ID is set",
         ],
       },
@@ -89,7 +89,7 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "payments",
         usage: "payments connect | status [--url http://127.0.0.1:8080]",
         summary: "Link the owner's Stripe Link wallet to the agent (prints the authorize URL) and show what is connected.",
-        example: "instinct payments connect",
+        example: "orion payments connect",
         flags: ["connect: asks the running server for GET /oauth/link/start, else builds the URL from LINK_CLIENT_ID and LINK_REDIRECT_URI", "status: GET /payments/status plus the local LINK_* configuration"],
       },
     ],
@@ -101,13 +101,13 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "invite",
         usage: "invite <name> --tier <tier> [--email x@y] [--phone +1...] [--handle <peer-handle>]",
         summary: "Add a person to the trusted network and create an Inkbox A2A invitation for their agent.",
-        example: 'instinct invite "Sam Lee" --tier partner --email sam@example.com --handle sam-instinct',
+        example: 'orion invite "Sam Lee" --tier partner --email sam@example.com --handle sam-orion',
       },
       {
         name: "trust",
         usage: "trust list | set <contact> <tier> | grant <contact> <cap,cap> [--until YYYY-MM-DD] [--max-usd N] [--purpose text] [--note text] | revoke <grantId>",
         summary: "Change tiers and scoped grants. Tiers: staff (agents only: needs an agent handle), partner, family, friend, contact, stranger.",
-        example: 'instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"',
+        example: 'orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"',
       },
     ],
   },
@@ -118,12 +118,12 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "persona",
         usage: 'persona show | edit | set "<text>" | reset | path',
         summary: "Read or change <dataDir>/PERSONA.md: the agent's name, voice, texting style and limits.",
-        example: 'instinct persona set "You are Pip. Dry wit, short sentences, never emojis."',
+        example: 'orion persona set "You are Pip. Dry wit, short sentences, never emojis."',
         flags: [
           "show: print the persona in effect (the file, or the built-in default before one exists)",
           "edit: open the file in $VISUAL or $EDITOR; without one, print the path",
           "reset: write the built-in default back",
-          "config.json agent.persona (instinct init --agent-name sets the name) adds a one-line note on top of the file",
+          "config.json agent.persona (orion init --agent-name sets the name) adds a one-line note on top of the file",
           "AGENTS.md next to PERSONA.md adds standing instructions; see docs/CUSTOMIZE.md",
         ],
       },
@@ -131,7 +131,7 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "prompt",
         usage: "prompt [--channel imessage|sms|email|chat|scheduled] [--layers] [--json] [--no-skills]",
         summary: "Print the system prompt your own conversation would get right now, built from the data dir.",
-        example: "instinct prompt --layers",
+        example: "orion prompt --layers",
         flags: ["--layers: one row per section with its source file instead of the full text", "--json: the sections as JSON", "--no-skills: leave out the skills index"],
       },
     ],
@@ -143,7 +143,7 @@ export const HELP_GROUPS: HelpGroup[] = [
         name: "schedules",
         usage: 'schedules list | add "<cron>" "<prompt>" [--tz Area/City] [--name ...] | add --at <iso> "<prompt>" | remove <id>',
         summary: "Cron or one-shot prompts the agent runs for you, delivered over iMessage.",
-        example: 'instinct schedules add "0 8 * * 1-5" "Morning briefing: calendar, weather, top emails" --tz America/New_York',
+        example: 'orion schedules add "0 8 * * 1-5" "Morning briefing: calendar, weather, top emails" --tz America/New_York',
       },
     ],
   },
@@ -153,7 +153,7 @@ export function renderHelp(c: Palette, command?: string): string {
   const lines: string[] = [];
   const entry = command ? HELP_GROUPS.flatMap((g) => g.entries).find((e) => e.name === command) : undefined;
   if (entry) {
-    lines.push(c.bold(`instinct ${entry.usage}`));
+    lines.push(c.bold(`orion ${entry.usage}`));
     lines.push("");
     lines.push(`  ${entry.summary}`);
     if (entry.flags?.length) {
@@ -164,12 +164,12 @@ export function renderHelp(c: Palette, command?: string): string {
     lines.push("");
     lines.push(`  ${c.dim("example")}  ${entry.example}`);
     lines.push("");
-    lines.push(c.dim("  Every command accepts --data-dir <dir> (default $INSTINCT_DATA_DIR or ./.instinct)."));
+    lines.push(c.dim("  Every command accepts --data-dir <dir> (default $ORION_DATA_DIR or ./.orion)."));
     return lines.join("\n");
   }
-  lines.push(c.bold("instinct") + "  Orion AI: a personal agent you text on iMessage, with its own computer.");
+  lines.push(c.bold("orion") + "  Orion AI: a personal agent you text on iMessage, with its own computer.");
   lines.push("");
-  lines.push("Usage: instinct <command> [options]   (add --help to any command)");
+  lines.push("Usage: orion <command> [options]   (add --help to any command)");
   lines.push("");
   for (const group of HELP_GROUPS) {
     lines.push(c.bold(group.title));
@@ -180,9 +180,9 @@ export function renderHelp(c: Palette, command?: string): string {
     }
     lines.push("");
   }
-  lines.push("Global: --data-dir <dir> (default $INSTINCT_DATA_DIR or ./.instinct), --help, --version");
+  lines.push("Global: --data-dir <dir> (default $ORION_DATA_DIR or ./.orion), --help, --version");
   lines.push("");
-  lines.push("Env: INSTINCT_DATA_DIR, INKBOX_ADMIN_API_KEY, MARITIME_API_KEY, ANTHROPIC_API_KEY, COMPOSIO_API_KEY, COMPOSIO_TOOLKITS, LINK_CLIENT_ID, EDITOR");
+  lines.push("Env: ORION_DATA_DIR, INKBOX_ADMIN_API_KEY, MARITIME_API_KEY, ANTHROPIC_API_KEY, COMPOSIO_API_KEY, COMPOSIO_TOOLKITS, LINK_CLIENT_ID, EDITOR");
   lines.push("Customize the agent (persona, instructions, skills, memory, tiers): docs/CUSTOMIZE.md");
   return lines.join("\n");
 }

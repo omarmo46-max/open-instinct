@@ -1,4 +1,4 @@
-# OIP/1: how two Instincts talk
+# OIP/1: how two Orions talk
 
 Orion AI Protocol version 1 is a thin layer on top of A2A 1.0 as hosted by Inkbox. Plain
 text carries the request so any A2A agent can read it. A structured `data` part carries a typed
@@ -16,19 +16,19 @@ to it, filled in the same way every time, so the other agent can act without gue
   for follow-ups) to our webhook. We answer with
   `POST /api/v1/identities/{handle}/a2a/tasks/{task_id}/reply` and a body
   `{ intent: "progress" | "complete" | "ask_caller" | "fail", parts: [...] }`. In code this is
-  `InkboxA2A.reply`, called by the `reply_instinct` tool. The runtime binds this tool to the current
+  `InkboxA2A.reply`, called by the `reply_orion` tool. The runtime binds this tool to the current
   task; the model supplies the intent and answer, not a task ID. When the model answers in plain words without
   calling the tool, the runtime sends its final text as `complete`, or as `progress` when an owner
   approval is still pending in that conversation.
 - Our agent as **caller**: `InkboxA2A.send(peer, text, data, { contextId?, taskId?, messageId? })` posts `SendMessage` and
-  returns `{ taskId, contextId, state }`. This is what the `ask_instinct` tool does. The peer's
+  returns `{ taskId, contextId, state }`. This is what the `ask_orion` tool does. The peer's
   answer arrives later as an `a2a.sent_task.updated` webhook. A persisted delegation route returns
   it to the original conversation, including after a restart. State-only submitted/working updates
   do not start new model turns. To answer a peer's `ask_caller`, pass its existing `taskId` to
-  `ask_instinct` with the same contact from the original conversation. `contextId` alone creates
+  `ask_orion` with the same contact from the original conversation. `contextId` alone creates
   another task in the topic.
 - Nested caller delegation from an inbound worker task is not supported. When a worker needs
-  more information from the caller, it uses `reply_instinct` with `ask_caller`, keeping the same
+  more information from the caller, it uses `reply_orion` with `ask_caller`, keeping the same
   task available for the caller's answer.
 - One A2A **context** per topic (a dinner, a trip). Tasks inside it are turns. Our conversation key
   for delivery is `a2a:<context_id>`. Worker execution is isolated by task and caller-message
@@ -50,7 +50,7 @@ Two gates, both must pass:
 2. Our tiers: the caller handle maps to a contact; the contact's tier decides what the request may do.
    Unknown callers are `stranger`.
 
-Invitations (`invite_to_network`, or `instinct invite ... --handle <peer>`) set up gate 1 for both
+Invitations (`invite_to_network`, or `orion invite ... --handle <peer>`) set up gate 1 for both
 sides at once; accepting an Orion AI invitation also sets the tier the inviter chose for gate 2.
 
 ## Message shape
@@ -59,12 +59,12 @@ Every A2A message has two parts:
 
 ```json
 [
-  { "text": "Hi, this is Maria's Instinct. Maria would like dinner with Sam this week. Which evenings work? Maria is free Tue, Thu, Fri after 7 pm." },
+  { "text": "Hi, this is Maria's Orion. Maria would like dinner with Sam this week. Which evenings work? Maria is free Tue, Thu, Fri after 7 pm." },
   { "data": {
       "oip": "1",
       "intent": "propose_times",
       "subject": "dinner with Maria and Sam",
-      "on_behalf_of": { "handle": "maria-instinct", "display": "Maria" },
+      "on_behalf_of": { "handle": "maria-orion", "display": "Maria" },
       "payload": {
         "slots": [
           { "start": "2026-10-07T19:00:00-04:00", "end": "2026-10-07T22:00:00-04:00" },
@@ -81,8 +81,8 @@ Every A2A message has two parts:
 The `text` is authoritative for a generic agent. The `data` is authoritative for an Orion AI.
 When they disagree, the receiving Orion AI trusts `data` and tells its owner. `on_behalf_of.display`
 names the human whose request this is. When a partner, family member or friend relays a request
-through someone else's Instinct, it names them, never that Instinct's owner, and the text starts with
-"From <name>, relayed by <owner>'s Instinct (not <owner>'s request)".
+through someone else's Orion, it names them, never that Orion's owner, and the text starts with
+"From <name>, relayed by <owner>'s Orion (not <owner>'s request)".
 
 ## Intents
 
@@ -103,13 +103,13 @@ blocks only; from a `stranger` it is declined. Proposals carry at most three opt
 
 ## Group plans
 
-A plan with several people is several two-party conversations, not one group call. `ask_instinct`
+A plan with several people is several two-party conversations, not one group call. `ask_orion`
 with `contacts: ["Sam", "Priya"]` sends the same intent and payload to each person:
 
-- Each Instinct gets its own task in its own context. Its answer returns to the originating
+- Each Orion gets its own task in its own context. Its answer returns to the originating
   conversation on the caller's side. The caller's model combines the answers
   for its owner ("Sam can do Thu, Priya can do Thu or Fri; Thu it is?").
-- A person without an Instinct gets the same request as a text or email, rendered by `oipToText`.
+- A person without an Orion gets the same request as a text or email, rendered by `oipToText`.
   Only the owner may use that fallback.
 - `contextId` continues one peer's topic and is refused with several contacts. Once the group has
   settled on a slot, the caller sends `confirm` to each peer in that peer's own context.
@@ -121,7 +121,7 @@ from one peer because another peer trusts it more.
 
 A worker that cannot honour a request answers politely and tells its own owner. The policy engine
 does this on its own: a denied request from another agent produces a refusal for the caller and one
-text to the owner per conversation per hour ("Sam's agent (@sam-instinct) asked to read your
+text to the owner per conversation per hour ("Sam's agent (@sam-orion) asked to read your
 calendar; I declined."). The network guidance adds the model-level rule: an out-of-scope request from
 another agent is declined with `fail` and reported, never carried out. See
 [PERMISSIONS.md](PERMISSIONS.md#enforced-twice-decline-and-tell-the-owner).
@@ -131,9 +131,9 @@ another agent is declined with `fail` and reported, never carried out. See
 - A worker that needs its owner's say-so does not block the caller. It answers `progress` ("checking
   with Sam") and completes later, so the caller's context stays open.
 - Both agents append the exchange to their audit logs and journals; owners can ask "what did you agree
-  with Sam's Instinct?".
+  with Sam's Orion?".
 
-## Humans without an Instinct
+## Humans without an Orion
 
 The same intents degrade to text. `propose_times` becomes a friendly iMessage listing the options;
 the reply is parsed by the model and written back as an `accept` or `decline` in the local thread.

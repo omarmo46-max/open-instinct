@@ -171,16 +171,16 @@ function harness(opts: HarnessOptions = {}): Harness {
   return { runtime: new AgentRuntime(deps), faux, sent, deps, calls, ownerTurns, gate };
 }
 
-const replyInstinctTool = defineTool({
-  name: "reply_instinct",
-  label: "Reply to Instinct",
+const replyOrionTool = defineTool({
+  name: "reply_orion",
+  label: "Reply to Orion",
   description: "answers an A2A task",
   parameters: Type.Object({ taskId: Type.String(), intent: Type.String(), text: Type.String() }),
   meta: { capabilities: ["converse"], group: "network" },
   execute: async () => textResult("replied"),
 });
 
-const SAM_HANDLE = "sam-instinct";
+const SAM_HANDLE = "sam-orion";
 
 function a2aFrom(handle: string, text: string, extra: Partial<InboundMessage> = {}): InboundMessage {
   return inbound({ channel: "a2a", from: handle, conversationKey: "a2a:ctx1", text, replyRef: { taskId: "task_1", contextId: "ctx1" }, ...extra });
@@ -757,7 +757,7 @@ describe("AgentRuntime.handleInbound", () => {
     const h = harness();
     h.deps.contacts.upsert({ name: "Alex Kim", tier: "friend", emails: ["alex@example.com"] });
     h.faux.setResponses([textTurn("Hi Alex, Thursday works.")]);
-    const ref = { messageId: "<abc@mail.example>", threadId: "t1", subject: "Re: dinner", mailbox: "maria-instinct@inkbox.ai" };
+    const ref = { messageId: "<abc@mail.example>", threadId: "t1", subject: "Re: dinner", mailbox: "maria-orion@inkbox.ai" };
     await h.runtime.handleInbound(inbound({ channel: "email", from: "alex@example.com", conversationKey: "email:t1", text: "Subject: Re: dinner\n\nThursday?", replyRef: ref }));
     expect(h.sent).toHaveLength(1);
     expect(h.sent[0]!.msg).toMatchObject({ channel: "email", conversationKey: "email:t1", replyRef: ref });
@@ -787,7 +787,7 @@ describe("AgentRuntime.handleInbound", () => {
     const h = harness({
       deps: {
         describeData: (d) => `OIP/1 message with intent "${String(d.intent)}"`,
-        promptExtra: (p) => (p.kind === "agent" ? ["## Working with other Instincts\nBe brief and factual."] : []),
+        promptExtra: (p) => (p.kind === "agent" ? ["## Working with other Orions\nBe brief and factual."] : []),
       },
     });
     h.deps.contacts.upsert({ name: "Sam Lee", tier: "partner", agentHandle: SAM_HANDLE });
@@ -800,11 +800,11 @@ describe("AgentRuntime.handleInbound", () => {
     expect(prompt).toContain("2026-10-07T19:00:00-04:00");
     expect(prompt).toContain("reply_by");
     expect(prompt.indexOf("propose_times")).toBeLessThan(prompt.indexOf("</untrusted>"));
-    expect(conv.agent.state.systemPrompt).toContain("Working with other Instincts");
+    expect(conv.agent.state.systemPrompt).toContain("Working with other Orions");
     // The owner does not get the network section.
     h.faux.setResponses([textTurn("ok")]);
     await h.runtime.handleInbound(inbound({ channel: "chat", from: "owner", conversationKey: "chat:main", text: "hi" }));
-    expect(h.runtime.conversation("chat:main", h.runtime.ownerPrincipal()).agent.state.systemPrompt).not.toContain("Working with other Instincts");
+    expect(h.runtime.conversation("chat:main", h.runtime.ownerPrincipal()).agent.state.systemPrompt).not.toContain("Working with other Orions");
   });
 
   it("builds the skills section per principal, so a stranger never sees the owner's private skills", async () => {
@@ -1191,7 +1191,7 @@ describe("approval scoping", () => {
     expect(dialed).toHaveLength(1);
     expect(h.deps.approvals.pending()).toHaveLength(1);
 
-    // A partner's Instinct cannot even ask: the tier has no phone.call and no approval is created.
+    // A partner's Orion cannot even ask: the tier has no phone.call and no approval is created.
     h.deps.contacts.upsert({ name: "Sam Lee", tier: "partner", phones: [SAM_PHONE] });
     h.faux.setResponses([toolTurn("phone_call", restaurant), textTurn("Sorry, I cannot place calls for you.")]);
     const sam = await h.runtime.handleInbound(inbound({ channel: "imessage", from: SAM_PHONE, conversationKey: "imessage:sam", text: "call the restaurant for me" }));
@@ -1552,10 +1552,10 @@ describe("A2A delivery", () => {
     expect(h.deps.audit.read({ kinds: ["error"] })).toHaveLength(0);
   });
 
-  it("does not answer a task twice when the model used reply_instinct", async () => {
-    const h = harness({ extraTools: [replyInstinctTool] });
+  it("does not answer a task twice when the model used reply_orion", async () => {
+    const h = harness({ extraTools: [replyOrionTool] });
     h.deps.contacts.upsert({ name: "Sam Lee", tier: "partner", agentHandle: SAM_HANDLE });
-    h.faux.setResponses([toolTurn("reply_instinct", { taskId: "task_1", intent: "complete", text: "Thursday works." }), textTurn("Replied to Sam's Instinct.")]);
+    h.faux.setResponses([toolTurn("reply_orion", { taskId: "task_1", intent: "complete", text: "Thursday works." }), textTurn("Replied to Sam's Orion.")]);
     await h.runtime.handleInbound(a2aFrom(SAM_HANDLE, "dinner?"));
     expect(h.sent.filter((s) => s.msg.channel === "a2a")).toHaveLength(0);
     // The next turn starts clean: a plain text answer is delivered again.

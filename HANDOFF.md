@@ -3,6 +3,10 @@
 Read this first in a new chat. It says what is done, what is left, how to work, and what to watch out for.
 Last updated after **Phase E**. Phases A, B1 to B5, C1 to C8, D and E are done. **Next: a live test phase, then Phase F.**
 
+## Rename: Instinct to Orion (done)
+
+Everything the owner or a tester can see now says Orion: the `orion` command, `ORION_*` settings, the `.orion` state folder, `@orion-ai/*`, tool names `ask_orion` / `reply_orion`, the `X-Orion-Token` header, and the agent's own name. Old `INSTINCT_*` settings still work: `applyLegacyEnv` (core) copies them to `ORION_*` at start. State written to `.instinct` by an older run is not migrated (move the folder to `.orion`). The repo URL still says `open-instinct` until the GitHub repository is renamed. `docs/research/` and this file still discuss the competitor by name on purpose; keep them out of anything testers see.
+
 ## The project in one paragraph
 
 Orion AI is an open-source, self-hostable personal AI agent you talk to by message (iMessage, SMS, email,
@@ -56,13 +60,13 @@ Phase A is closed by the owner's decision. The two leftovers are fixed in code a
 | A8 Arabic | Arabic yes/no in approvals, language prompt layer (dialect mirroring), `owner.language` / `owner.locale`, localized acks and `/new`, `detectLanguage` | `core/i18n.ts`, `approvals.ts`, `prompt.ts` |
 
 Env added: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID`, `TELEGRAM_ENABLED`, `TELEGRAM_GROUPS`, `TELEGRAM_GATEWAY_URL`,
-`TELEGRAM_GATEWAY_TOKEN` (set by the gateway), `STT_*`, `INSTINCT_OWNER_LANGUAGE`, `INSTINCT_OWNER_LOCALE`.
+`TELEGRAM_GATEWAY_TOKEN` (set by the gateway), `STT_*`, `ORION_OWNER_LANGUAGE`, `ORION_OWNER_LOCALE`.
 
 ## Done: Phase B1 (proactive triggers)
 
 The agent scans Gmail and Google Calendar by itself and texts the owner first. Code only, no model call: `core/triggers.ts` (engine, detectors, quiet hours, dedupe), `apps/triggers-source.ts` (Composio reader), `Scheduler.ensureSystem` plus `ScheduleEntry.task` (the scan is a schedule entry so Maritime wakes the VM), `AgentRuntime.notifyOwner`, wiring in `server/boot.ts`. Details and limits: `docs/TRIGGERS.md`.
 
-- Off by default. `INSTINCT_TRIGGERS=1` (or `triggers.enabled` in config.json) and a Composio session with Gmail/Calendar connected. `INSTINCT_QUIET_HOURS=23:00-07:00`.
+- Off by default. `ORION_TRIGGERS=1` (or `triggers.enabled` in config.json) and a Composio session with Gmail/Calendar connected. `ORION_QUIET_HOURS=23:00-07:00`.
 - Detects: unanswered invite (72 h ahead, again under 24 h), birthday (day before and day of), flight change / cancelled / missing from the calendar, and mail whose subject looks like a flight change (English and Arabic).
 - An alert counts as sent only after the channel took it; quiet hours hold all but an urgent flight alert (departs within 12 h).
 - **B1 hardening (second pass):** broader trip detection using title, airport place and `fromGmail` event type, with look-alike exclusions and owner corrections (`trigger_feedback`); mail alerts say they rest on the subject only; a vanished plan is checked against a 90+ day read before it is called missing; moves under `flightChangeMinutes` ignored; extra birthday shapes plus owner marking; mute or pause by chat (`trigger_mute`, `trigger_unmute`, `trigger_status`); ordinary alerts grouped into one message; one-time welcome; `inviteSoonHours` and `urgentFlightHours` configurable; audit kind `trigger`.
@@ -73,9 +77,9 @@ The agent scans Gmail and Google Calendar by itself and texts the owner first. C
 Details and limits in `docs/PROACTIVE.md`.
 
 - **B2** `core/habits.ts` learns the sleep window from message hours (no text); `Scheduler.start` takes a `hold` callback and `ScheduleEntry.waitForWake` (tool arg `wait_for_wake`); triggers use the learned quiet window.
-- **B3** `core/memory-search.ts` + tool `memory_search`: words by default, meaning with `INSTINCT_SEMANTIC_MEMORY=1` and an embeddings key (opt-in, sends memory text out).
+- **B3** `core/memory-search.ts` + tool `memory_search`: words by default, meaning with `ORION_SEMANTIC_MEMORY=1` and an embeddings key (opt-in, sends memory text out).
 - **B4** `core/preferences.ts` + tools `preference_note`, `booking_brief`, `preference_forget`. Stated wins; a choice repeated 3 times becomes learned; ties are asked, not guessed.
-- **B5** `core/places.ts`, `LocationService`, tools `place_save`, `arrival_reminder`, `where_am_i`, `place_remove`, route `POST /location`. Off unless `INSTINCT_LOCATION=1`.
+- **B5** `core/places.ts`, `LocationService`, tools `place_save`, `arrival_reminder`, `where_am_i`, `place_remove`, route `POST /location`. Off unless `ORION_LOCATION=1`.
 - All new owner tools use the existing `memory.write` capability (owner only), so the permission table is unchanged.
 - Not verified live: iPhone automation, a real embeddings service, Composio slugs (B1).
 
@@ -88,7 +92,7 @@ Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit an
 - **C6** `core/vault.ts` + `core/secrets-broker.ts`: encrypted vault, `{{secret:...}}` references filled in after approval and scrubbed from results. **C7** `core/totp.ts`: RFC 6238 and step-up. **C8** `core/onepassword.ts`: 1Password through the `op` CLI with an allowed-vault list.
 - Wiring: `RuntimeDeps.security` (interface in `security-types.ts`, implemented by `SecurityLayer`), hooks in `runtime.ts` (inbound, guard, recordToolCall, reply), `ToolMeta.secretAccess` / `acceptsSecrets`, `ToolRegistry.remove`, boot in `server/boot.ts`, owner tools in `core/security-tools.ts`.
 - Second pass: pins watch only `meta.external` tools (set in `apps/wrap.ts`); tool results are scanned and taint the conversation (`inspectToolResult`); owner approval of credential use is a signed single-use `CredentialIssuer` token; secret-reveal tools are no longer scrubbed and are withheld from the audit; security events have audit kind `security`; the audit log is hash-chained (`AuditLog.verify`, tool `audit_verify`).
-- Behavior change to know about: a reply that states a figure, link or code nobody supplied now ends with a plain note; set `INSTINCT_GROUNDING=off` to remove it.
+- Behavior change to know about: a reply that states a figure, link or code nobody supplied now ends with a plain note; set `ORION_GROUNDING=off` to remove it.
 - Not verified live: a real 1Password account, a real authenticator app, a browser filling a login, real attackers.
 
 ## Done: Phase D
@@ -100,7 +104,7 @@ Details, settings and limits in `docs/PHASE-C-SECURITY.md`. C9 (outside audit an
 
 Details in `docs/PHASE-E.md`.
 
-- **E5** shareable polls, sign-ups and RSVPs (`INSTINCT_PAGES=1`), `server/src/pages.ts`.
+- **E5** shareable polls, sign-ups and RSVPs (`ORION_PAGES=1`), `server/src/pages.ts`.
 - **E6** concierge calls under a standing mandate, `inkbox/src/concierge.ts`, new capability `phone.concierge`; `phone_call` still asks every time.
 - **E1 + E2 foundation** the partner layer `OPP/1` and `PartnerConnector`, `network/src/partners.ts`; no partner connected yet.
 - **E3 (invite links, referrals) and E4 (group coordination of 10 to 100) are dropped**: not built, no code. Phase A's allowed-groups feature stays.

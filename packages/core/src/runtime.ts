@@ -39,7 +39,7 @@ import {
   type Capability,
   type Channel,
   type InboundMessage,
-  type InstinctConfig,
+  type OrionConfig,
   type OutboundMessage,
   type Principal,
   type ScheduleEntry,
@@ -58,7 +58,7 @@ export interface RuntimeDeps {
   /** Told when the owner writes (habit learning, B2). Never receives message text. */
   onOwnerActivity?: (at: Date) => void;
   state: StateDir;
-  config: InstinctConfig;
+  config: OrionConfig;
   policy: PolicyEngine;
   approvals: ApprovalStore;
   audit: AuditLog;
@@ -120,7 +120,7 @@ const APPROVAL_CHANNELS: ReadonlySet<Channel> = new Set(["imessage", "sms", "wha
 /** Phone text threads: where owner notices go when the owner last wrote from one. */
 const TEXT_THREADS: ReadonlySet<Channel> = new Set(["imessage", "sms", "whatsapp", "telegram"]);
 const CHANNELS: ReadonlySet<string> = new Set(["imessage", "sms", "whatsapp", "telegram", "email", "a2a", "chat", "scheduled", "system"]);
-const REPLY_TOOL = "reply_instinct";
+const REPLY_TOOL = "reply_orion";
 const PROCESSING_FILE = "processing-events.json";
 const CLAIM_ATTEMPTS_FILE = "owner-claim-attempts.json";
 const CARRIER_CHANNELS: ReadonlySet<Channel> = new Set(["imessage", "sms"]);
@@ -1191,7 +1191,7 @@ export class AgentRuntime {
       capabilities: [...capabilities],
       toolGroups: [...groups],
       memoryDigest: this.memoryDigestFor(principal),
-      // Read fresh each time so `instinct persona set` applies on the next message.
+      // Read fresh each time so `orion persona set` applies on the next message.
       persona: readPersona(state),
       instructions: inGroup ? undefined : readAgentsInstructions(state),
       skillsPrompt: inGroup ? undefined : typeof skillsPrompt === "function" ? skillsPrompt(principal) : skillsPrompt,
@@ -1637,7 +1637,7 @@ export function hashArgs(args: unknown): string {
   return createHash("sha256").update(stableJson(args ?? {})).digest("hex").slice(0, 16);
 }
 
-function approvalText(approval: Approval, requester: Principal, config: InstinctConfig): string {
+function approvalText(approval: Approval, requester: Principal, config: OrionConfig): string {
   const who = requester.kind === "owner" ? "" : ` (asked by ${requester.displayName})`;
   const amount = approval.amountUsd !== undefined ? ` ($${approval.amountUsd.toFixed(2)})` : "";
   // A plain question, no token and no protocol words: a bare yes or no settles it, anything else the model settles.

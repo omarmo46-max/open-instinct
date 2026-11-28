@@ -4,7 +4,7 @@
  * catches its own errors; a bad request must never take the process down.
  *
  * Trust model. /health is open. /chat, /status and /schedules are the owner's
- * surface: when a chat token is configured (INSTINCT_CHAT_TOKEN) every call must
+ * surface: when a chat token is configured (ORION_CHAT_TOKEN) every call must
  * carry it, otherwise they answer 401. Without a token the server relies on the
  * network: main.ts binds loopback unless a container env says otherwise, and a
  * Maritime VM only exposes /chat through Maritime's own authenticated API. The
@@ -16,7 +16,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { decodeEvent, saveConfig, systemTaskOf, telegramLinkOf, telegramMessageOf } from "@orion-ai/core";
-import type { AgentRuntime, HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry, Scheduler, StateDir } from "@orion-ai/core";
+import type { AgentRuntime, HandleResult, InboundMessage, OrionConfig, OutboundMessage, ScheduleEntry, Scheduler, StateDir } from "@orion-ai/core";
 import { DurableInbox, parseCallEnded, parseInkboxEvent, verifyInkboxSignature } from "@orion-ai/inkbox";
 import type { CallEndedEvent } from "@orion-ai/inkbox";
 
@@ -44,14 +44,14 @@ export interface HttpApp {
   enrichInbound?(msg: InboundMessage): Promise<InboundMessage>;
   runtime: Pick<AgentRuntime, "handleInbound" | "stats"> & Partial<Pick<AgentRuntime, "runScheduled" | "runSystemTask">>;
   scheduler: Pick<Scheduler, "toMaritimeSchedules"> & Partial<Pick<Scheduler, "list" | "markRan">>;
-  config: InstinctConfig;
+  config: OrionConfig;
   computerKind?: string;
   appsConnected?: string[];
   startedAt?: number;
   modelSpec?: string;
   /** Set when the outbox buffers chat replies (ConsoleOutbox or the chat-aware Inkbox wrapper). */
   chatBuffer?: ChatBuffer;
-  /** Set when INSTINCT_LOCATION=1: takes a phone's location fix or arrive/leave event. */
+  /** Set when ORION_LOCATION=1: takes a phone's location fix or arrive/leave event. */
   location?: { ingest(body: unknown): Promise<{ ok: boolean; events: number; fired: number; error?: string }> };
   /** Set when payments are configured. */
   wallet?: WalletCallback;
@@ -60,7 +60,7 @@ export interface HttpApp {
   ownerApi?: { handle(resource: string, query: URLSearchParams): Promise<{ status: number; body: unknown }> };
   customModel?: { apply(body: unknown): { ok: boolean; error?: string }; publicStatus(): unknown };
   /** Set when EGP_WALLET=1: serves the owner's private one-time card page. */
-  /** Set when INSTINCT_PAGES=1: serves the public poll / sign-up / RSVP pages. */
+  /** Set when ORION_PAGES=1: serves the public poll / sign-up / RSVP pages. */
   pages?: { handleHttp(method: string, path: string, body: string, client: string): { status: number; html: string } | undefined };
   egp?: { handleHttp(method: string, path: string, body: string): { status: number; html: string } | undefined };
   /** Report a finished phone call to the owner. Unset: call.ended events are acknowledged and dropped. */
@@ -85,7 +85,7 @@ export interface HttpServerOptions {
   /** Max request body. Default 1 MiB. */
   bodyLimitBytes?: number;
   /**
-   * Shared secret for /chat, /status and /schedules. Falls back to env INSTINCT_CHAT_TOKEN.
+   * Shared secret for /chat, /status and /schedules. Falls back to env ORION_CHAT_TOKEN.
    * When neither is set those routes are open and the bind address is the only guard.
    */
   chatToken?: string;
@@ -98,7 +98,7 @@ export interface HttpServerOptions {
 }
 
 export const BODY_LIMIT_BYTES = 1024 * 1024;
-export const CHAT_TOKEN_HEADER = "x-instinct-token";
+export const CHAT_TOKEN_HEADER = "x-orion-token";
 export const TUNNEL_ROUTES: ReadonlySet<string> = new Set(["GET /health", "POST /webhooks/inkbox"]);
 /** A Maritime schedule wake may arrive a little before the minute boundary we computed. */
 export const SCHEDULE_WAKE_GRACE_MS = 90_000;
@@ -200,7 +200,7 @@ export function tokenMatches(expected: string | undefined, presented: string | u
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** The token a request presents: `Authorization: Bearer <t>` or `X-Instinct-Token: <t>`. */
+/** The token a request presents: `Authorization: Bearer <t>` or `X-Orion-Token: <t>`. */
 export function presentedToken(headers: http.IncomingHttpHeaders): string | undefined {
   const auth = headers.authorization;
   if (typeof auth === "string") {
@@ -361,7 +361,7 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
   const limit = opts.bodyLimitBytes ?? BODY_LIMIT_BYTES;
   const now = opts.now ?? (() => new Date());
   const signingKey = (): string | undefined => opts.signingKey ?? opts.signingKeyProvider?.() ?? env.INKBOX_SIGNING_KEY;
-  const chatToken = opts.chatToken ?? env.INSTINCT_CHAT_TOKEN?.trim() ?? undefined;
+  const chatToken = opts.chatToken ?? env.ORION_CHAT_TOKEN?.trim() ?? undefined;
   const tunnelOnly = opts.tunnelOnly === true;
   if (inboxes.get(app)?.closing) throw new Error("The agent's webhook inbox is still closing");
   if (app.state && !inboxes.has(app)) {
@@ -461,7 +461,7 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     }
 
     if (method === "GET" && path === "/schedules") return sendJson(res, 200, app.scheduler.toMaritimeSchedules());
-    // `instinct payments connect | status`. Owner surface: the authorize URL starts a flow this server completes.
+    // `orion payments connect | status`. Owner surface: the authorize URL starts a flow this server completes.
     if (method === "GET" && path === "/oauth/link/start") {
       if (!app.wallet?.authorizeUrl) return sendJson(res, 404, { error: "payments not configured" });
       return sendJson(res, 200, { url: app.wallet.authorizeUrl().url });
@@ -474,7 +474,7 @@ export function createHttpServer(app: HttpApp, opts: HttpServerOptions = {}): ht
     // A spoken message from the owner (the iPhone Action Button Shortcut): audio in, the agent's answer out.
     if (method === "POST" && path === "/voice") return handleVoice(req, res);
 
-    // The phone's location (an iOS automation or app): a fix {lat, lon, accuracy?} or {place, event}. Off unless INSTINCT_LOCATION=1.
+    // The phone's location (an iOS automation or app): a fix {lat, lon, accuracy?} or {place, event}. Off unless ORION_LOCATION=1.
     if (method === "POST" && path === "/location") {
       if (!app.location) return sendJson(res, 404, { error: "location is off on this agent" });
       const raw = await readBody(req, 4096);

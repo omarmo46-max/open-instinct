@@ -26,14 +26,14 @@ There are two ways to give the agent an Ample account.
 
 ```bash
 export AMPLE_SIGNUP=1
-pnpm instinct dev
+pnpm orion dev
 ```
 
 No key is needed. The first time the owner asks for a site, the agent signs up
 for a free Ample account of its own, deploys into it, and sends the owner the
 site's link together with a claim link. Opening the claim link and confirming
 an email makes the owner the account's owner. When the owner's email is in the
-config (`INSTINCT_OWNER_EMAIL`), Ample also emails them a claim link at signup.
+config (`ORION_OWNER_EMAIL`), Ample also emails them a claim link at signup.
 
 Ample deletes an unclaimed account, with its sites, two days after signup.
 Until the owner claims it, every deploy result reminds the agent of the claim
@@ -55,7 +55,7 @@ line (no browser needed):
 
 ```bash
 curl -fsSL https://get.ample.computer/install.sh | sh
-ample --format json auth signup --name my-instinct
+ample --format json auth signup --name my-orion
 ```
 
 The response has `credentials.client_id`, `credentials.client_secret` and a
@@ -63,7 +63,7 @@ The response has `credentials.client_id`, `credentials.client_secret` and a
 after 48 hours. Or, with an account you already have:
 
 ```bash
-ample auth agent create --name instinct --scope 'servers:read,servers:write,databases:*'
+ample auth agent create --name orion --scope 'servers:read,servers:write,databases:*'
 ```
 
 Then export both values before starting or deploying the agent:
@@ -71,10 +71,10 @@ Then export both values before starting or deploying the agent:
 ```bash
 export AMPLE_CLIENT_ID=agent_...
 export AMPLE_CLIENT_SECRET=ample_agent_...
-pnpm instinct dev
+pnpm orion dev
 ```
 
-`instinct deploy` forwards them to Maritime, the secret as an encrypted
+`orion deploy` forwards them to Maritime, the secret as an encrypted
 variable. `AMPLE_TOKEN` (an API token) works instead of the pair until the
 token expires; the pair lasts until you revoke it with
 `ample auth agent revoke`. `AMPLE_API_URL` points at another Ample API and

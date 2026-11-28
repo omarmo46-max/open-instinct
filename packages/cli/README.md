@@ -1,10 +1,10 @@
 # @orion-ai/cli
 
-The `instinct` command. It sets up your agent, runs it on your machine, deploys it to
+The `orion` command. It sets up your agent, runs it on your machine, deploys it to
 Maritime, connects your iMessage, and edits who in your life may ask it for what.
 
-Everything the CLI writes lives in one data directory (`$INSTINCT_DATA_DIR`, default
-`./.instinct`). The agent server reads the same files, so a change made here applies on
+Everything the CLI writes lives in one data directory (`$ORION_DATA_DIR`, default
+`./.orion`). The agent server reads the same files, so a change made here applies on
 the agent's next message.
 
 ## Install
@@ -12,11 +12,11 @@ the agent's next message.
 ```bash
 # inside the monorepo
 pnpm install && pnpm -r build
-pnpm --filter @orion-ai/cli exec instinct --help
+pnpm --filter @orion-ai/cli exec orion --help
 
 # or link it on your PATH
 cd packages/cli && pnpm link --global
-instinct --help
+orion --help
 ```
 
 Node 22.19 or newer is required.
@@ -25,21 +25,21 @@ Node 22.19 or newer is required.
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `INSTINCT_DATA_DIR` | all | state directory (default `./.instinct`); `--data-dir` overrides it |
+| `ORION_DATA_DIR` | all | state directory (default `./.orion`); `--data-dir` overrides it |
 | `INKBOX_ADMIN_API_KEY` | `init`, `invite`, `connect`, `dev --tunnel` | org-wide Inkbox key; provisions identities and webhooks |
 | `INKBOX_BASE_URL` | same | Inkbox API base, only for self-hosted Inkbox |
 | `MARITIME_API_KEY` | `deploy`, `chat --agent` | `mk_...` key with the `provision` and `deploy` scopes |
 | `MARITIME_API_URL`, `MARITIME_APP_URL` | `deploy`, `chat` | control plane and dashboard base URLs (defaults: api.maritime.sh, maritime.sh) |
 | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` + `OPENAI_BASE_URL` | `dev`, `deploy` | model access, copied into the Maritime agent on deploy |
-| `INSTINCT_MARITIME_MODEL` | `deploy --maritime-llm` | model id behind Maritime's metered proxy (default `gpt-5.4`) |
+| `ORION_MARITIME_MODEL` | `deploy --maritime-llm` | model id behind Maritime's metered proxy (default `gpt-5.4`) |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | `init`, `dev`, `deploy` | Gmail, Calendar and other apps through Composio. `init` turns `apps.enabled` on when either is set; `dev` warns when the key is set but apps are off |
 | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `LINK_REDIRECT_URI`, `STRIPE_PUBLISHABLE_KEY` | `deploy`, `payments` | Stripe Link Agent Wallet. `deploy` copies them into the agent when `LINK_CLIENT_ID` is set; `payments connect` uses them to build the authorize URL when no server offers one |
 | `BRAVE_SEARCH_API_KEY` | `dev`, `deploy` | optional web search key |
 | `VISUAL`, `EDITOR` | `persona edit` | the editor to open `PERSONA.md` in; without one the path is printed |
 | `NO_COLOR` | all | disables ANSI colors |
-| `INSTINCT_DEBUG` | all | prints stack traces on unexpected errors |
+| `ORION_DEBUG` | all | prints stack traces on unexpected errors |
 
-`instinct init` stores the identity-scoped Inkbox credentials in
+`orion init` stores the identity-scoped Inkbox credentials in
 `<dataDir>/secrets/inkbox.json` (mode 0600). `dev` and `deploy` read that file, so you
 do not need to export `INKBOX_API_KEY` yourself.
 
@@ -47,7 +47,7 @@ do not need to export `INKBOX_API_KEY` yourself.
 
 Every command accepts `--data-dir <dir>` and `--help`.
 
-### `instinct init`
+### `orion init`
 
 Writes `config.json`. With `INKBOX_ADMIN_API_KEY` set, also provisions the agent's Inkbox
 identity with iMessage enabled, mints an identity-scoped API key and a webhook signing
@@ -55,7 +55,7 @@ key, saves them to `secrets/inkbox.json`, prints the matching `export` lines, an
 the connect instructions.
 
 ```
-instinct init --name <you> [--phone +1...] [--email you@x.com] [--handle <handle>]
+orion init --name <you> [--phone +1...] [--email you@x.com] [--handle <handle>]
               [--model provider/model-id] [--timezone Area/City] [--city "..."]
               [--agent-name "..."] [--phone-number] [--skip-inkbox]
               [--use-existing] [--rotate-signing-key]
@@ -66,10 +66,10 @@ instinct init --name <you> [--phone +1...] [--email you@x.com] [--handle <handle
 |---|---|
 | `--name` | your name (required) |
 | `--phone`, `--email` | how the agent recognises you as the owner; repeat `init` to add more |
-| `--handle` | the agent's Inkbox handle, for example `maria-instinct`; required to provision. `owner` is reserved |
+| `--handle` | the agent's Inkbox handle, for example `maria-orion`; required to provision. `owner` is reserved |
 | `--model` | `provider/model-id`, default `anthropic/claude-fable-5-1` |
 | `--timezone`, `--city` | owner profile fields used in prompts and schedules |
-| `--agent-name` | display name of the agent (default from core, for example "Maria's Instinct") |
+| `--agent-name` | display name of the agent (default from core, for example "Maria's Orion") |
 | `--phone-number` | also buy an SMS line for the identity (off by default; iMessage works without it) |
 | `--skip-inkbox` | write config only, even when an admin key is present |
 | `--use-existing` | explicitly import an existing identity instead of creating a fresh one |
@@ -84,57 +84,57 @@ already taken, Inkbox assigns a suffixed one and `init` saves that handle in the
 later does nothing on its own. Run `init` again (with `--apps` or the key in env) to flip
 `apps.enabled`; `dev` prints a warning naming that fix when it sees the key with apps off.
 
-### `instinct connect`
+### `orion connect`
 
 Prints the Inkbox router number, the `connect @handle` text, a tap-to-text link, and
 writes the QR code to `<dataDir>/connect-qr.png`. Text that command from your iPhone and
 a new iMessage thread from your agent appears.
 
-### `instinct dev`
+### `orion dev`
 
 Runs the agent server in this process. No Docker, no Maritime. Loads `secrets/inkbox.json`
-into env, sets `PORT` and `INSTINCT_DATA_DIR`, then imports `boot` and `createHttpServer`
+into env, sets `PORT` and `ORION_DATA_DIR`, then imports `boot` and `createHttpServer`
 from `@orion-ai/server`.
 
 ```
-instinct dev [--port 8080] [--host 127.0.0.1] [--tunnel] [--quiet]
+orion dev [--port 8080] [--host 127.0.0.1] [--tunnel] [--quiet]
 ```
 
 The management listener binds to loopback by default. The public tunnel forwards to a
 separate webhook-only listener, so it does not expose chat, status or schedules.
 
-`--tunnel` sets `INSTINCT_TUNNEL=1`, opens an Inkbox tunnel to this listener and, with
+`--tunnel` sets `ORION_TUNNEL=1`, opens an Inkbox tunnel to this listener and, with
 `INKBOX_ADMIN_API_KEY`, subscribes the webhook to `<publicUrl>/webhooks/inkbox`. Without an
 admin key it prints the URL for you to subscribe by hand. Ctrl-C closes the tunnel, the
 server and the agent cleanly. `--data-dir` may come before or after `dev`; the binary stays
 up either way.
 
 If `COMPOSIO_API_KEY` is set but `config.json` has `apps.enabled: false`, `dev` warns and
-names the fix (`instinct init --name <you> --apps`) instead of booting without app tools.
+names the fix (`orion init --name <you> --apps`) instead of booting without app tools.
 
-### `instinct chat`
+### `orion chat`
 
 Sends one message and prints the reply.
 
 ```
-instinct chat "<message>" [--url http://127.0.0.1:8080] [--agent <maritimeAgentId>] [--conversation <id>]
+orion chat "<message>" [--url http://127.0.0.1:8080] [--agent <maritimeAgentId>] [--conversation <id>]
 ```
 
 Without `--agent` it posts to the local server's `/chat`. With `--agent` it goes through
 `POST https://api.maritime.sh/api/agents/<id>/chat` with `MARITIME_API_KEY`, which wakes a
 sleeping agent. `--conversation` keeps several messages in one thread. When
-`INSTINCT_CHAT_TOKEN` is set, local calls send it as `Authorization: Bearer <token>`.
+`ORION_CHAT_TOKEN` is set, local calls send it as `Authorization: Bearer <token>`.
 
-### `instinct status`
+### `orion status`
 
 ```
-instinct status [--url http://127.0.0.1:8080]
+orion status [--url http://127.0.0.1:8080]
 ```
 
-Fetches `GET /` (falls back to `/health`), sending `INSTINCT_CHAT_TOKEN` when set, and prints a flattened key/value table: agent
+Fetches `GET /` (falls back to `/health`), sending `ORION_CHAT_TOKEN` when set, and prints a flattened key/value table: agent
 name, owner, model, computer kind, connected apps, conversation counts, uptime.
 
-### `instinct deploy`
+### `orion deploy`
 
 Creates one Maritime agent for you from a built image. The request body is the same one
 the gateway uses for multi-user signups, so both shapes produce the same kind of agent:
@@ -145,36 +145,36 @@ server binds and the port Maritime forwards to are always the same. Local runs
 (`deploy/Dockerfile.agent`, `docker compose`) keep `PORT=8080`.
 
 ```
-instinct deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name instinct-<handle>]
+orion deploy --image ghcr.io/<you>/orion-ai-agent:<tag> [--name orion-<handle>]
                 [--idle 900] [--no-desktop] [--maritime-llm] [--model <id>] [--dry-run]
 ```
 
 | Flag | Meaning |
 |---|---|
 | `--image` | the agent image (required); build it from `deploy/Dockerfile.agent` |
-| `--name` | Maritime agent name, default `instinct-<handle>` |
+| `--name` | Maritime agent name, default `orion-<handle>` |
 | `--idle` | seconds of silence before the microVM sleeps, default 900 |
 | `--no-desktop` | skip the Linux desktop (no computer use, cheaper) |
-| `--maritime-llm` | no model key of your own: sets `useMaritimeLlm: true` so Maritime injects `OPENAI_API_KEY` and `OPENAI_BASE_URL` for its metered proxy, and sets `INSTINCT_MODEL=openai-compatible/<model>` so the agent uses them. Your own `OPENAI_*` are not copied in this mode |
-| `--model` | with `--maritime-llm`, the proxy model id (default `gpt-5.4`, or `INSTINCT_MARITIME_MODEL`); otherwise overrides `config.model.primary` for this agent |
+| `--maritime-llm` | no model key of your own: sets `useMaritimeLlm: true` so Maritime injects `OPENAI_API_KEY` and `OPENAI_BASE_URL` for its metered proxy, and sets `ORION_MODEL=openai-compatible/<model>` so the agent uses them. Your own `OPENAI_*` are not copied in this mode |
+| `--model` | with `--maritime-llm`, the proxy model id (default `gpt-5.4`, or `ORION_MARITIME_MODEL`); otherwise overrides `config.model.primary` for this agent |
 | `--dry-run` | print the body with secrets redacted, create nothing |
 
-Env vars copied into the agent: `PORT`, `INSTINCT_*` owner and model settings, `INKBOX_*` from
+Env vars copied into the agent: `PORT`, `ORION_*` owner and model settings, `INKBOX_*` from
 `secrets/inkbox.json`, `ANTHROPIC_API_KEY` or `OPENAI_*`, `COMPOSIO_*`, `BRAVE_SEARCH_API_KEY`,
 and, when `LINK_CLIENT_ID` is set, `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `LINK_REDIRECT_URI`
 and `STRIPE_PUBLISHABLE_KEY` for Stripe Link payments. Secrets are flagged `isSecret: true` so
 Maritime encrypts them. The new agent id is saved to `<dataDir>/maritime.json` and the command
 prints the dashboard URL plus the two ways to receive webhooks: run the gateway, or self-host
-with `instinct dev --tunnel`. Creating an agent debits your Maritime wallet; a 402 is shown
+with `orion dev --tunnel`. Creating an agent debits your Maritime wallet; a 402 is shown
 with the server's own explanation.
 
-### `instinct invite`
+### `orion invite`
 
 Adds a person to the trusted network and, with `INKBOX_ADMIN_API_KEY`, creates an Inkbox
 A2A invitation their agent can accept.
 
 ```
-instinct invite <name> --tier <partner|family|friend|contact|stranger>
+orion invite <name> --tier <partner|family|friend|contact|stranger>
                 [--email x@y] [--phone +1...] [--handle <peer-handle>] [--note "..."]
 ```
 
@@ -182,13 +182,13 @@ instinct invite <name> --tier <partner|family|friend|contact|stranger>
 A2A contact rule, so the peer's first task is admitted. The printed link or handoff prompt
 is what you forward to the other person.
 
-### `instinct trust`
+### `orion trust`
 
 ```
-instinct trust list
-instinct trust set <contact> <tier>
-instinct trust grant <contact> <cap,cap> [--until YYYY-MM-DD] [--max-usd N] [--purpose "..."] [--note "..."]
-instinct trust revoke <grantId>
+orion trust list
+orion trust set <contact> <tier>
+orion trust grant <contact> <cap,cap> [--until YYYY-MM-DD] [--max-usd N] [--purpose "..."] [--note "..."]
+orion trust revoke <grantId>
 ```
 
 `<contact>` is a contact id (`sam-lee`) or a name. `set` creates the contact when it does
@@ -197,11 +197,11 @@ date means end of that day (UTC). Capabilities are the strings from
 `docs/PERMISSIONS.md`, for example `calendar.write,plans.commit`. Nobody can be set to
 `owner`.
 
-### `instinct payments`
+### `orion payments`
 
 ```
-instinct payments connect [--url http://127.0.0.1:8080]
-instinct payments status  [--url http://127.0.0.1:8080]
+orion payments connect [--url http://127.0.0.1:8080]
+orion payments status  [--url http://127.0.0.1:8080]
 ```
 
 `connect` prints the Stripe Link authorize URL that links your Link wallet to the agent.
@@ -216,31 +216,31 @@ exchange still needs a server. Behind the gateway, the redirect lands on
 of `GET /`) and whether `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `LINK_REDIRECT_URI` and
 `STRIPE_PUBLISHABLE_KEY` are set locally. Values are never printed, only `set` or `missing`.
 
-### `instinct persona`
+### `orion persona`
 
 ```
-instinct persona show
-instinct persona edit
-instinct persona set "<text>"
-instinct persona reset
-instinct persona path
+orion persona show
+orion persona edit
+orion persona set "<text>"
+orion persona reset
+orion persona path
 ```
 
 `PERSONA.md` in the data directory is the identity section of the agent's system prompt:
 its voice, texting style and what it never does. The first boot writes the built-in default
-(or `INSTINCT_PERSONA` from the environment); after that the file is yours. `show` prints
+(or `ORION_PERSONA` from the environment); after that the file is yours. `show` prints
 what is in effect, the default included when no file exists yet. `edit` opens the file in
 `$VISUAL` or `$EDITOR` and writes the default first when there is nothing to edit; with no
 editor set it prints the path. `set` replaces the file with the text given. `reset` puts
 the default back. The server reads the file on every message, so a change applies to the
-next reply. The agent's name is `agent.name` in `config.json`: `instinct init --name <you>
+next reply. The agent's name is `agent.name` in `config.json`: `orion init --name <you>
 --agent-name "Pip"`. [docs/CUSTOMIZE.md](../../docs/CUSTOMIZE.md) covers the other layers
 (`AGENTS.md`, skills, memory, policy).
 
-### `instinct prompt`
+### `orion prompt`
 
 ```
-instinct prompt [--channel imessage|sms|email|a2a|chat|scheduled|system] [--layers] [--json] [--no-skills]
+orion prompt [--channel imessage|sms|email|a2a|chat|scheduled|system] [--layers] [--json] [--no-skills]
 ```
 
 Prints the system prompt your own conversation would get right now, built from the data
@@ -248,17 +248,17 @@ directory with you as the owner: `config.json`, `PERSONA.md`, `AGENTS.md`, the m
 digest, your capabilities from `policy.json`, pending approvals and the skills index. No
 server or model key is needed. `--layers` prints one row per section (id, length, the file
 that decides it) instead of the text; `--json` prints the sections as data. The skills
-index comes from `$INSTINCT_SKILLS_DIR` or `<repo>/skills`; `--no-skills` leaves it out.
+index comes from `$ORION_SKILLS_DIR` or `<repo>/skills`; `--no-skills` leaves it out.
 A running agent adds the tool groups it wired (messaging, computer, apps) and the network
 guidance for whoever it is talking to; the text of every file is the same.
 
-### `instinct schedules`
+### `orion schedules`
 
 ```
-instinct schedules list
-instinct schedules add "<cron>" "<prompt>" [--tz Area/City] [--name "..."]
-instinct schedules add --at <iso-timestamp> "<prompt>"
-instinct schedules remove <id>
+orion schedules list
+orion schedules add "<cron>" "<prompt>" [--tz Area/City] [--name "..."]
+orion schedules add --at <iso-timestamp> "<prompt>"
+orion schedules remove <id>
 ```
 
 Cron has five fields (`minute hour day month weekday`) with `*`, lists, ranges and steps,
@@ -273,56 +273,56 @@ export INKBOX_ADMIN_API_KEY=ik_admin_...
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # 1. Create the agent's config and its iMessage identity.
-$ instinct init --name "Maria" --phone +14155550100 --email maria@example.com \
-    --handle maria-instinct --timezone America/New_York
-Wrote /Users/maria/.instinct/config.json
+$ orion init --name "Maria" --phone +14155550100 --email maria@example.com \
+    --handle maria-orion --timezone America/New_York
+Wrote /Users/maria/.orion/config.json
   owner  Maria  +14155550100  maria@example.com
-  agent  Maria's Instinct  @maria-instinct
+  agent  Maria's Orion  @maria-orion
   model  anthropic/claude-fable-5-1
 
-Provisioning Inkbox identity @maria-instinct ...
-Identity ready: @maria-instinct  maria-instinct@inkboxmail.com  iMessage on
-Secrets written to /Users/maria/.instinct/secrets/inkbox.json (mode 0600).
+Provisioning Inkbox identity @maria-orion ...
+Identity ready: @maria-orion  maria-orion@inkboxmail.com  iMessage on
+Secrets written to /Users/maria/.orion/secrets/inkbox.json (mode 0600).
 
 Connect your iMessage
-  1. Text connect @maria-instinct to +1 415 555 0100
-  2. A new thread from your Instinct appears. Say hi.
+  1. Text connect @maria-orion to +1 415 555 0100
+  2. A new thread from your Orion appears. Say hi.
 
 # 2. Run it on your laptop with webhooks tunneled in.
-$ instinct dev --tunnel
-Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
-  tunnel: https://maria-instinct.inkboxwire.com
+$ orion dev --tunnel
+Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.orion)
+  tunnel: https://maria-orion.inkboxwire.com
   webhook: subscription whs_8f2 (new)
 
 # 3. Talk to it from another terminal, or from your phone.
-$ instinct chat "Book me a table for two at Nopa on Thursday at 7"
+$ orion chat "Book me a table for two at Nopa on Thursday at 7"
 On it. I will send the result when it is done.
 
 # 4. Give your partner more access than a friend.
-$ instinct invite "Sam Lee" --tier partner --email sam@example.com --handle sam-instinct
-Added Sam Lee (sam-lee) as partner, agent @sam-instinct
-Allowed A2A with @sam-instinct on @maria-instinct.
+$ orion invite "Sam Lee" --tier partner --email sam@example.com --handle sam-orion
+Added Sam Lee (sam-lee) as partner, agent @sam-orion
+Allowed A2A with @sam-orion on @maria-orion.
 
 Invitation for Sam Lee (partner)
   link    https://inkbox.ai/i/inv_3k9...
 
-$ instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 \
+$ orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 \
     --note "Sam can book us dinner this week"
 Granted calendar.write, plans.commit to Sam Lee (grant_x1) until 2026-10-12T23:59:59.000Z, max $150
 
 # 5. A morning briefing on weekdays.
-$ instinct schedules add "0 8 * * 1-5" "Morning briefing: calendar, weather, top emails" --tz America/New_York
+$ orion schedules add "0 8 * * 1-5" "Morning briefing: calendar, weather, top emails" --tz America/New_York
 Scheduled sch_7a  0 8 * * 1-5  (America/New_York)  next 2026-10-05T12:00:00.000Z
 
 # 6. Move it to its own computer on Maritime.
 $ export MARITIME_API_KEY=mk_...
-$ instinct deploy --image ghcr.io/maria/orion-ai-agent:latest
-Creating Maritime agent instinct-maria-instinct from ghcr.io/maria/orion-ai-agent:latest ...
+$ orion deploy --image ghcr.io/maria/orion-ai-agent:latest
+Creating Maritime agent orion-maria-orion from ghcr.io/maria/orion-ai-agent:latest ...
 Agent created: agt_01J...  (deploying)
   dashboard  https://maritime.sh/dashboard/agents/agt_01J...
-  chat       instinct chat "hello" --agent agt_01J...
+  chat       orion chat "hello" --agent agt_01J...
 
-$ instinct chat "what did you do today" --agent agt_01J...
+$ orion chat "what did you do today" --agent agt_01J...
 ```
 
 ## Programmatic use
@@ -330,7 +330,7 @@ $ instinct chat "what did you do today" --agent agt_01J...
 ```ts
 import { runCli } from "@orion-ai/cli";
 
-const code = await runCli(["trust", "list"], { INSTINCT_DATA_DIR: "/tmp/agent" }, {
+const code = await runCli(["trust", "list"], { ORION_DATA_DIR: "/tmp/agent" }, {
   stdout: (t) => process.stdout.write(t),
   stderr: (t) => process.stderr.write(t),
 });

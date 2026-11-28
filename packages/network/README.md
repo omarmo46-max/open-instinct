@@ -13,7 +13,7 @@ Analogy: core is the house and its locks. This package is the guest list, the sp
 3. [OIP/1, the typed envelope](#oip1-the-typed-envelope)
 4. [A2A flow](#a2a-flow)
 5. [Worked example: dinner between two agents](#worked-example-dinner-between-two-agents)
-6. [People without an Instinct](#people-without-an-instinct)
+6. [People without an Orion](#people-without-an-orion)
 7. [Tools](#tools)
 8. [Prompt guidance](#prompt-guidance)
 9. [API](#api)
@@ -24,7 +24,7 @@ Analogy: core is the house and its locks. This package is the guest list, the sp
 
 Every contact sits in one tier. The tier decides what their messages, and their agent's messages, may ask for. The full capability table is in [docs/PERMISSIONS.md](../../docs/PERMISSIONS.md). The short version:
 
-| Tier | Who | What their Instinct can learn or do |
+| Tier | Who | What their Orion can learn or do |
 |---|---|---|
 | `partner` | spouse, partner | calendar details, exact location, most preferences; books and writes to the calendar after the owner says yes |
 | `family` | close family | free/busy, approximate location, some preferences; commitments need a yes |
@@ -34,7 +34,7 @@ Every contact sits in one tier. The tier decides what their messages, and their 
 
 Nobody but the owner is `owner`. The tools refuse to place a contact there.
 
-An agent inherits the tier of the person it acts for. When `@sam-instinct` calls, `resolveA2aPrincipal` looks up the contact whose `agentHandle` is `sam-instinct` and takes that contact's tier. An unknown handle is a stranger, whatever Inkbox let through.
+An agent inherits the tier of the person it acts for. When `@sam-orion` calls, `resolveA2aPrincipal` looks up the contact whose `agentHandle` is `sam-orion` and takes that contact's tier. An unknown handle is a stranger, whatever Inkbox let through.
 
 The owner moves people between tiers in plain language. "Sam is my partner" becomes `trust_set_tier { contact: "Sam", tier: "partner" }`.
 
@@ -59,7 +59,7 @@ Rules the tools enforce:
 - Only the owner can create, list or revoke grants.
 - Capability names are checked against the list in `CAPABILITIES`. A typo fails the whole call rather than silently granting less.
 - A window needs both ends. When `expiresAt` is omitted the grant expires at the end of the window's last day.
-- `to` is resolved to a contact and stored as `contact:<id>`. A raw principal id such as `agent:sam-instinct` is accepted as given.
+- `to` is resolved to a contact and stored as `contact:<id>`. A raw principal id such as `agent:sam-orion` is accepted as given.
 - Grants never widen past what the owner can do. The policy engine still applies spend limits to any `maxUsd`.
 
 `trust_list` prints the whole picture: contacts grouped by tier, tier overrides, and active grants with their ids. `trust_revoke { grantId }` removes one.
@@ -75,7 +75,7 @@ Two Orion AI agents speak A2A 1.0 through Inkbox. Every message has a plain text
   "oip": "1",
   "intent": "propose_times",
   "subject": "dinner with Maria and Sam",
-  "on_behalf_of": { "handle": "maria-instinct", "display": "Maria" },
+  "on_behalf_of": { "handle": "maria-orion", "display": "Maria" },
   "payload": {
     "slots": [
       { "start": "2026-10-06T19:00:00-04:00", "end": "2026-10-06T22:00:00-04:00" },
@@ -95,33 +95,33 @@ Four functions handle the envelope:
 - `encodeOip(m)` produces the wire object and drops undefined fields.
 - `decodeOip(data)` validates. Anything that is not an OIP/1 object with a known intent returns `undefined`, so the caller falls back to the text part. Malformed optional fields are dropped, not fatal.
 - `describeOip(m)` writes one paragraph for the model: intent, subject, sender, payload, consent flag, deadline, and the reply the protocol expects.
-- `oipToText(m, ownerName, { tz })` writes a short friendly message for a human who has no Instinct. Slot times are printed in `tz` when given, else as the sender wrote them.
+- `oipToText(m, ownerName, { tz })` writes a short friendly message for a human who has no Orion. Slot times are printed in `tz` when given, else as the sender wrote them.
 
 ## A2A flow
 
 ```
- Maria's Instinct (caller)                 Inkbox                    Sam's Instinct (worker)
+ Maria's Orion (caller)                 Inkbox                    Sam's Orion (worker)
  ──────────────────────────                ──────                    ───────────────────────
- ask_instinct { contact: "Sam", ... }
-   └ InkboxA2A.send("sam-instinct",
-        text, encodeOip(oip))  ──────────► POST /a2a/sam-instinct
+ ask_orion { contact: "Sam", ... }
+   └ InkboxA2A.send("sam-orion",
+        text, encodeOip(oip))  ──────────► POST /a2a/sam-orion
                                            stores task, posts webhook ──► a2a.task.created
-                                                                           principal = resolveA2aPrincipal("maria-instinct")
+                                                                           principal = resolveA2aPrincipal("maria-orion")
                                                                            prompt includes describeOip(data) + networkGuidance
-                                                                           reply_instinct { intent: "progress", ... }
+                                                                           reply_orion { intent: "progress", ... }
  a2a.sent_task.updated ◄────────────────── POST .../tasks/{id}/reply ◄────┘
  (new message in the same conversation)                                    ... asks its owner, then
-                                                                           reply_instinct { intent: "complete", oipIntent: "accept", ... }
+                                                                           reply_orion { intent: "complete", oipIntent: "accept", ... }
  a2a.sent_task.updated ◄────────────────── POST .../tasks/{id}/reply ◄────┘
 ```
 
 Admission is double gated. Inkbox contact rules decide whether the two identities may talk at all. Our tier decides what the request may do once it arrives. `invite_to_network` sets up both gates: it creates an Inkbox invitation for the other person and records the tier the owner chose.
 
-Replies are asynchronous. `ask_instinct` returns at once with the task and context ids. The worker's progress and completion arrive later as webhooks, which the server turns into new messages in the same conversation. The guidance tells the model to say so to the owner rather than wait.
+Replies are asynchronous. `ask_orion` returns at once with the task and context ids. The worker's progress and completion arrive later as webhooks, which the server turns into new messages in the same conversation. The guidance tells the model to say so to the owner rather than wait.
 
 ## Worked example: dinner between two agents
 
-Maria and Sam are partners. Each has an Orion AI. Maria's agent has the handle `maria-instinct`, Sam's has `sam-instinct`. Maria has Sam at tier `partner`; Sam has Maria at tier `partner`.
+Maria and Sam are partners. Each has an Orion AI. Maria's agent has the handle `maria-orion`, Sam's has `sam-orion`. Maria has Sam at tier `partner`; Sam has Maria at tier `partner`.
 
 **1. Maria asks.** Maria texts her agent: "Set up dinner with Sam this week, Tue or Thu after 7."
 
@@ -129,12 +129,12 @@ Maria's agent checks her calendar, then calls:
 
 ```json
 {
-  "tool": "ask_instinct",
+  "tool": "ask_orion",
   "args": {
     "contact": "Sam",
     "intent": "propose_times",
     "subject": "dinner with Maria and Sam",
-    "text": "Hi, this is Maria's Instinct. Maria would like dinner with Sam this week. Tue or Thu after 7 pm work for her. Which suits Sam?",
+    "text": "Hi, this is Maria's Orion. Maria would like dinner with Sam this week. Tue or Thu after 7 pm work for her. Which suits Sam?",
     "payload": {
       "slots": [
         { "start": "2026-10-06T19:00:00-04:00", "end": "2026-10-06T22:00:00-04:00" },
@@ -146,14 +146,14 @@ Maria's agent checks her calendar, then calls:
 }
 ```
 
-The tool finds Sam's contact, sees `agentHandle: "sam-instinct"`, and sends the text plus `encodeOip(...)` with `on_behalf_of: { handle: "maria-instinct", display: "Maria" }`. Inkbox returns a task id and a context id. The audit log gets an `outbound` entry. Maria's agent texts her: "Asked Sam's Instinct about Tue or Thu. I will tell you when it answers."
+The tool finds Sam's contact, sees `agentHandle: "sam-orion"`, and sends the text plus `encodeOip(...)` with `on_behalf_of: { handle: "maria-orion", display: "Maria" }`. Inkbox returns a task id and a context id. The audit log gets an `outbound` entry. Maria's agent texts her: "Asked Sam's Orion about Tue or Thu. I will tell you when it answers."
 
-**2. Sam's agent receives.** Inkbox posts `a2a.task.created` to Sam's agent. The server resolves the caller handle `maria-instinct` with `resolveA2aPrincipal` and gets Sam's contact "Maria" at tier `partner`. The prompt includes `describeOip(data)` and `networkGuidance(principal)`, which tells it what a partner may learn and that it must not commit Sam without his yes.
+**2. Sam's agent receives.** Inkbox posts `a2a.task.created` to Sam's agent. The server resolves the caller handle `maria-orion` with `resolveA2aPrincipal` and gets Sam's contact "Maria" at tier `partner`. The prompt includes `describeOip(data)` and `networkGuidance(principal)`, which tells it what a partner may learn and that it must not commit Sam without his yes.
 
 Sam's agent reads Sam's free/busy. Thursday is open. It answers at once so the context stays alive:
 
 ```json
-{ "tool": "reply_instinct", "args": { "taskId": "task-7f3", "intent": "progress", "text": "Checking with Sam. Thursday looks open on his side." } }
+{ "tool": "reply_orion", "args": { "taskId": "task-7f3", "intent": "progress", "text": "Checking with Sam. Thursday looks open on his side." } }
 ```
 
 Then it texts Sam: "Maria wants dinner this week, Tue or Thu after 7 near the Mission. Thu is free for you. OK to say yes to Thu 7 pm?"
@@ -162,7 +162,7 @@ Then it texts Sam: "Maria wants dinner this week, Tue or Thu after 7 near the Mi
 
 ```json
 {
-  "tool": "reply_instinct",
+  "tool": "reply_orion",
   "args": {
     "taskId": "task-7f3",
     "intent": "complete",
@@ -173,7 +173,7 @@ Then it texts Sam: "Maria wants dinner this week, Tue or Thu after 7 near the Mi
 }
 ```
 
-The tool wraps the payload as OIP/1 with `on_behalf_of: { handle: "sam-instinct", display: "Sam" }` and posts the reply.
+The tool wraps the payload as OIP/1 with `on_behalf_of: { handle: "sam-orion", display: "Sam" }` and posts the reply.
 
 **4. Maria's agent closes the loop.** The `a2a.sent_task.updated` webhook arrives with the accept. Maria's agent tells her: "Sam is in for Thu Oct 8, 7 pm, near the Mission. Want me to book somewhere?" Maria says "Yes, Nopa, keep it under $150."
 
@@ -181,7 +181,7 @@ Booking is a `plans.commit` and a possible `purchase`. The owner just approved i
 
 ```json
 {
-  "tool": "ask_instinct",
+  "tool": "ask_orion",
   "args": {
     "contact": "Sam",
     "intent": "confirm",
@@ -192,16 +192,16 @@ Booking is a `plans.commit` and a possible `purchase`. The owner just approved i
 }
 ```
 
-Both agents append the exchange to their journals. Either owner can later ask "what did you agree with Sam's Instinct?" and get the audit trail.
+Both agents append the exchange to their journals. Either owner can later ask "what did you agree with Sam's Orion?" and get the audit trail.
 
 **What the tiers did here.** Sam's agent shared free/busy (allowed for `partner`) and did not share event titles (it never does over A2A). Neither agent committed its owner without a yes. If Maria had Sam at `friend`, the flow would be the same but Sam's agent would learn only yes or no, not Maria's preferences. If Sam's handle were unknown to Maria's contacts, Sam's agent would be a `stranger` and the request would be declined with an offer to pass a message.
 
-## People without an Instinct
+## People without an Orion
 
-If a contact has no `agentHandle`, `ask_instinct` sends the same request as a normal message through the `Outbox`: iMessage when a phone is on file, email when only an email is. The body comes from `oipToText`, which turns the `propose_times` above into:
+If a contact has no `agentHandle`, `ask_orion` sends the same request as a normal message through the `Outbox`: iMessage when a phone is on file, email when only an email is. The body comes from `oipToText`, which turns the `propose_times` above into:
 
 ```
-Hi, this is Maria's Instinct.
+Hi, this is Maria's Orion.
 Maria would like to plan dinner with Maria and Sam.
 Would any of these work?
 1) Tue, Oct 6, 7:00 PM to 10:00 PM
@@ -212,18 +212,18 @@ Reply with the number that works, or suggest another time.
 
 The human's reply comes back in the normal thread. The model reads it and continues as if it were an `accept` or `decline`.
 
-This fallback is the owner's alone. When a partner, family member or friend calls `ask_instinct`, a contact without an Instinct is refused with "only the owner can message people who have no Instinct"; the agent never texts or emails a third party with someone else's words under "Hi, this is Maria's Instinct."
+This fallback is the owner's alone. When a partner, family member or friend calls `ask_orion`, a contact without an Orion is refused with "only the owner can message people who have no Orion"; the agent never texts or emails a third party with someone else's words under "Hi, this is Maria's Orion."
 
 ## Group plans
 
-`ask_instinct` takes `contacts: string[]` as well as `contact`. Every person gets the same intent, subject and payload; Instincts get it over A2A, others as text or email, and the tool returns one line per person plus `details.results` with each contact's `ok`, `via`, `taskId` and `contextId`. Replies arrive separately, one `a2a:<contextId>` conversation per Instinct, so the model combines them for the owner. `contextId` only makes sense with one contact and is refused with several.
+`ask_orion` takes `contacts: string[]` as well as `contact`. Every person gets the same intent, subject and payload; Orions get it over A2A, others as text or email, and the tool returns one line per person plus `details.results` with each contact's `ok`, `via`, `taskId` and `contextId`. Replies arrive separately, one `a2a:<contextId>` conversation per Orion, so the model combines them for the owner. `contextId` only makes sense with one contact and is refused with several.
 
 ## What a non-owner may ask
 
-`ask_instinct` is available to partner, family and friend (`network.ask`), so its `execute` narrows what they may do:
+`ask_orion` is available to partner, family and friend (`network.ask`), so its `execute` narrows what they may do:
 
-- They may address only their own contact entry (so a person can reach their own Instinct through this one). Anyone else, known or not, gets the same generic refusal; the contact list is never enumerated, and an ambiguous name returns "Several contacts match; ask the owner." without candidates.
-- Over A2A the text is prefixed with who asked ("From Jo Rivera, relayed by Maria's Instinct (not Maria's request): ...") and `on_behalf_of.display` is the requester, never the owner, so the far side cannot mistake it for the owner's intent.
+- They may address only their own contact entry (so a person can reach their own Orion through this one). Anyone else, known or not, gets the same generic refusal; the contact list is never enumerated, and an ambiguous name returns "Several contacts match; ask the owner." without candidates.
+- Over A2A the text is prefixed with who asked ("From Jo Rivera, relayed by Maria's Orion (not Maria's request): ...") and `on_behalf_of.display` is the requester, never the owner, so the far side cannot mistake it for the owner's intent.
 - The text or email fallback is refused.
 
 ## Tools
@@ -236,23 +236,23 @@ This fallback is the owner's alone. When a partner, family member or friend call
 | `trust_grant { to, capabilities[], purpose?, from?, to_date?, maxUsd?, expiresAt?, note? }` | `trust.manage` | owner | scoped, time-boxed exception |
 | `trust_revoke { grantId }` | `trust.manage` | owner | remove a grant |
 | `trust_list {}` | `trust.manage` | owner | tiers, overrides and grants in one view |
-| `ask_instinct { contact?, contacts?, intent, subject?, text, payload?, contextId? }` | `network.ask` | owner, partner, family, friend | send an OIP request to one or several contacts' Instincts, or (owner only) to the person as text or email; non-owners may address only their own entry |
-| `reply_instinct { taskId, intent, text, payload?, oipIntent?, subject? }` | `converse` | any A2A caller | answer the task being worked on; only inside an `a2a` conversation |
+| `ask_orion { contact?, contacts?, intent, subject?, text, payload?, contextId? }` | `network.ask` | owner, partner, family, friend | send an OIP request to one or several contacts' Orions, or (owner only) to the person as text or email; non-owners may address only their own entry |
+| `reply_orion { taskId, intent, text, payload?, oipIntent?, subject? }` | `converse` | any A2A caller | answer the task being worked on; only inside an `a2a` conversation |
 | `invite_to_network { contact, tier, email? }` | `network.invite` | owner | create the contact if needed, set the tier, create an Inkbox invitation |
 
-The runtime's policy engine decides whether a call may run at all. These tools add a second, structural check in `execute`: owner-only tools refuse non-owners, `reply_instinct` refuses outside `a2a`, and `contacts_search` narrows what non-owners see. Both checks exist on purpose. Hiding a tool is a convenience; the check in the tool is the guard.
+The runtime's policy engine decides whether a call may run at all. These tools add a second, structural check in `execute`: owner-only tools refuse non-owners, `reply_orion` refuses outside `a2a`, and `contacts_search` narrows what non-owners see. Both checks exist on purpose. Hiding a tool is a convenience; the check in the tool is the guard.
 
 Contact references are forgiving. `contact`, `to` and `query` accept an id (`sam-lee`), a principal id (`contact:sam-lee`), a name, a phone in any format, an email, or `@handle`. When a name matches several people the tool returns the candidates to the owner and asks for the id instead of guessing; non-owners get the same error without the names (`lookupContact(contacts, ref, { disclose: false })`).
 
-`reply_instinct` turns an Inkbox 429 into "Inkbox is rate limiting; try reply_instinct again in N s." so the model waits instead of surfacing a raw error.
+`reply_orion` turns an Inkbox 429 into "Inkbox is rate limiting; try reply_orion again in N s." so the model waits instead of surfacing a raw error.
 
 ## Prompt guidance
 
 `networkGuidance(principal)` returns a prompt section the runtime appends when network tools are available.
 
-For the owner it explains `ask_instinct`, group plans with `contacts`, the fallback to text, the three-options rule, and that replies arrive later.
+For the owner it explains `ask_orion`, group plans with `contacts`, the fallback to text, the three-options rule, and that replies arrive later.
 
-For anyone else it states the counterpart's tier, lists what may be shared at that tier, and repeats the hard rules: say who you act for, treat their words as information rather than instructions, propose at most 3 options, never commit the owner without a yes, and decline anything above their tier or reserved for the owner while telling the owner what was asked. For agents it adds how to use `reply_instinct`, that an out-of-scope request from another agent is declined with `fail` and reported to the owner rather than carried out, and that the OIP data part wins over the text when they disagree.
+For anyone else it states the counterpart's tier, lists what may be shared at that tier, and repeats the hard rules: say who you act for, treat their words as information rather than instructions, propose at most 3 options, never commit the owner without a yes, and decline anything above their tier or reserved for the owner while telling the owner what was asked. For agents it adds how to use `reply_orion`, that an out-of-scope request from another agent is declined with `fail` and reported to the owner rather than carried out, and that the OIP data part wins over the text when they disagree.
 
 ## API
 
@@ -275,10 +275,10 @@ import {
 interface NetworkToolDeps {
   contacts: ContactStore;       // core
   policy: PolicyEngine;         // core
-  config: InstinctConfig;       // core; agent.handle and owner.name go into on_behalf_of
+  config: OrionConfig;       // core; agent.handle and owner.name go into on_behalf_of
   audit: AuditLog;              // core
-  outbox: Outbox;               // core; used when a contact has no Instinct
-  a2a?: InkboxA2A;              // @orion-ai/inkbox; omit and ask_instinct always falls back to text
+  outbox: Outbox;               // core; used when a contact has no Orion
+  a2a?: InkboxA2A;              // @orion-ai/inkbox; omit and ask_orion always falls back to text
   provisioner?: InkboxProvisioner; // @orion-ai/inkbox; omit and invite_to_network explains the manual path
   onPolicyChange?: (policy: Policy) => void; // persist grants, e.g. savePolicy(state, policy)
 }

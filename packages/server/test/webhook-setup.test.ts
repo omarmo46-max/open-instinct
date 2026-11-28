@@ -51,7 +51,7 @@ function fakes(opts: { existing?: Subscription[]; configured?: boolean } = {}) {
 const url = "https://pub.example/webhooks/inkbox";
 describe("webhook setup", () => {
   let dir: string;
-  beforeEach(() => (dir = mkdtempSync(join(tmpdir(), "instinct-wh-"))));
+  beforeEach(() => (dir = mkdtempSync(join(tmpdir(), "orion-wh-"))));
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
   it("round-trips through secrets/webhook.json", () => {

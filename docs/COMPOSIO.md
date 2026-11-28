@@ -7,7 +7,6 @@ message, and what each tool is allowed to do.
 
 Code: [`packages/apps`](../packages/apps/README.md). Server wiring: [`packages/server`](../packages/server/README.md).
 
-(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Composio is
 
@@ -32,14 +31,14 @@ apps on in the server.
 
 | Where you run | How to set the key |
 |---|---|
-| `instinct dev` on your machine | Export `COMPOSIO_API_KEY` before `instinct init` and `instinct dev` |
-| `instinct deploy` to Maritime | Export `COMPOSIO_API_KEY`; `deploy` copies it into the agent as a secret |
+| `orion dev` on your machine | Export `COMPOSIO_API_KEY` before `orion init` and `orion dev` |
+| `orion deploy` to Maritime | Export `COMPOSIO_API_KEY`; `deploy` copies it into the agent as a secret |
 | Gateway, many users | Set `COMPOSIO_API_KEY` on the gateway; it passes the key to every agent it creates |
 | Docker compose | Fill in `COMPOSIO_API_KEY` in [`deploy/.env.example`](../deploy/.env.example) |
 
 One warning. `config.json` wins over the environment after the first boot. If you
-exported the key after `init`, apps may still be off. `instinct dev` prints a warning
-in that case. Run `instinct init --name <you> --apps` and start again.
+exported the key after `init`, apps may still be off. `orion dev` prints a warning
+in that case. Run `orion init --name <you> --apps` and start again.
 
 ## One session per person
 
@@ -50,7 +49,7 @@ agent's Inkbox handle.
 The session is saved in the state directory as `apps.json`:
 
 ```json
-{ "sessionId": "...", "userId": "maria-instinct", "toolkits": ["gmail", "googlecalendar", "googlecontacts"], "mode": "direct", "createdAt": "..." }
+{ "sessionId": "...", "userId": "maria-orion", "toolkits": ["gmail", "googlecalendar", "googlecontacts"], "mode": "direct", "createdAt": "..." }
 ```
 
 The server reuses the saved session across restarts. It makes a new one when the user
@@ -102,7 +101,7 @@ Every Composio tool carries a capability tag. The policy engine checks that tag
 against the caller's tier before the tool runs. The tiers are described in
 [PERMISSIONS.md](PERMISSIONS.md).
 
-This is how a partner's Instinct can read the owner's calendar but cannot send
+This is how a partner's Orion can read the owner's calendar but cannot send
 mail as the owner.
 
 | Tool family | Capability | owner | partner | family | friend |
@@ -155,21 +154,21 @@ word `all`. The default is `gmail,googlecalendar,googlecontacts`.
 ```bash
 export COMPOSIO_API_KEY=...
 export COMPOSIO_TOOLKITS=gmail,googlecalendar,googlecontacts,slack
-instinct init --name "Maria" --toolkits gmail,googlecalendar,googlecontacts,slack
-instinct dev
+orion init --name "Maria" --toolkits gmail,googlecalendar,googlecontacts,slack
+orion dev
 ```
 
 | Place | Effect |
 |---|---|
-| `instinct init --toolkits a,b` | Writes the list to `config.json` and turns apps on |
+| `orion init --toolkits a,b` | Writes the list to `config.json` and turns apps on |
 | `COMPOSIO_TOOLKITS` in env at first boot | Seeds `config.json` the same way |
-| `instinct deploy` | Copies `COMPOSIO_TOOLKITS` (or the list from `config.json`) into the agent |
+| `orion deploy` | Copies `COMPOSIO_TOOLKITS` (or the list from `config.json`) into the agent |
 | Gateway | Sends `COMPOSIO_TOOLKITS` to every new agent, default list when unset |
 
 `COMPOSIO_TOOLKITS` only seeds `config.json` on an agent's first boot; after that the
 file wins. Changing the variable on a running agent, or on the gateway for agents it
 already created, does nothing. Edit `apps.toolkits` in that agent's `config.json` (or
-run `instinct init --toolkits ...` again) and restart it, or create a new agent.
+run `orion init --toolkits ...` again) and restart it, or create a new agent.
 
 Each toolkit needs an auth config in your Composio project. Some, such as Gmail and
 Google Calendar, can use Composio's managed one; others, often Google Contacts in a
@@ -198,8 +197,8 @@ connections stay, because Composio stores them per user id, not per session.
 | unset | `router` when the model speaks an OpenAI-style chat completions API, `direct` otherwise | As above |
 
 OpenAI-style chat completions APIs reject a request with more than 128 tools
-(`Invalid 'tools': array too long`). The Maritime LLM proxy that `instinct deploy
---maritime-llm` and the gateway's `INSTINCT_USE_MARITIME_LLM=1` use is one of them,
+(`Invalid 'tools': array too long`). The Maritime LLM proxy that `orion deploy
+--maritime-llm` and the gateway's `ORION_USE_MARITIME_LLM=1` use is one of them,
 and so is any `openai-compatible/<model>`. Direct Gmail plus Calendar alone is about a
 hundred tools, and the agent has a few dozen of its own, so on those models a direct
 session would make every reply fail. Left unset, the mode is chosen from the model;
@@ -212,8 +211,8 @@ passes 128 on such a model.
 ```bash
 export COMPOSIO_API_KEY=...
 export COMPOSIO_TOOLKITS=all
-instinct init --name "Maria" --toolkits all
-instinct dev
+orion init --name "Maria" --toolkits all
+orion dev
 ```
 
 `all` (or `*`) creates the Composio session without a toolkit allowlist. The owner
@@ -261,7 +260,7 @@ yours alone.
 ## Checking that it works
 
 ```bash
-instinct status
+orion status
 ```
 
 The status line lists the connected apps, as does `apps: [...]` on the server's

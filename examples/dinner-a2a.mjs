@@ -151,7 +151,7 @@ function json(value, status = 200) {
 }
 
 async function startAgent(wire, me, peer) {
-  const dir = mkdtempSync(join(tmpdir(), `instinct-${me.handle}-`));
+  const dir = mkdtempSync(join(tmpdir(), `orion-${me.handle}-`));
   const state = new StateDir(dir);
   state.ensure();
   // The owner's address book: the peer is a partner whose agent has a known handle.
@@ -162,14 +162,14 @@ async function startAgent(wire, me, peer) {
   models.setProvider(faux.provider);
 
   const env = {
-    INSTINCT_DATA_DIR: dir,
-    INSTINCT_OWNER_NAME: me.name,
-    INSTINCT_OWNER_PHONE: me.phone,
-    INSTINCT_OWNER_TIMEZONE: "America/New_York",
-    INSTINCT_AGENT_NAME: `${me.name}'s Instinct`,
-    INSTINCT_MODEL: `faux-${me.handle}/faux-1`,
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dir, "no-skills"),
+    ORION_DATA_DIR: dir,
+    ORION_OWNER_NAME: me.name,
+    ORION_OWNER_PHONE: me.phone,
+    ORION_OWNER_TIMEZONE: "America/New_York",
+    ORION_AGENT_NAME: `${me.name}'s Orion`,
+    ORION_MODEL: `faux-${me.handle}/faux-1`,
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dir, "no-skills"),
     // An Inkbox key and handle switch the A2A client on; the fake fetch answers for Inkbox.
     INKBOX_API_KEY: "ik_demo",
     INKBOX_AGENT_HANDLE: me.handle,
@@ -187,7 +187,7 @@ async function startAgent(wire, me, peer) {
   return agent;
 }
 
-/** The owner typing in the local chat channel (what `instinct chat` does over HTTP). */
+/** The owner typing in the local chat channel (what `orion chat` does over HTTP). */
 function ownerSays(agent, text) {
   return agent.app.runtime.handleInbound({
     id: `chat_${Math.random().toString(36).slice(2)}`,
@@ -211,34 +211,34 @@ const toolCall = (name, args) => fauxAssistantMessage([fauxToolCall(name, args)]
 
 async function main() {
   const wire = new Wire();
-  const mariaId = { name: "Maria", handle: "maria-instinct", phone: "+14155550100" };
-  const samId = { name: "Sam", handle: "sam-instinct", phone: "+14155550199" };
+  const mariaId = { name: "Maria", handle: "maria-orion", phone: "+14155550100" };
+  const samId = { name: "Sam", handle: "sam-orion", phone: "+14155550199" };
   const maria = await startAgent(wire, mariaId, samId);
   const sam = await startAgent(wire, samId, mariaId);
 
   try {
     log("1. Maria asks her agent");
     maria.faux.setResponses([
-      toolCall("ask_instinct", {
+      toolCall("ask_orion", {
         contact: "Sam",
         intent: "propose_times",
         subject: "dinner with Maria and Sam",
-        text: "Hi, this is Maria's Instinct. Maria would like dinner with Sam this week. Thursday or Friday after 7 pm work for her. Which suits Sam?",
+        text: "Hi, this is Maria's Orion. Maria would like dinner with Sam this week. Thursday or Friday after 7 pm work for her. Which suits Sam?",
         payload: { slots: SLOTS, place_hint: "near the Mission" },
       }),
-      fauxAssistantMessage("Asked Sam's Instinct about Thursday or Friday near the Mission. I will tell you when it answers."),
+      fauxAssistantMessage("Asked Sam's Orion about Thursday or Friday near the Mission. I will tell you when it answers."),
     ]);
     // Sam's agent, when the task arrives: tell Sam, then accept Thursday with a typed OIP part.
     sam.faux.setResponses([
-      toolCall("notify_owner", { text: "Maria's Instinct asked about dinner this week, Thursday or Friday after 7 near the Mission. Thursday is open for you, so I said Thursday works." }),
-      toolCall("reply_instinct", {
+      toolCall("notify_owner", { text: "Maria's Orion asked about dinner this week, Thursday or Friday after 7 near the Mission. Thursday is open for you, so I said Thursday works." }),
+      toolCall("reply_orion", {
         taskId: "task_1",
         intent: "complete",
         text: "Sam can do Thursday Oct 8 at 7 pm. Anywhere near the Mission is fine.",
         oipIntent: "accept",
         payload: { slot: SLOTS[0] },
       }),
-      fauxAssistantMessage("Replied to Maria's Instinct."),
+      fauxAssistantMessage("Replied to Maria's Orion."),
     ]);
     // Maria's agent, when the accept arrives: tell Maria. Nothing to say back on the task itself.
     maria.faux.appendResponses([
@@ -247,13 +247,13 @@ async function main() {
     ]);
 
     const first = await ownerSays(maria, "Dinner with Sam this week, Thursday or Friday after 7.");
-    log(`  chat  Maria's Instinct -> Maria: ${first.reply}`);
-    check(/Asked Sam's Instinct/.test(first.reply ?? ""), "Maria's agent sent the request and told Maria it is waiting");
+    log(`  chat  Maria's Orion -> Maria: ${first.reply}`);
+    check(/Asked Sam's Orion/.test(first.reply ?? ""), "Maria's agent sent the request and told Maria it is waiting");
 
     await settle(() => maria.outbox.sent.some((m) => m.channel === "imessage" && /Thursday/.test(m.text)), "Maria to hear back from Sam's side");
     const samText = sam.outbox.sent.find((m) => m.channel === "imessage");
     check(samText !== undefined && samText.to === samId.phone, "Sam's agent texted Sam, not Maria");
-    check(samText !== undefined && /^Maria's agent \(@maria-instinct\) via /.test(samText.text), "the text to Sam names who asked");
+    check(samText !== undefined && /^Maria's agent \(@maria-orion\) via /.test(samText.text), "the text to Sam names who asked");
     const accept = wire.lines.find((l) => /reply complete\s+task_1/.test(l));
     check(accept !== undefined, "Sam's agent completed task_1 with an accept");
     const mariaText = maria.outbox.sent.find((m) => m.channel === "imessage");
@@ -261,24 +261,24 @@ async function main() {
 
     log("2. Maria says yes; her agent confirms in the same context");
     maria.faux.appendResponses([
-      toolCall("ask_instinct", {
+      toolCall("ask_orion", {
         contact: "Sam",
         intent: "confirm",
         contextId: "ctx_1",
         text: "Nopa, Thursday Oct 8, 7:00 pm, table for two, under Maria's name.",
         payload: { summary: "Nopa, Thu Oct 8, 7:00 pm, 2 people" },
       }),
-      fauxAssistantMessage("Told Sam's Instinct: Nopa, Thursday 7 pm. Next I will hold the table."),
+      fauxAssistantMessage("Told Sam's Orion: Nopa, Thursday 7 pm. Next I will hold the table."),
       fauxAssistantMessage(""),
     ]);
     sam.faux.appendResponses([
-      toolCall("notify_owner", { text: "Confirmed with Maria's Instinct: Nopa, Thursday Oct 8 at 7 pm, table for two." }),
-      toolCall("reply_instinct", { taskId: "task_2", intent: "complete", text: "Noted. Sam will be there." }),
+      toolCall("notify_owner", { text: "Confirmed with Maria's Orion: Nopa, Thursday Oct 8 at 7 pm, table for two." }),
+      toolCall("reply_orion", { taskId: "task_2", intent: "complete", text: "Noted. Sam will be there." }),
       fauxAssistantMessage("Replied."),
     ]);
 
     const second = await ownerSays(maria, "Yes. Book Nopa and tell Sam.");
-    log(`  chat  Maria's Instinct -> Maria: ${second.reply}`);
+    log(`  chat  Maria's Orion -> Maria: ${second.reply}`);
     await settle(() => wire.lines.some((l) => /reply complete\s+task_2/.test(l)), "Sam's agent to acknowledge the confirmation");
     await settle(() => sam.outbox.sent.filter((m) => m.channel === "imessage").length >= 2, "Sam to be told about the booking");
     check(wire.lines.some((l) => /SendMessage\s+task_2 in ctx_1/.test(l)), "the confirm reused A2A context ctx_1");
@@ -293,9 +293,9 @@ async function main() {
       log(`  @${agent.handle}: ${a2a.length} audit entries on a2a:ctx_1; inbound principals: ${[...inboundFrom].join(", ") || "none"}`);
     }
     const samInbound = new AuditLog(sam.state).read({ kinds: ["inbound"] }).find((e) => e.conversationKey === "a2a:ctx_1");
-    check(samInbound?.principal === "agent:maria-instinct", "Sam's agent resolved the caller to agent:maria-instinct (partner)");
+    check(samInbound?.principal === "agent:maria-orion", "Sam's agent resolved the caller to agent:maria-orion (partner)");
     const samPolicy = new AuditLog(sam.state).read({ kinds: ["policy"] }).filter((e) => e.conversationKey === "a2a:ctx_1" && e.detail.outcome === "allow").map((e) => e.detail.tool);
-    check(samPolicy.every((t) => t === "notify_owner" || t === "reply_instinct"), `policy allowed only notify_owner and reply_instinct for Maria's agent (got ${samPolicy.join(", ")})`);
+    check(samPolicy.every((t) => t === "notify_owner" || t === "reply_orion"), `policy allowed only notify_owner and reply_orion for Maria's agent (got ${samPolicy.join(", ")})`);
   } finally {
     await maria.app.close();
     await sam.app.close();

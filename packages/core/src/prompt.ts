@@ -4,15 +4,15 @@
  *
  * The prompt is a list of layers. `describePromptLayers` returns them with the file or
  * module each one comes from, so the owner can see what the agent is told
- * (`instinct prompt --layers`); `buildSystemPrompt` joins them into the text the model gets.
+ * (`orion prompt --layers`); `buildSystemPrompt` joins them into the text the model gets.
  */
 import { ARABIC_LOCALES } from "./i18n.js";
 import { DEFAULT_PERSONA } from "./persona.js";
 import { OWNER_EMAIL_PRINCIPAL_ID } from "./principal.js";
-import type { Approval, Capability, Channel, InstinctConfig, Principal, Tier } from "./types.js";
+import type { Approval, Capability, Channel, OrionConfig, Principal, Tier } from "./types.js";
 
 export interface PromptInput {
-  config: InstinctConfig;
+  config: OrionConfig;
   principal: Principal;
   channel: Channel;
   now: Date;
@@ -42,7 +42,7 @@ export interface PromptLayer {
 /** Where each layer comes from, for the owner's eyes. Kept in one place so the docs stay true. */
 export const PROMPT_SOURCES = {
   personaFile: "<data>/PERSONA.md",
-  personaDefault: "built-in default (no PERSONA.md yet; `instinct persona reset` writes it)",
+  personaDefault: "built-in default (no PERSONA.md yet; `orion persona reset` writes it)",
   personaConfig: "config.json agent.persona",
   instructions: "<data>/AGENTS.md",
   owner: "config.json owner",
@@ -111,7 +111,7 @@ function identitySource({ persona, config }: PromptInput): string {
  * the config line wins where they disagree.
  */
 function identitySection({ config, persona }: PromptInput): string {
-  const name = config.agent.name || "Instinct";
+  const name = config.agent.name || "Orion";
   const lines = [
     `# You are ${name}`,
     `You are ${config.owner.name}'s personal agent, built on Orion AI. You have your own phone number, email and computer. You do real tasks for ${config.owner.name}: research, scheduling, messages, bookings, files. You can coordinate with the agents of people ${config.owner.name} trusts.`,
@@ -178,7 +178,7 @@ function principalSection({ principal, capabilities, toolGroups, config }: Promp
       break;
     case "agent":
       lines.push(
-        `Another Instinct, ${principal.displayName}${principal.agentHandle ? ` (@${principal.agentHandle})` : ""}` +
+        `Another Orion, ${principal.displayName}${principal.agentHandle ? ` (@${principal.agentHandle})` : ""}` +
           (principal.onBehalfOf ? `, acting for ${principal.onBehalfOf.displayName}` : "") +
           `. Tier: ${principal.tier}. ${tierBlurb(principal.tier)} Answer as ${config.owner.name}'s agent, speaking to a peer agent: factual, concise, structured.`,
       );

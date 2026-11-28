@@ -1,4 +1,4 @@
-/** `instinct status`: ask a running server who it is and print a short table. */
+/** `orion status`: ask a running server who it is and print a short table. */
 import { parse, str, type OptionSpec } from "../args.js";
 import { table } from "../ansi.js";
 import type { CliContext } from "../context.js";
@@ -30,7 +30,7 @@ export function flattenStatus(value: Record<string, unknown>, prefix = ""): stri
 export async function runStatus(ctx: CliContext, argv: string[]): Promise<number> {
   const { values } = parse("status", argv, statusOptions);
   const url = str(values, "url") ?? DEFAULT_LOCAL_URL;
-  const info = await localStatus(fetchOf(ctx.io), url, ctx.env.INSTINCT_CHAT_TOKEN);
+  const info = await localStatus(fetchOf(ctx.io), url, ctx.env.ORION_CHAT_TOKEN);
   ctx.print(ctx.c.bold(`Orion AI at ${url}`));
   ctx.print(table(flattenStatus(info)));
   return 0;

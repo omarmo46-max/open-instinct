@@ -40,17 +40,17 @@ function check(cond: unknown, what: string): void {
 }
 
 async function main(): Promise<void> {
-  const dataDir = mkdtempSync(join(tmpdir(), "instinct-smoke-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "orion-smoke-"));
   const env: NodeJS.ProcessEnv = {
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Smoke Owner",
-    INSTINCT_OWNER_PHONE: OWNER_PHONE,
-    INSTINCT_OWNER_EMAIL: "owner@example.com",
-    INSTINCT_OWNER_TIMEZONE: "America/New_York",
-    INSTINCT_AGENT_NAME: "Smoke",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Smoke Owner",
+    ORION_OWNER_PHONE: OWNER_PHONE,
+    ORION_OWNER_EMAIL: "owner@example.com",
+    ORION_OWNER_TIMEZONE: "America/New_York",
+    ORION_AGENT_NAME: "Smoke",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
   };
 
   const faux = fauxProvider({ provider: "faux", models: [{ id: "faux-1" }] });

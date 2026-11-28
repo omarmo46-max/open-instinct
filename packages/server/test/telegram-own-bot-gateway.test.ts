@@ -60,13 +60,13 @@ describe("boot: own Telegram bot and a gateway at once", () => {
   }) as typeof fetch;
 
   const env = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Maria",
-    INSTINCT_OWNER_PHONE: "+14155550000",
-    INSTINCT_AGENT_NAME: "Smoke",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Maria",
+    ORION_OWNER_PHONE: "+14155550000",
+    ORION_AGENT_NAME: "Smoke",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
     TELEGRAM_OWNER_ID: "555",
     TELEGRAM_GATEWAY_URL: "https://gw.test",
     TELEGRAM_GATEWAY_TOKEN: "agent-token",
@@ -74,7 +74,7 @@ describe("boot: own Telegram bot and a gateway at once", () => {
   });
 
   beforeEach(() => {
-    dataDir = mkdtempSync(join(tmpdir(), "instinct-own-bot-"));
+    dataDir = mkdtempSync(join(tmpdir(), "orion-own-bot-"));
     logs.length = 0;
     gatewaySends = [];
     vi.stubGlobal("fetch", fakeFetch);

@@ -6,7 +6,7 @@ import type {
   Contact,
   ContactStore,
   Grant,
-  InstinctConfig,
+  OrionConfig,
   Outbox,
   OutboundMessage,
   Policy,
@@ -30,7 +30,7 @@ export type ProvisionerLike = Pick<InkboxProvisioner, "createInvitation" | "addC
 export interface NetworkToolDeps {
   contacts: ContactStore;
   policy: PolicyEngine;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: AuditLog;
   a2a?: A2aLike;
   a2aStore?: A2AStore;
@@ -69,11 +69,11 @@ function ownerOnly(ctx: ToolContext, what: string): ToolResultLike | undefined {
   return isOwner(ctx.principal) ? undefined : refuse(`Only the owner can ${what}. Offer to pass the request to the owner instead.`);
 }
 
-function agentHandleOf(config: InstinctConfig): string {
+function agentHandleOf(config: OrionConfig): string {
   return config.agent.handle ?? slugify(config.agent.name);
 }
 
-function onBehalfOf(config: InstinctConfig): OipMessage["on_behalf_of"] {
+function onBehalfOf(config: OrionConfig): OipMessage["on_behalf_of"] {
   return { handle: agentHandleOf(config), display: config.owner.name };
 }
 
@@ -82,11 +82,11 @@ function requesterName(p: Principal): string {
 }
 
 /** The sending handle is still ours; the human we act for is the requester, not the owner. */
-function onBehalfOfRequester(config: InstinctConfig, p: Principal): OipMessage["on_behalf_of"] {
+function onBehalfOfRequester(config: OrionConfig, p: Principal): OipMessage["on_behalf_of"] {
   return { handle: agentHandleOf(config), display: requesterName(p) };
 }
 
-const NON_OWNER_REACH = "I can only reach your own Instinct for you. For anyone else, ask the owner; offer to pass the request along.";
+const NON_OWNER_REACH = "I can only reach your own Orion for you. For anyone else, ask the owner; offer to pass the request along.";
 
 interface AskArgs {
   intent: OipIntent;
@@ -177,7 +177,7 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
       name: Type.String(),
       phone: Type.Optional(Type.String()),
       email: Type.Optional(Type.String()),
-      agentHandle: Type.Optional(Type.String({ description: "Inkbox handle of this person's Instinct, without @" })),
+      agentHandle: Type.Optional(Type.String({ description: "Inkbox handle of this person's Orion, without @" })),
       tier: Type.Optional(TierSchema),
       notes: Type.Optional(Type.String()),
     }),
@@ -207,7 +207,7 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
   const trustSetTier = defineTool({
     name: "trust_set_tier",
     label: "Set a contact's trust tier",
-    description: `Place a contact in a tier (${ASSIGNABLE_TIERS.join(", ")}). Their Instinct inherits the tier.`,
+    description: `Place a contact in a tier (${ASSIGNABLE_TIERS.join(", ")}). Their Orion inherits the tier.`,
     parameters: Type.Object({ contact: Type.String({ description: "Contact id, name, phone, email or @handle" }), tier: TierSchema }),
     meta: { capabilities: ["trust.manage"], group: "contacts", describe: (a) => `trust_set_tier ${(a as { contact: string; tier: string }).contact} -> ${(a as { tier: string }).tier}` },
     async execute(args, ctx) {
@@ -318,17 +318,17 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
     },
   });
 
-  const askInstinct = defineTool({
-    name: "ask_instinct",
-    label: "Ask another Instinct",
+  const askOrion = defineTool({
+    name: "ask_orion",
+    label: "Ask another Orion",
     description:
-      "Send a request to a contact's Instinct over A2A with a typed OIP intent. Give `contact` for one person or `contacts` for a group plan; everyone gets the same request and answers separately. When the owner asks and a contact has no Instinct, the same request goes to them as a text or email. Replies arrive later as new messages.",
+      "Send a request to a contact's Orion over A2A with a typed OIP intent. Give `contact` for one person or `contacts` for a group plan; everyone gets the same request and answers separately. When the owner asks and a contact has no Orion, the same request goes to them as a text or email. Replies arrive later as new messages.",
     parameters: Type.Object({
       contact: Type.Optional(Type.String({ description: "Contact id, name, phone, email or @handle" })),
       contacts: Type.Optional(Type.Array(Type.String(), { description: "Several contacts for a group plan; each gets the same request" })),
       intent: OipIntentSchema,
       subject: Type.Optional(Type.String({ description: "Short topic, e.g. dinner with Maria and Sam" })),
-      text: Type.String({ description: "Plain-language version of the request, written as the owner's Instinct" }),
+      text: Type.String({ description: "Plain-language version of the request, written as the owner's Orion" }),
       payload: Type.Optional(PayloadSchema),
       contextId: Type.Optional(Type.String({ description: "A2A context to continue; only with a single contact. Omit to start a new topic" })),
       taskId: Type.Optional(Type.String({ description: "An existing delegated task to answer when the other agent asks for more input. Only with a single contact." })),
@@ -338,11 +338,11 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
       group: "network",
       describe: (a) => {
         const x = a as { contact?: string; contacts?: string[]; intent: string };
-        return `ask_instinct ${[x.contact, ...(x.contacts ?? [])].filter(Boolean).join(", ")} ${x.intent}`;
+        return `ask_orion ${[x.contact, ...(x.contacts ?? [])].filter(Boolean).join(", ")} ${x.intent}`;
       },
     },
     async execute(args, ctx) {
-      if (ctx.channel === "a2a") return refuse("Nested delegation is not supported inside an inbound A2A task. Use reply_instinct with ask_caller to request more information from the calling agent.");
+      if (ctx.channel === "a2a") return refuse("Nested delegation is not supported inside an inbound A2A task. Use reply_orion with ask_caller to request more information from the calling agent.");
       const refs = uniqueRefs([args.contact, ...(args.contacts ?? [])]);
       if (refs.length === 0) return refuse("Give `contact` or `contacts`.");
       if ((args.contextId || args.taskId) && refs.length > 1) return refuse("contextId or taskId continues one peer's topic. Give one contact with it.");
@@ -373,14 +373,14 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
       }
       const lines = results.map((r) => `- ${r.text}`);
       lines.unshift(`Asked ${okCount} of ${results.length}:`);
-      if (anyA2a) lines.push("Replies arrive here as new messages, one per Instinct; tell the owner you will report back once they answer.");
+      if (anyA2a) lines.push("Replies arrive here as new messages, one per Orion; tell the owner you will report back once they answer.");
       return { content: [{ type: "text", text: lines.join("\n") }], isError: okCount === 0, details: { results } };
     },
   });
 
   /**
-   * Who a principal may address through ask_instinct. The owner: anyone in contacts. Anyone
-   * else: only their own entry (so a person can ask their own Instinct through this one), with
+   * Who a principal may address through ask_orion. The owner: anyone in contacts. Anyone
+   * else: only their own entry (so a person can ask their own Orion through this one), with
    * no hint about who else is in the address book.
    */
   function resolveAskTarget(ref: string, principal: Principal): { contact?: Contact; error: string } {
@@ -400,7 +400,7 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
     const oip: OipMessage = { oip: "1", intent: args.intent, payload: args.payload ?? {}, on_behalf_of: owner ? onBehalfOf(config) : onBehalfOfRequester(config, ctx.principal) };
     if (args.subject) oip.subject = args.subject;
     // A relayed request must never read as the owner's own words.
-    const text = owner ? args.text : `From ${requesterName(ctx.principal)}, relayed by ${config.owner.name}'s Instinct (not ${config.owner.name}'s request): ${args.text}`;
+    const text = owner ? args.text : `From ${requesterName(ctx.principal)}, relayed by ${config.owner.name}'s Orion (not ${config.owner.name}'s request): ${args.text}`;
     const base = { ref: c.id, contactId: c.id, name: c.name };
 
     if (c.agentHandle && deps.a2a) {
@@ -423,7 +423,7 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
         detail: { channel: "a2a", to: c.agentHandle, contactId: c.id, intent: args.intent, subject: args.subject, taskId: res.taskId, contextId: res.contextId, state: res.state, onBehalfOf: oip.on_behalf_of?.display },
       });
       const ids = [res.taskId ? `task ${res.taskId}` : undefined, res.contextId ? `context ${res.contextId}` : undefined].filter(Boolean).join(", ");
-      const out: AskResult = { ...base, ok: true, via: "a2a", text: `Sent "${args.intent}" to ${c.name}'s Instinct (@${c.agentHandle})${ids ? ` (${ids})` : ""}.` };
+      const out: AskResult = { ...base, ok: true, via: "a2a", text: `Sent "${args.intent}" to ${c.name}'s Orion (@${c.agentHandle})${ids ? ` (${ids})` : ""}.` };
       if (res.taskId) out.taskId = res.taskId;
       if (res.contextId) out.contextId = res.contextId;
       if (res.state) out.state = res.state;
@@ -431,11 +431,11 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
     }
 
     if (!owner) {
-      // Texting or emailing a human as the owner's Instinct is the owner's call, never a caller's.
-      return { ...base, ok: false, text: `${c.name}: only the owner can message people who have no Instinct. Offer to pass the request to the owner.` };
+      // Texting or emailing a human as the owner's Orion is the owner's call, never a caller's.
+      return { ...base, ok: false, text: `${c.name}: only the owner can message people who have no Orion. Offer to pass the request to the owner.` };
     }
     const route = pickFallbackChannel(c);
-    if (!route) return { ...base, ok: false, text: `${c.name} has no Instinct, phone or email on file. Ask the owner for a way to reach them.` };
+    if (!route) return { ...base, ok: false, text: `${c.name} has no Orion, phone or email on file. Ask the owner for a way to reach them.` };
     const body = oipToText({ ...oip, payload: { ...oip.payload, text: args.text } }, config.owner.name, { tz: config.owner.timezone });
     await outbox.send({ channel: route.channel, to: route.to, text: body }, { principal: ctx.principal, conversationKey: ctx.conversationKey });
     audit.append({
@@ -444,12 +444,12 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
       principal: ctx.principal.id,
       detail: { channel: route.channel, to: route.to, contactId: c.id, intent: args.intent, subject: args.subject, fallback: true },
     });
-    return { ...base, ok: true, via: route.channel, text: `${c.name} has no Instinct, so I sent them a ${route.channel === "email" ? "email" : "text"} instead:\n${body}` };
+    return { ...base, ok: true, via: route.channel, text: `${c.name} has no Orion, so I sent them a ${route.channel === "email" ? "email" : "text"} instead:\n${body}` };
   }
 
-  const replyInstinct = defineTool({
-    name: "reply_instinct",
-    label: "Reply to the calling Instinct",
+  const replyOrion = defineTool({
+    name: "reply_orion",
+    label: "Reply to the calling Orion",
     description:
       "Answer the A2A task you are working on. Use progress while you check with the owner, complete with the answer, ask_caller to ask them something, fail when you cannot help. Only valid inside an A2A conversation.",
     parameters: Type.Object({
@@ -459,9 +459,9 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
       oipIntent: Type.Optional(OipIntentSchema),
       subject: Type.Optional(Type.String()),
     }),
-    meta: { capabilities: ["converse"], group: "network", describe: (a) => `reply_instinct ${(a as { intent: string }).intent}` },
+    meta: { capabilities: ["converse"], group: "network", describe: (a) => `reply_orion ${(a as { intent: string }).intent}` },
     async execute(args, ctx) {
-      if (ctx.channel !== "a2a") return refuse("reply_instinct only works inside an A2A conversation. Use send_message here.");
+      if (ctx.channel !== "a2a") return refuse("reply_orion only works inside an A2A conversation. Use send_message here.");
       if (!deps.a2a) return refuse("A2A is not configured on this agent.");
       const taskId = ctx.replyRef?.taskId;
       if (!taskId || !ctx.assertA2AActive) return refuse("No active inbound A2A task is bound to this conversation.");
@@ -472,7 +472,7 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
         ctx.markA2AState?.(({ progress: "working", complete: "completed", ask_caller: "input_required", fail: "failed" } as const)[args.intent as ReplyIntent]);
       } catch (err) {
         const wait = rateLimitWait(err);
-        if (wait !== undefined) return refuse(`Inkbox is rate limiting; try reply_instinct again in ${wait}.`);
+        if (wait !== undefined) return refuse(`Inkbox is rate limiting; try reply_orion again in ${wait}.`);
         throw err;
       }
       audit.append({
@@ -487,9 +487,9 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
 
   const inviteToNetwork = defineTool({
     name: "invite_to_network",
-    label: "Invite someone's Instinct",
+    label: "Invite someone's Orion",
     description:
-      "Connect a person's Instinct to this one at a chosen tier. Creates an Inkbox invitation when possible and returns a link or text for the owner to pass along. Creates the contact if needed.",
+      "Connect a person's Orion to this one at a chosen tier. Creates an Inkbox invitation when possible and returns a link or text for the owner to pass along. Creates the contact if needed.",
     parameters: Type.Object({
       contact: Type.String({ description: "Contact id or name; a new contact is created from a name" }),
       tier: TierSchema,
@@ -524,10 +524,10 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
         if (placed.agentHandle) await deps.provisioner.addContactRule(ourHandle, placed.agentHandle, "both");
         if (inv.invitationUrl) lines.push(`Invitation link: ${inv.invitationUrl}`);
         if (recipientEmail) lines.push(`Inkbox emailed it to ${recipientEmail}.`);
-        if (inv.agentHandoffPrompt) lines.push(`Text for ${placed.name} to give their Instinct:\n${inv.agentHandoffPrompt}`);
+        if (inv.agentHandoffPrompt) lines.push(`Text for ${placed.name} to give their Orion:\n${inv.agentHandoffPrompt}`);
         if (placed.agentHandle) lines.push(`@${placed.agentHandle} may now call @${ourHandle} and vice versa.`);
       } else if (ourHandle) {
-        lines.push(`Ask ${placed.name} to have their Instinct connect to @${ourHandle}, then tell me their agent handle so I can save it.`);
+        lines.push(`Ask ${placed.name} to have their Orion connect to @${ourHandle}, then tell me their agent handle so I can save it.`);
       } else {
         lines.push("This agent has no Inkbox handle yet, so I cannot create an invitation. Finish Inkbox setup first.");
       }
@@ -542,13 +542,13 @@ export function networkTools(deps: NetworkToolDeps): RegisteredTool[] {
     },
   });
 
-  return [contactsSearch, contactsUpsert, trustSetTier, trustGrant, trustRevoke, trustList, askInstinct, replyInstinct, inviteToNetwork];
+  return [contactsSearch, contactsUpsert, trustSetTier, trustGrant, trustRevoke, trustList, askOrion, replyOrion, inviteToNetwork];
 }
 
 /** Decide what structured data a reply carries: a valid OIP object as given, an OIP wrap when an intent is named, else the raw payload. */
 function buildReplyData(
   args: { payload?: Record<string, unknown>; oipIntent?: OipIntent; subject?: string },
-  config: InstinctConfig,
+  config: OrionConfig,
 ): Record<string, unknown> | undefined {
   if (args.payload) {
     const asOip = decodeOip(args.payload);

@@ -7,7 +7,6 @@ card, how the spend policy fits in, what is not supported, and how to test.
 
 Code: [`packages/payments`](../packages/payments/README.md). Server wiring: [`packages/server`](../packages/server/README.md).
 
-(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Link Agent Wallet is
 
@@ -35,7 +34,6 @@ a single bill that only works at the shop it named.
 | Build a Stripe merchant integration | Only works at shops that integrate with you. The agent buys from arbitrary sites. |
 | Link Agent Wallet | The owner approves each amount. The card is single-use and amount-bound. Works at any checkout that takes a card. The agent business needs no Stripe account. |
 
-Instinct uses the same rail. Link lists it among its agent users.
 
 The owner needs a Link account with a card or bank account on it. Link Agent Wallet
 is available to consumers in the United States and Canada. The agent can run anywhere.
@@ -89,12 +87,12 @@ and Stripe reviews applications on a rolling basis, every 3 to 5 days as of Octo
 
 Redirect URIs must match exactly: scheme, host, port and path. Register every one you
 will use, including staging. Stripe discourages `localhost` URIs; if you need one for
-`instinct dev`, say why in the form.
+`orion dev`, say why in the form.
 
 | Deployment | Redirect URI |
 |---|---|
-| `instinct dev` | `http://127.0.0.1:<port>/oauth/link/callback` |
-| Single agent with a public URL | `<INSTINCT_PUBLIC_URL>/oauth/link/callback` |
+| `orion dev` | `http://127.0.0.1:<port>/oauth/link/callback` |
+| Single agent with a public URL | `<ORION_PUBLIC_URL>/oauth/link/callback` |
 | Behind the gateway | `<GATEWAY_PUBLIC_URL>/oauth/link/callback` (one URI for every agent) |
 
 In the gateway case one registered URI serves the whole fleet: each agent puts its handle in
@@ -115,26 +113,26 @@ The server reads these. The payments package itself reads no environment.
 | `LINK_CLIENT_SECRET` | yes | OAuth client secret from Stripe |
 | `STRIPE_PUBLISHABLE_KEY` | yes | Stripe publishable key, `pk_live_...` or `pk_test_...` |
 | `LINK_REDIRECT_URI` | no | Overrides the computed callback URL. Must match a registered URI exactly |
-| `INSTINCT_PUBLIC_URL` | no | The agent's public URL. Used to build the default callback URL |
+| `ORION_PUBLIC_URL` | no | The agent's public URL. Used to build the default callback URL |
 
 When all three required variables are set, the server registers the four payment tools
 and serves `GET /oauth/link/callback`. When any is missing, no payment tools exist and
 the agent cannot buy anything.
 
-Callback URL rule: `LINK_REDIRECT_URI` if set, else `INSTINCT_PUBLIC_URL` plus
+Callback URL rule: `LINK_REDIRECT_URI` if set, else `ORION_PUBLIC_URL` plus
 `/oauth/link/callback`, else `http://127.0.0.1:$PORT/oauth/link/callback`.
 
 | Where you run | How to set them |
 |---|---|
-| `instinct dev` | Export the variables in your shell |
-| `instinct deploy` | Export them; `deploy` copies them into the agent when `LINK_CLIENT_ID` is set. It warns when `LINK_REDIRECT_URI` is missing |
+| `orion dev` | Export the variables in your shell |
+| `orion deploy` | Export them; `deploy` copies them into the agent when `LINK_CLIENT_ID` is set. It warns when `LINK_REDIRECT_URI` is missing |
 | Gateway | Set them on the gateway; it passes them to every new agent and computes the per-user redirect URI |
 | Docker compose | Fill in the payments block in [`deploy/.env.example`](../deploy/.env.example) |
 
 Check what is set, without printing values:
 
 ```bash
-instinct payments status
+orion payments status
 ```
 
 ## The owner flow in three texts
@@ -150,7 +148,7 @@ signs in to Link and approves the connection. Tokens land in
 Only the owner can do this. The CLI can also print the same link:
 
 ```bash
-instinct payments connect
+orion payments connect
 ```
 
 ### 2. Approve

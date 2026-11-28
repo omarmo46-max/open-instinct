@@ -15,16 +15,16 @@ afterEach(() => {
 
 /** Boots an agent and returns the tool count from its "ready" line, plus every log line. */
 async function bootWith(extra: NodeJS.ProcessEnv): Promise<{ tools: number; logs: string[] }> {
-  const dataDir = mkdtempSync(join(tmpdir(), "instinct-boot-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "orion-boot-"));
   dirs.push(dataDir);
   const env: NodeJS.ProcessEnv = {
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Test Owner",
-    INSTINCT_OWNER_PHONE: "+14155550100",
-    INSTINCT_AGENT_NAME: "Test",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Test Owner",
+    ORION_OWNER_PHONE: "+14155550100",
+    ORION_AGENT_NAME: "Test",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
     ...extra,
   };
   const faux = fauxProvider({ provider: "faux", models: [{ id: "faux-1" }] });
@@ -45,7 +45,7 @@ describe("Keenable wiring in boot", () => {
     const base = (await bootWith({})).tools;
     expect((await bootWith({ KEENABLE_SEARCH: "0" })).tools).toBe(base);
     expect((await bootWith({ KEENABLE_SEARCH: "1" })).tools).toBe(base + 2);
-    // The same values the gateway accepts, since `instinct deploy` forwards the switch as written.
+    // The same values the gateway accepts, since `orion deploy` forwards the switch as written.
     expect((await bootWith({ KEENABLE_SEARCH: "true" })).tools).toBe(base + 2);
     expect((await bootWith({ KEENABLE_SEARCH: "Yes" })).tools).toBe(base + 2);
     expect((await bootWith({ KEENABLE_SEARCH: "false" })).tools).toBe(base);

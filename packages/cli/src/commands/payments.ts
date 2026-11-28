@@ -1,5 +1,5 @@
 /**
- * `instinct payments connect | status`: link the owner's Stripe Link wallet to
+ * `orion payments connect | status`: link the owner's Stripe Link wallet to
  * the agent and see where that stands. The running server owns the OAuth state
  * (PKCE verifier, tokens), so the CLI asks it first and only builds the
  * authorize URL itself when no server answers.
@@ -55,8 +55,8 @@ async function getJson(f: typeof fetch, url: string, token?: string): Promise<{ 
 /** Ask the running server for its Link authorize URL. Undefined when it has no such route. */
 export async function serverAuthorizeUrl(f: typeof fetch, baseUrl: string, token?: string): Promise<string | undefined> {
   const res = await getJson(f, `${baseUrl.replace(/\/+$/, "")}${LINK_START_PATH}`, token);
-  if (!res) throw new CliError(`Could not reach ${baseUrl}. Is \`instinct dev\` running? Pass --url for another server.`);
-  if (res.status === 401) throw new CliError(`${baseUrl} wants a chat token. Set INSTINCT_CHAT_TOKEN to the server's value.`);
+  if (!res) throw new CliError(`Could not reach ${baseUrl}. Is \`orion dev\` running? Pass --url for another server.`);
+  if (res.status === 401) throw new CliError(`${baseUrl} wants a chat token. Set ORION_CHAT_TOKEN to the server's value.`);
   if (res.status >= 300 && res.status < 400 && res.location) return res.location;
   if (res.status === 200 && res.body) return pickUrl(res.body);
   return undefined;
@@ -69,7 +69,7 @@ export async function serverAuthorizeUrl(f: typeof fetch, baseUrl: string, token
  */
 export function buildAuthorizeUrl(env: NodeJS.ProcessEnv, baseUrl: string, state: string = randomBytes(12).toString("hex")): string {
   const clientId = env.LINK_CLIENT_ID;
-  if (!clientId) throw new CliError("LINK_CLIENT_ID is not set and the server did not offer an authorize URL. Set LINK_CLIENT_ID (and LINK_REDIRECT_URI) or start `instinct dev`.");
+  if (!clientId) throw new CliError("LINK_CLIENT_ID is not set and the server did not offer an authorize URL. Set LINK_CLIENT_ID (and LINK_REDIRECT_URI) or start `orion dev`.");
   const redirect = env.LINK_REDIRECT_URI ?? `${baseUrl.replace(/\/+$/, "")}/oauth/link/callback`;
   const u = new URL(LINK_AUTHORIZE_URL);
   u.searchParams.set("response_type", "code");
@@ -82,10 +82,10 @@ export function buildAuthorizeUrl(env: NodeJS.ProcessEnv, baseUrl: string, state
 
 export async function runPaymentsConnect(ctx: CliContext, baseUrl: string): Promise<number> {
   const { c } = ctx;
-  const fromServer = await serverAuthorizeUrl(fetchOf(ctx.io), baseUrl, ctx.env.INSTINCT_CHAT_TOKEN);
+  const fromServer = await serverAuthorizeUrl(fetchOf(ctx.io), baseUrl, ctx.env.ORION_CHAT_TOKEN);
   if (fromServer) {
     ctx.print(c.bold("Connect your Link wallet"));
-    ctx.print(`  Open this in a browser and approve. Link sends you back to your Instinct, which confirms over iMessage.`);
+    ctx.print(`  Open this in a browser and approve. Link sends you back to your Orion, which confirms over iMessage.`);
     ctx.print(`  ${fromServer}`);
     return 0;
   }
@@ -99,9 +99,9 @@ export async function runPaymentsStatus(ctx: CliContext, baseUrl: string): Promi
   const { c } = ctx;
   const f = fetchOf(ctx.io);
   const root = baseUrl.replace(/\/+$/, "");
-  const token = ctx.env.INSTINCT_CHAT_TOKEN;
+  const token = ctx.env.ORION_CHAT_TOKEN;
   const res = await getJson(f, `${root}${PAYMENTS_STATUS_PATH}`, token);
-  if (!res) throw new CliError(`Could not reach ${baseUrl}. Is \`instinct dev\` running? Pass --url for another server.`);
+  if (!res) throw new CliError(`Could not reach ${baseUrl}. Is \`orion dev\` running? Pass --url for another server.`);
   ctx.print(c.bold(`Payments at ${baseUrl}`));
   let rows: string[][] | undefined;
   if (res.status === 200 && res.body) {

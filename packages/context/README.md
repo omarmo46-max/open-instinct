@@ -8,7 +8,7 @@ Set `CONTEXT_DEV_API_KEY` before starting the agent:
 
 ```bash
 export CONTEXT_DEV_API_KEY=ctxt_secret_...
-pnpm instinct dev
+pnpm orion dev
 ```
 
 The tool uses `fast` mode unless the agent requests `ultra` for deeper research.

@@ -21,12 +21,12 @@ describe("ContactStore", () => {
 
   it("creates contacts with slug ids, normalized addresses and a default tier", () => {
     const store = new ContactStore(tempState());
-    const c = store.upsert({ name: "Sam Lee", phones: ["(415) 555-0199"], emails: ["Sam@Example.com"], agentHandle: "@Sam-Instinct" });
+    const c = store.upsert({ name: "Sam Lee", phones: ["(415) 555-0199"], emails: ["Sam@Example.com"], agentHandle: "@Sam-Orion" });
     expect(c.id).toBe("sam-lee");
     expect(c.tier).toBe("contact");
     expect(c.phones).toEqual(["+14155550199"]);
     expect(c.emails).toEqual(["sam@example.com"]);
-    expect(c.agentHandle).toBe("sam-instinct");
+    expect(c.agentHandle).toBe("sam-orion");
     expect(Date.parse(c.createdAt)).not.toBeNaN();
     expect(store.all()).toHaveLength(1);
   });
@@ -65,11 +65,11 @@ describe("ContactStore", () => {
 
   it("finds by phone, email and handle regardless of formatting", () => {
     const store = new ContactStore(tempState());
-    store.upsert({ name: "Sam Lee", phones: ["+14155550199"], emails: ["sam@example.com"], agentHandle: "sam-instinct" });
+    store.upsert({ name: "Sam Lee", phones: ["+14155550199"], emails: ["sam@example.com"], agentHandle: "sam-orion" });
     expect(store.findByPhone("415.555.0199")?.id).toBe("sam-lee");
     expect(store.findByPhone("+12125550000")).toBeUndefined();
     expect(store.findByEmail("SAM@EXAMPLE.COM")?.id).toBe("sam-lee");
-    expect(store.findByHandle("@Sam-Instinct")?.id).toBe("sam-lee");
+    expect(store.findByHandle("@Sam-Orion")?.id).toBe("sam-lee");
     expect(store.findByHandle("")).toBeUndefined();
     expect(store.get("sam-lee")?.name).toBe("Sam Lee");
     expect(store.get("nobody")).toBeUndefined();

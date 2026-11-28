@@ -6,19 +6,19 @@ import { StateDir, resolveDataDir } from "../src/state.js";
 import { tempState } from "./helpers.js";
 
 describe("resolveDataDir", () => {
-  it("honours INSTINCT_DATA_DIR and otherwise picks /data or ./.instinct", () => {
-    expect(resolveDataDir({ INSTINCT_DATA_DIR: "/tmp/x/state" })).toBe("/tmp/x/state");
-    expect(resolveDataDir({ INSTINCT_DATA_DIR: "rel/state" })).toBe(path.resolve("rel/state"));
+  it("honours ORION_DATA_DIR and otherwise picks /data or ./.orion", () => {
+    expect(resolveDataDir({ ORION_DATA_DIR: "/tmp/x/state" })).toBe("/tmp/x/state");
+    expect(resolveDataDir({ ORION_DATA_DIR: "rel/state" })).toBe(path.resolve("rel/state"));
     const fallback = resolveDataDir({});
     const hasData = fs.existsSync("/data") && fs.statSync("/data").isDirectory();
-    expect(fallback).toBe(hasData ? "/data" : path.resolve(".instinct"));
-    expect(resolveDataDir({ INSTINCT_DATA_DIR: "   " })).toBe(fallback);
+    expect(fallback).toBe(hasData ? "/data" : path.resolve(".orion"));
+    expect(resolveDataDir({ ORION_DATA_DIR: "   " })).toBe(fallback);
   });
 });
 
 describe("StateDir", () => {
   it("ensure() creates the standard subdirectories", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "instinct-state-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "orion-state-"));
     const state = new StateDir(path.join(root, "nested", "data"));
     expect(fs.existsSync(state.root)).toBe(false);
     state.ensure();

@@ -2,7 +2,7 @@
 import dns from "node:dns/promises";
 import net from "node:net";
 
-export const AGENT_TOKEN_HEADER = "x-instinct-token";
+export const AGENT_TOKEN_HEADER = "x-orion-token";
 
 function privateAddress(ip: string): boolean {
   if (net.isIPv4(ip)) {

@@ -7,4 +7,4 @@ description: Make a shareable poll, sign-up list or RSVP page and get a link. Us
 
 Use `page_create` (kind `poll`, `signup` or `rsvp`). Give polls 2 to 10 short options. Default language is Arabic; pick English if the owner writes English or the guests will. Send the owner the link and say how long it stays open (14 days unless you set `days`).
 
-Read results with `page_results` when the owner asks, and tell them plainly: counts for polls, names for sign-ups. Close the page with `page_close` when the owner says it is done. Never put private details in a title or description: anyone with the link can read them. If the tools are missing, `INSTINCT_PAGES=1` is not set: say so and offer a message to forward instead.
+Read results with `page_results` when the owner asks, and tell them plainly: counts for polls, names for sign-ups. Close the page with `page_close` when the owner says it is done. Never put private details in a title or description: anyone with the link can read them. If the tools are missing, `ORION_PAGES=1` is not set: say so and offer a message to forward instead.

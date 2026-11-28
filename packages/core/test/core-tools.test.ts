@@ -211,7 +211,7 @@ describe("owner relay tools", () => {
     const { run, text, sent } = setup();
     expect(text(await run("notify_owner", { text: "Running late" }, principalOf("friend", { displayName: "Alex" })))).toContain("Sent to Maria");
     await run("notify_owner", { text: "Reminder set" });
-    expect(sent[0]!.msg.text).toBe("Alex via Instinct: Running late");
+    expect(sent[0]!.msg.text).toBe("Alex via Orion: Running late");
     expect(sent[1]!.msg.text).toBe("Reminder set");
   });
 
@@ -353,10 +353,10 @@ describe("web tools", () => {
         <a class="result__snippet" href="https://example.org/two">Snippet two</a>
       </div>`;
     const { run, text } = setup({ fetchImpl: fakeFetch({ "https://html.duckduckgo.com/html/": { body: html } }) });
-    const out = text(await run("web_search", { query: "open instinct" }));
+    const out = text(await run("web_search", { query: "open orion" }));
     expect(out).toContain("1. First Result\n   https://example.com/one\n   Snippet & one");
     expect(out).toContain("2. Second\n   https://example.org/two\n   Snippet two");
-    expect(out).toContain('<untrusted source="web search results for open instinct">');
+    expect(out).toContain('<untrusted source="web search results for open orion">');
   });
 
   it("web_search uses Brave when a key is set and caps at 8 results", async () => {
@@ -385,11 +385,11 @@ describe("web tools", () => {
       return new Response(JSON.stringify({ results: { web } }), { status: 200, headers: { "content-type": "application/json" } });
     }) as typeof fetch;
     const { run, text } = setup({ fetchImpl, searchApiKey: "brave-key", youSearch: {} });
-    const out = text(await run("web_search", { query: "open instinct" }));
+    const out = text(await run("web_search", { query: "open orion" }));
     expect(calls).toHaveLength(1);
     const url = new URL(calls[0]!.url);
     expect(`${url.origin}${url.pathname}`).toBe("https://api.you.com/v1/agents/search");
-    expect(url.searchParams.get("query")).toBe("open instinct");
+    expect(url.searchParams.get("query")).toBe("open orion");
     expect(calls[0]!.init?.method).toBeUndefined();
     const headers = calls[0]!.init?.headers as Record<string, string>;
     expect(headers["user-agent"]).toBe("youdotcom-integration/orion-ai");

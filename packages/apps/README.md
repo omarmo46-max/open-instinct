@@ -135,7 +135,7 @@ on the wire. Names that collide after clipping keep the first tool.
 ## Capability map
 
 The policy engine checks every capability a tool needs against the caller's tier
-(docs/PERMISSIONS.md). This is how a partner's Instinct can see the owner's calendar but not send
+(docs/PERMISSIONS.md). This is how a partner's Orion can see the owner's calendar but not send
 mail as the owner.
 
 | Tool family | Capability |
@@ -161,7 +161,7 @@ is `email.send` + `purchase`). The judgement lives in `sensitiveCapabilitiesForS
 table in `test/capabilities.test.ts` is the reference.
 
 `apps.use` is a transport tag. Core's tier table opens it to partner, family and friend so
-that a partner's Instinct can reach `GOOGLECALENDAR_EVENTS_LIST` and be judged by
+that a partner's Orion can reach `GOOGLECALENDAR_EVENTS_LIST` and be judged by
 `calendar.read`. On its own it would not stop a friend from managing the owner's connections
 or running an unknown toolkit, so those rows carry a second, owner-only capability.
 `trust.manage` stands in for a future `apps.manage` and `memory.write` for a future

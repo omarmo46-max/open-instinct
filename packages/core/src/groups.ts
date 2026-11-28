@@ -5,7 +5,7 @@
  * its own notes, and no view of the owner's memory, accounts, files or people.
  */
 import type { StateDir } from "./state.js";
-import type { AllowedGroup, InstinctConfig } from "./types.js";
+import type { AllowedGroup, OrionConfig } from "./types.js";
 import { saveConfig } from "./config.js";
 
 const PENDING_FILE = "groups-pending.json";
@@ -27,7 +27,7 @@ export function groupSlug(key: string): string {
 export class GroupRegistry {
   constructor(
     private readonly state: StateDir,
-    private readonly config: InstinctConfig,
+    private readonly config: OrionConfig,
     private readonly now: () => Date = () => new Date(),
   ) {}
 

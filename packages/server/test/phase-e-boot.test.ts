@@ -15,7 +15,7 @@ describe("phase E boots and serves", () => {
   let close: (() => Promise<void>) | undefined;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "instinct-phase-e-"));
+    dir = mkdtempSync(join(tmpdir(), "orion-phase-e-"));
   });
   afterEach(async () => {
     await close?.();
@@ -31,7 +31,7 @@ describe("phase E boots and serves", () => {
     models.setProvider(faux.provider);
     const streamFn = models.streamSimple.bind(models) as unknown as StreamFn;
     app = await boot(
-      { INSTINCT_DATA_DIR: dir, INSTINCT_OWNER_NAME: "Omar", INSTINCT_OWNER_PHONE: "+14155550000", INSTINCT_AGENT_NAME: "T", INSTINCT_MODEL: "faux/faux-1", INSTINCT_COMPUTER: "none", INSTINCT_SKILLS_DIR: join(dir, "none"), INSTINCT_PUBLIC_URL: "https://agent.example", ...extra } as NodeJS.ProcessEnv,
+      { ORION_DATA_DIR: dir, ORION_OWNER_NAME: "Omar", ORION_OWNER_PHONE: "+14155550000", ORION_AGENT_NAME: "T", ORION_MODEL: "faux/faux-1", ORION_COMPUTER: "none", ORION_SKILLS_DIR: join(dir, "none"), ORION_PUBLIC_URL: "https://agent.example", ...extra } as NodeJS.ProcessEnv,
       { model: faux.getModel("faux-1"), streamFn, logger: () => {} },
     );
     const server = createHttpServer(app, { env: httpEnv });
@@ -41,8 +41,8 @@ describe("phase E boots and serves", () => {
   }
   const names = () => (app!.runtime as any).deps.registry.all().map((t: any) => t.spec.name);
 
-  it("E5: with INSTINCT_PAGES=1 the tools exist, a page is created and voted on over HTTP", async () => {
-    const base = await start({ INSTINCT_PAGES: "1" });
+  it("E5: with ORION_PAGES=1 the tools exist, a page is created and voted on over HTTP", async () => {
+    const base = await start({ ORION_PAGES: "1" });
     expect(names()).toEqual(expect.arrayContaining(["page_create", "page_results", "page_close"]));
     const create = (app!.runtime as any).deps.registry.all().find((t: any) => t.spec.name === "page_create")!.spec as any;
     const r = await create.execute({ kind: "poll", title: "Dinner?", options: ["Pizza", "Sushi"], lang: "en" }, { principal: { kind: "owner", id: "owner", tier: "owner", displayName: "Omar" }, conversationKey: "k", channel: "imessage" });
@@ -56,38 +56,38 @@ describe("phase E boots and serves", () => {
     expect((await fetch(base + "/p/pg_doesnotexist1")).status).toBe(404);
   });
 
-  it("E5: without INSTINCT_PAGES=1 there are no page tools and /p/ is not served", async () => {
+  it("E5: without ORION_PAGES=1 there are no page tools and /p/ is not served", async () => {
     const base = await start({});
     expect(names()).not.toContain("page_create");
     expect((await fetch(base + "/p/pg_abcdefabcdef")).status).not.toBe(200);
   });
 
   it("E6 and E1/E2 tools are registered by default; phone_call is still there", async () => {
-    await start({ INKBOX_API_KEY: "ik", INKBOX_AGENT_HANDLE: "t-instinct", INKBOX_BASE_URL: "https://inkbox.test" }).catch(() => undefined);
+    await start({ INKBOX_API_KEY: "ik", INKBOX_AGENT_HANDLE: "t-orion", INKBOX_BASE_URL: "https://inkbox.test" }).catch(() => undefined);
     expect(names()).toEqual(expect.arrayContaining(["partner_list", "partner_request", "partner_confirm"]));
   });
 
   it("custom model: PUT /model needs the owner token, stores the key privately and never returns it", async () => {
-    const base = await start({}, { INSTINCT_CHAT_TOKEN: "owner-token-123" });
+    const base = await start({}, { ORION_CHAT_TOKEN: "owner-token-123" });
     const body = JSON.stringify({ enabled: true, provider: "openai", model: "gpt-4.1", apiKey: "sk-private-key-123456" });
     expect((await fetch(base + "/model", { method: "PUT", body })).status).toBe(401);
-    const ok = await fetch(base + "/model", { method: "PUT", body, headers: { "x-instinct-token": "owner-token-123" } });
+    const ok = await fetch(base + "/model", { method: "PUT", body, headers: { "x-orion-token": "owner-token-123" } });
     expect(ok.status).toBe(200);
-    const got = await fetch(base + "/model", { headers: { "x-instinct-token": "owner-token-123" } });
+    const got = await fetch(base + "/model", { headers: { "x-orion-token": "owner-token-123" } });
     const text = await got.text();
     expect(JSON.parse(text)).toMatchObject({ enabled: true, provider: "openai", model: "gpt-4.1", status: "active" });
     expect(text).not.toContain("sk-private-key");
-    const bad = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ provider: "nope", model: "m", apiKey: "sk-private-key-123456" }), headers: { "x-instinct-token": "owner-token-123" } });
+    const bad = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ provider: "nope", model: "m", apiKey: "sk-private-key-123456" }), headers: { "x-orion-token": "owner-token-123" } });
     expect(bad.status).toBe(400);
-    const off = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ remove: true }), headers: { "x-instinct-token": "owner-token-123" } });
+    const off = await fetch(base + "/model", { method: "PUT", body: JSON.stringify({ remove: true }), headers: { "x-orion-token": "owner-token-123" } });
     expect(off.status).toBe(200);
-    expect(await (await fetch(base + "/model", { headers: { "x-instinct-token": "owner-token-123" } })).json()).toEqual({ enabled: false });
+    expect(await (await fetch(base + "/model", { headers: { "x-orion-token": "owner-token-123" } })).json()).toEqual({ enabled: false });
   });
 
   it("owner API: needs the owner token and answers on the real boot", async () => {
-    const base = await start({}, { INSTINCT_CHAT_TOKEN: "owner-token-123" });
+    const base = await start({}, { ORION_CHAT_TOKEN: "owner-token-123" });
     expect((await fetch(base + "/owner/overview")).status).toBe(401);
-    const h = { "x-instinct-token": "owner-token-123" };
+    const h = { "x-orion-token": "owner-token-123" };
     for (const r of ["overview", "people", "approvals", "activity", "schedules", "memory", "skills", "pages", "apps", "channels", "payments", "security"]) {
       const res = await fetch(`${base}/owner/${r}`, { headers: h });
       expect(res.status, r).toBe(200);

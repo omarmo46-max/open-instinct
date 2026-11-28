@@ -14,8 +14,8 @@ describe("paymentsEnv", () => {
   it("builds the redirect URI from the explicit value, the public URL, or loopback on PORT", () => {
     expect(paymentsEnv(full)).toEqual({ clientId: "lc_1", clientSecret: "ls_1", publishableKey: "pk_test_1", redirectUri: `http://127.0.0.1:8080${LINK_CALLBACK_PATH}` });
     expect(paymentsEnv({ ...full, PORT: "18789" })?.redirectUri).toBe(`http://127.0.0.1:18789${LINK_CALLBACK_PATH}`);
-    expect(paymentsEnv({ ...full, INSTINCT_PUBLIC_URL: "https://maria.example.com/" })?.redirectUri).toBe(`https://maria.example.com${LINK_CALLBACK_PATH}`);
-    expect(paymentsEnv({ ...full, INSTINCT_PUBLIC_URL: "https://x", LINK_REDIRECT_URI: "https://gw.example.com/oauth/link/callback" })?.redirectUri).toBe(
+    expect(paymentsEnv({ ...full, ORION_PUBLIC_URL: "https://maria.example.com/" })?.redirectUri).toBe(`https://maria.example.com${LINK_CALLBACK_PATH}`);
+    expect(paymentsEnv({ ...full, ORION_PUBLIC_URL: "https://x", LINK_REDIRECT_URI: "https://gw.example.com/oauth/link/callback" })?.redirectUri).toBe(
       "https://gw.example.com/oauth/link/callback",
     );
   });

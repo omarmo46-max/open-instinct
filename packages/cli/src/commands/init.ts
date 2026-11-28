@@ -1,9 +1,9 @@
 /**
- * `instinct init`: write config.json, and when an Inkbox admin key is present,
+ * `orion init`: write config.json, and when an Inkbox admin key is present,
  * provision the agent's identity (iMessage on), mint its keys and store them
  * under <dataDir>/secrets/inkbox.json.
  */
-import { isReservedHandle, loadConfig, saveConfig, type InstinctConfig } from "@orion-ai/core";
+import { isReservedHandle, loadConfig, saveConfig, type OrionConfig } from "@orion-ai/core";
 import { InkboxPlanLimitError } from "@orion-ai/inkbox";
 import { parse, str, requireStr, flag, type OptionSpec } from "../args.js";
 import type { CliContext } from "../context.js";
@@ -91,7 +91,7 @@ export function parseInitFlags(argv: string[], env: NodeJS.ProcessEnv = {}): Ini
 }
 
 /** Applies flags on top of whatever loadConfig produced, so re-running init updates fields. */
-export function applyInitFlags(config: InstinctConfig, flags: InitFlags): InstinctConfig {
+export function applyInitFlags(config: OrionConfig, flags: InitFlags): OrionConfig {
   const owner = { ...config.owner, name: flags.name };
   if (flags.phone && !owner.phones.includes(flags.phone)) owner.phones = [flags.phone, ...owner.phones];
   if (flags.email && !owner.emails.includes(flags.email)) owner.emails = [flags.email, ...owner.emails];
@@ -115,13 +115,13 @@ export async function runInit(ctx: CliContext, argv: string[]): Promise<number> 
 
   // Seed env so a fresh config picks the flags up through core's own seeding path.
   const seedEnv: NodeJS.ProcessEnv = { ...ctx.env };
-  if (flags.name) seedEnv.INSTINCT_OWNER_NAME = flags.name;
-  if (flags.phone) seedEnv.INSTINCT_OWNER_PHONE = flags.phone;
-  if (flags.email) seedEnv.INSTINCT_OWNER_EMAIL = flags.email;
-  if (flags.timezone) seedEnv.INSTINCT_OWNER_TIMEZONE = flags.timezone;
+  if (flags.name) seedEnv.ORION_OWNER_NAME = flags.name;
+  if (flags.phone) seedEnv.ORION_OWNER_PHONE = flags.phone;
+  if (flags.email) seedEnv.ORION_OWNER_EMAIL = flags.email;
+  if (flags.timezone) seedEnv.ORION_OWNER_TIMEZONE = flags.timezone;
   if (flags.handle) seedEnv.INKBOX_AGENT_HANDLE = flags.handle;
-  if (flags.model) seedEnv.INSTINCT_MODEL = flags.model;
-  if (flags.agentName) seedEnv.INSTINCT_AGENT_NAME = flags.agentName;
+  if (flags.model) seedEnv.ORION_MODEL = flags.model;
+  if (flags.agentName) seedEnv.ORION_AGENT_NAME = flags.agentName;
 
   const existed = state.exists("config.json");
   let config = applyInitFlags(loadConfig(state, seedEnv), flags);
@@ -199,6 +199,6 @@ export async function runInit(ctx: CliContext, argv: string[]): Promise<number> 
 
 function printEnvLines(ctx: CliContext, secrets: InkboxSecrets): void {
   ctx.print();
-  ctx.print("Export these for the server (instinct dev loads them for you):");
+  ctx.print("Export these for the server (orion dev loads them for you):");
   for (const [k, v] of Object.entries(secretsToEnv(secrets))) ctx.print(`  export ${k}=${v}`);
 }

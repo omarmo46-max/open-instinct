@@ -22,8 +22,8 @@ Sends go through the official `@inkbox/sdk` so request shapes track the API.
 
 One Inkbox identity is one agent. It has:
 
-- a **handle** (`maria-instinct`), used in `connect @maria-instinct`, in A2A URLs and in contact rules;
-- a **mailbox** (`maria-instinct@inkboxmail.com`) created with the identity;
+- a **handle** (`maria-orion`), used in `connect @maria-orion`, in A2A URLs and in contact rules;
+- a **mailbox** (`maria-orion@inkboxmail.com`) created with the identity;
 - **iMessage** on the shared router line when `imessage_enabled: true`, or a dedicated line when claimed;
 - an optional **phone number** for SMS (`phone: true`), subject to inventory;
 - an **A2A endpoint** at `https://inkbox.ai/a2a/{handle}` once enabled.
@@ -37,7 +37,7 @@ Two kinds of API key matter:
 import { InkboxProvisioner } from "@orion-ai/inkbox";
 
 const admin = new InkboxProvisioner({ adminApiKey: process.env.INKBOX_ADMIN_API_KEY! });
-const id = await admin.provisionIdentity({ handle: "maria-instinct", displayName: "Maria's Instinct", imessage: true });
+const id = await admin.provisionIdentity({ handle: "maria-orion", displayName: "Maria's Orion", imessage: true });
 const agentKey = await admin.mintIdentityKey(id.identityId, "maria agent");      // shown once
 const signingKey = await admin.ensureSigningKey(id.handle);                    // store immediately
 const sub = await admin.subscribeWebhooks(id.identityId, "https://gateway.example/hooks/inkbox");
@@ -46,13 +46,13 @@ await admin.enableA2A(id.handle);
 
 `provisionIdentity` creates a new identity by default. A taken handle gets `-2`, `-3`
 suffixes; it does not silently import that existing identity. Import intentionally with
-`reuseExisting: true` (CLI: `instinct init --use-existing`). The CLI also resumes an
+`reuseExisting: true` (CLI: `orion init --use-existing`). The CLI also resumes an
 identity already recorded in its own secrets file. A plan limit (HTTP 402) throws
 `InkboxPlanLimitError` with the console billing URL. A phone-inventory 429 retries without a number.
 
 `ensureSigningKey` reuses a supplied `knownSigningKey` when the identity already has one.
 If that key is unavailable, initialization stops rather than replacing it. Rotation is
-explicit: `{ rotate: true }`, or `instinct init --rotate-signing-key`. Save each one-time
+explicit: `{ rotate: true }`, or `orion init --rotate-signing-key`. Save each one-time
 credential before proceeding to later provisioning steps.
 
 ### Rate limits
@@ -72,7 +72,7 @@ iMessage does not let an arbitrary server own a phone number. Inkbox runs a shar
 
 1. The gateway calls `admin.routerInfo()` and gets `{ number, connectCommand, smsLink, qrPngDataUrl }`.
 2. The signup page shows the QR (or the `sms:` link). The person's phone opens Messages with
-   `connect @maria-instinct` prefilled, addressed to the router number.
+   `connect @maria-orion` prefilled, addressed to the router number.
 3. They send it. Inkbox creates an iMessage **conversation** between that phone and the identity.
 4. From then on, every message they send arrives as an `imessage.received` webhook with a stable
    `conversation_id`. Replies go back with `sendIMessage({ conversationId })`.
@@ -203,13 +203,13 @@ and a separate `deliveryKey`, so group session identifiers never become wire con
 `remember()` remains a fallback for other callers that intentionally omit a reply reference.
 
 ```ts
-const channel = new InkboxChannel({ apiKey: process.env.INKBOX_API_KEY!, handle: "maria-instinct" });
+const channel = new InkboxChannel({ apiKey: process.env.INKBOX_API_KEY!, handle: "maria-orion" });
 await channel.typing("imessage:conv_1");
 await channel.send({ channel: "imessage", conversationKey: "imessage:conv_1", text: "Booked. Thu 7pm at Nopa." }, { principal, conversationKey });
 await channel.react("imessage:conv_1", messageId, "love");
 ```
 
-## A2A: how two Instincts talk
+## A2A: how two Orions talk
 
 Our agent is a **worker** when another agent calls it, and a **caller** when it reaches out.
 
@@ -230,7 +230,7 @@ The server shares an `A2AStore` between the network tools and runtime. It persis
 reply routes and task lifecycle state. Worker replies are bound to the admitted task;
 separate tasks in one context execute separately.
 The network tool does not start nested delegations from an inbound A2A task. Workers
-request missing information through `reply_instinct` with `ask_caller` instead.
+request missing information through `reply_orion` with `ask_caller` instead.
 
 ## Tools
 
@@ -247,7 +247,7 @@ request missing information through `reply_instinct` with `ask_caller` instead.
   tagged `files.read`. Relative paths resolve under `<dataDir>/workspace`; absolute paths must stay
   under `dataDir` after symlinks. iMessage and SMS go through `uploadIMessageMedia` (10 MB limit,
   the error suggests email); email attaches up to 25 MB. With no `to` in a `chat:*` conversation
-  (the Maritime dashboard or `instinct chat`) it returns the path plus a fenced `maritime-file`
+  (the Maritime dashboard or `orion chat`) it returns the path plus a fenced `maritime-file`
   block the dashboard renders as an attachment. Without `dataDir` every path is refused.
 
 `sendFileTool({ contacts, config, dataDir, channel? })` is the same tool on its own. The server

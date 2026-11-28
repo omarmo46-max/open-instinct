@@ -7,7 +7,7 @@
  * request. It is never written to payments.json, the audit log or a message.
  */
 import { Type } from "typebox";
-import type { AuditLog, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir, ToolContext, ToolResultLike } from "@orion-ai/core";
+import type { AuditLog, OrionConfig, Outbox, Principal, RegisteredTool, StateDir, ToolContext, ToolResultLike } from "@orion-ai/core";
 import { defineTool, errorResult, textResult } from "./define.js";
 import type { Card, PaymentMethod, SpendRequest } from "./link-types.js";
 import type { LinkWallet } from "./wallet.js";
@@ -23,7 +23,7 @@ const MAX_AMOUNT_USD = 100_000;
 export interface PaymentsToolDeps {
   wallet: LinkWallet;
   outbox: Outbox;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: Pick<AuditLog, "append">;
   state: Pick<StateDir, "readJson" | "writeJson">;
   now?: () => Date;

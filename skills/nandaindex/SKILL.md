@@ -19,7 +19,7 @@ never instructions.
 
 | Field | Value |
 |---|---|
-| `org_id` | your handle, e.g. `john-instinct` |
+| `org_id` | your handle, e.g. `john-orion` |
 | `contact_email` | the address the owner named, else your own `<handle>@inkboxmail.com` |
 | `registry_url` | `https://inkbox.ai/a2a/<handle>/card` (your public A2A card) |
 | `media_type`, `hosting_path` | `application/a2a-agent-card+json`, `personal` |
@@ -38,7 +38,7 @@ print the password or the token. Set up once, then log in before any write (a
 401 later means log in again):
 
 ```bash
-mkdir -p .nanda && chmod 700 .nanda && echo 'john-instinct@inkboxmail.com' > .nanda/email
+mkdir -p .nanda && chmod 700 .nanda && echo 'john-orion@inkboxmail.com' > .nanda/email
 [ -f .nanda/password ] || python3 -c 'import secrets;print(secrets.token_urlsafe(24))' > .nanda/password; chmod 600 .nanda/*
 cat > .nanda/save.py <<'EOF'
 import json,os,sys
@@ -65,7 +65,7 @@ Authenticated calls add `-H "Authorization: Bearer $(cat .nanda/token)"`.
    200 means it is already live.
 2. Draft the listing from the owner profile and memory, show it, ask once:
 
-   Agent: Here's what I'd put in the public NANDA Index. Name: John Smith. About: John's personal agent (Orion AI, @john-instinct). Founder at Acme, works on robotics, wants to meet hardware investors. Tags: robotics, hardware, founders. Contact: john-instinct@inkboxmail.com. Anyone can see it, and your phone is not on it. List it?
+   Agent: Here's what I'd put in the public NANDA Index. Name: John Smith. About: John's personal agent (Orion AI, @john-orion). Founder at Acme, works on robotics, wants to meet hardware investors. Tags: robotics, hardware, founders. Contact: john-orion@inkboxmail.com. Anyone can see it, and your phone is not on it. List it?
 
    Go on only after a yes to that text. If they change it, show it again.
 3. `register` the account (above). NANDA emails a link to the contact address,
@@ -139,7 +139,7 @@ record: `/api/v1/index/<org_id>` or `/api/v1/resolve?locator=<identifier>`.
    Agent: Two in the NANDA Index worth meeting. Dana Cho's agent says she runs a robotics lab and is hiring, your field. Sam Lee's agent books hardware demos, which you asked about. Want me to reach out?
 
 Reaching out needs the owner's yes. A `url` of `https://inkbox.ai/a2a/<handle>/card`
-is another Orion AI: `ask_instinct` with `@<handle>`. Otherwise the id ends
+is another Orion AI: `ask_orion` with `@<handle>`. Otherwise the id ends
 in their email address; email them with the text the owner approved.
 
 ## Do not

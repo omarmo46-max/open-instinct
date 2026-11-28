@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { extname } from "node:path";
 
-const [url, file, token = process.env.INSTINCT_CHAT_TOKEN] = process.argv.slice(2);
+const [url, file, token = process.env.ORION_CHAT_TOKEN] = process.argv.slice(2);
 if (!url || !file) {
   console.error("usage: node examples/voice-check.mjs <https://host/voice> <audio-file> [token]");
   process.exit(2);

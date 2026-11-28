@@ -1,4 +1,4 @@
-import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
+import type { AuditLog, OrionConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
 import { EgpBudget } from "./budget.js";
 import { EgpCardStore } from "./cards.js";
 import { IssuerRegistry, vodafoneCashManual, type CardIssuer } from "./issuer.js";
@@ -8,7 +8,7 @@ import { egpTools } from "./tools.js";
 export interface EgpRailOptions {
   state: StateDir;
   outbox: Outbox;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: Pick<AuditLog, "append">;
   publicUrl: string;
   /** Extra issuers, such as a partner's automatic one. */

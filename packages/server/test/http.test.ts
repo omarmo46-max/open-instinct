@@ -5,14 +5,14 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { encodeEvent, StateDir } from "@orion-ai/core";
-import type { HandleResult, InboundMessage, InstinctConfig, OutboundMessage, ScheduleEntry } from "@orion-ai/core";
+import type { HandleResult, InboundMessage, OrionConfig, OutboundMessage, ScheduleEntry } from "@orion-ai/core";
 import { ACK_TEXT, CHAT_TOKEN_HEADER, LINK_CALLBACK_EVENT, createHttpServer, listenTunnelServer, matchScheduleEntry, type HttpApp } from "../src/http.js";
 import { ChatReplyBuffer } from "../src/console-outbox.js";
 
-const config: InstinctConfig = {
+const config: OrionConfig = {
   version: 1,
   owner: { name: "Maria", phones: ["+15550001111"], emails: [], timezone: "America/New_York" },
-  agent: { name: "Smoke", handle: "smoke-instinct" },
+  agent: { name: "Smoke", handle: "smoke-orion" },
   model: { primary: "faux/faux-1" },
   computer: { mode: "none" },
   apps: { enabled: false, toolkits: [] },
@@ -350,7 +350,7 @@ describe("http server", () => {
         receivedAt: "2026-11-24T10:00:00Z", meta: { pushName: "Maria", isAdmin: true, telegramFile: { fileId: "f1", kind: "image", size: 4 } }, attachments: [{ path: "/etc/passwd", mimeType: "image/png" }],
       },
     };
-    const res = await post("/chat", { message: `@@instinct-event@@${JSON.stringify(event)}`, conversation_id: "telegram:555", source: "front_door" });
+    const res = await post("/chat", { message: `@@orion-event@@${JSON.stringify(event)}`, conversation_id: "telegram:555", source: "front_door" });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ acked: true, conversationKey: "telegram:555" });
     await new Promise((r) => setTimeout(r, 30));
@@ -368,7 +368,7 @@ describe("http server", () => {
       { type: "telegram.message", message: { id: "x", conversationKey: "telegram:555", from: "owner", text: "who" } },
       { type: "telegram.message", message: { id: "x", conversationKey: "telegram:556", from: "telegram:555", text: "mismatch" } },
     ]) {
-      const r = await post("/chat", { message: `@@instinct-event@@${JSON.stringify(bad)}` });
+      const r = await post("/chat", { message: `@@orion-event@@${JSON.stringify(bad)}` });
       expect(await r.json()).toMatchObject({ acked: true });
     }
     await new Promise((r) => setTimeout(r, 30));
@@ -379,12 +379,12 @@ describe("http server", () => {
     const before = { ...app.config.owner };
     app.config.owner.telegramIds = ["111"];
     app.config.owner.claimOnFirstContact = true;
-    const res = await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.link", telegramId: "00555" })}` });
+    const res = await post("/chat", { message: `@@orion-event@@${JSON.stringify({ type: "telegram.link", telegramId: "00555" })}` });
     expect(await res.json()).toMatchObject({ acked: true });
     expect(app.config.owner.telegramIds).toEqual(["555"]);
     expect(app.config.owner.claimOnFirstContact).toBe(false);
     // A junk id changes nothing.
-    await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.link", telegramId: "@evil" })}` });
+    await post("/chat", { message: `@@orion-event@@${JSON.stringify({ type: "telegram.link", telegramId: "@evil" })}` });
     expect(app.config.owner.telegramIds).toEqual(["555"]);
     Object.assign(app.config.owner, before);
   });
@@ -396,16 +396,16 @@ describe("http server", () => {
     const before = { ...app.config.owner, telegramIds: ["111"] };
     app.config.owner.telegramIds = ["111"];
     const message = { type: "telegram.message", message: { id: "telegram:6001", conversationKey: "telegram:555", from: "telegram:555", text: "hello" } };
-    const sent = await post("/chat", { message: `@@instinct-event@@${JSON.stringify(message)}`, source: "front_door" });
+    const sent = await post("/chat", { message: `@@orion-event@@${JSON.stringify(message)}`, source: "front_door" });
     expect(await sent.json()).toMatchObject({ acked: true, response: "", conversationKey: "telegram:555", blocked: expect.stringContaining("own Telegram bot") });
-    const link = await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.link", telegramId: "555" })}` });
+    const link = await post("/chat", { message: `@@orion-event@@${JSON.stringify({ type: "telegram.link", telegramId: "555" })}` });
     expect(await link.json()).toMatchObject({ acked: true, blocked: expect.stringContaining("own Telegram bot") });
     await new Promise((r) => setTimeout(r, 30));
     expect(app.inbound).toHaveLength(0);
     expect(app.config.owner.telegramIds).toEqual(["111"]);
     expect(seen).toEqual([["message", "555"], ["link", "555"]]);
     // A forged event is still dropped quietly, and tells nobody.
-    await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "telegram.message", message: { id: "x", conversationKey: "telegram:-100", from: "telegram:555", text: "g" } })}` });
+    await post("/chat", { message: `@@orion-event@@${JSON.stringify({ type: "telegram.message", message: { id: "x", conversationKey: "telegram:-100", from: "telegram:555", text: "g" } })}` });
     expect(seen).toHaveLength(2);
     delete app.telegramOwnBot;
     delete app.onGatewayTelegram;
@@ -418,7 +418,7 @@ describe("http server", () => {
       tasks.push(task);
       return "done";
     };
-    const message = `@@instinct-event@@${JSON.stringify({ type: "system.task", id: "conference-prepare", name: "Prepare", prompt: "Research the owner.", quiet: true })}`;
+    const message = `@@orion-event@@${JSON.stringify({ type: "system.task", id: "conference-prepare", name: "Prepare", prompt: "Research the owner.", quiet: true })}`;
     const res = await post("/chat", { message, conversation_id: "system:conference-prepare" });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ response: "", acked: true, conversationKey: "system:conference-prepare" });
@@ -432,7 +432,7 @@ describe("http server", () => {
     expect(await unsupported.json()).toMatchObject({ acked: true, blocked: "system tasks are not supported by this runtime" });
     expect(app.inbound).toHaveLength(0);
 
-    const malformed = await post("/chat", { message: `@@instinct-event@@${JSON.stringify({ type: "system.task", id: "no prompt" })}` });
+    const malformed = await post("/chat", { message: `@@orion-event@@${JSON.stringify({ type: "system.task", id: "no prompt" })}` });
     expect(await malformed.json()).toMatchObject({ response: "", acked: true });
     expect(app.inbound).toHaveLength(0);
   });
@@ -513,7 +513,7 @@ describe("http server with a chat token", () => {
 
   beforeEach(async () => {
     app = stubApp();
-    const server = createHttpServer(app, { signingKey: SIGNING_KEY, env: { INSTINCT_CHAT_TOKEN: TOKEN } });
+    const server = createHttpServer(app, { signingKey: SIGNING_KEY, env: { ORION_CHAT_TOKEN: TOKEN } });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     close = () => new Promise((r) => server.close(() => r()));
@@ -557,7 +557,7 @@ describe("http server with a chat token", () => {
     expect((await fetch(`${base}/status`, { headers: { [CHAT_TOKEN_HEADER]: TOKEN } })).status).toBe(200);
   });
 
-  it("the token is accepted as Bearer or X-Instinct-Token, for plain chat and envelopes", async () => {
+  it("the token is accepted as Bearer or X-Orion-Token, for plain chat and envelopes", async () => {
     const a = await post("/chat", { message: "hi" }, { authorization: `Bearer ${TOKEN}` });
     expect(a.status).toBe(200);
     expect(await a.json()).toMatchObject({ response: "echo:hi" });
@@ -567,7 +567,7 @@ describe("http server with a chat token", () => {
   });
 
   it("the chatToken option wins over env", async () => {
-    const server = createHttpServer(app, { env: { INSTINCT_CHAT_TOKEN: "from-env" }, chatToken: "from-opts" });
+    const server = createHttpServer(app, { env: { ORION_CHAT_TOKEN: "from-env" }, chatToken: "from-opts" });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/schedules`;
     try {
@@ -720,7 +720,7 @@ describe("payments callback", () => {
 describe("payments routes for the CLI", () => {
   it("serve the authorize URL and connection state behind the chat token, and 404 without payments", async () => {
     const app = stubApp();
-    const server = createHttpServer(app, { env: { INSTINCT_CHAT_TOKEN: "tok" } });
+    const server = createHttpServer(app, { env: { ORION_CHAT_TOKEN: "tok" } });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
     const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     const auth = { authorization: "Bearer tok" };

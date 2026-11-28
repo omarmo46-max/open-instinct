@@ -59,7 +59,7 @@ import {
   resolveTriggers,
   scanCron,
 } from "@orion-ai/core";
-import type { InboundMessage, InstinctConfig, Outbox, Principal, RegisteredTool } from "@orion-ai/core";
+import type { InboundMessage, OrionConfig, Outbox, Principal, RegisteredTool } from "@orion-ai/core";
 import { CALL_ORIGINATIONS, DurableInbox, InkboxA2A, InkboxChannel, InkboxInboundHydrator, InkboxProvisioner, handleCallEnded, conciergeTools, messagingTools, sendFileTool, voiceInstructions } from "@orion-ai/inkbox";
 import type { CallEndedEvent, CallOrigination } from "@orion-ai/inkbox";
 import { enrichInbound, transcriberFromEnv } from "@orion-ai/media";
@@ -105,7 +105,7 @@ export interface BootResult {
   customModel?: CustomModelStore;
   ownerApi?: import("./owner-api.js").OwnerApi;
   state: StateDir;
-  config: InstinctConfig;
+  config: OrionConfig;
   scheduler: Scheduler;
   outbox: Outbox;
   close(): Promise<void>;
@@ -162,7 +162,7 @@ export class GatewayNotices {
 export const DEFAULT_MARITIME_MCP_URL = "https://mcp.maritime.sh";
 
 export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Promise<BootResult> {
-  const log = opts.logger ?? ((m: string) => console.log(`[instinct] ${m}`));
+  const log = opts.logger ?? ((m: string) => console.log(`[orion] ${m}`));
   const startedAt = Date.now();
 
   const state = new StateDir(resolveDataDir(env));
@@ -182,12 +182,12 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
       ? `owner claim open: the first 1:1 iMessage/SMS (or Telegram /start <code>) carrying the one-time code becomes the owner${config.owner.claimExpiresAt ? ` (until ${config.owner.claimExpiresAt})` : ""}`
       : `WARNING: owner claim is disabled: ${claim.reason}. Nobody can claim this agent until a valid code is set`);
   }
-  // PERSONA.md is the owner's file; INSTINCT_PERSONA seeds it on first boot only.
-  if (ensurePersona(state, env.INSTINCT_PERSONA)) log(`wrote ${state.path("PERSONA.md")}${env.INSTINCT_PERSONA?.trim() ? " from INSTINCT_PERSONA" : " (default persona)"}`);
-  // AGENTS.md is the owner's standing-instructions file. INSTINCT_INSTRUCTIONS seeds it, and a changed seed
+  // PERSONA.md is the owner's file; ORION_PERSONA seeds it on first boot only.
+  if (ensurePersona(state, env.ORION_PERSONA)) log(`wrote ${state.path("PERSONA.md")}${env.ORION_PERSONA?.trim() ? " from ORION_PERSONA" : " (default persona)"}`);
+  // AGENTS.md is the owner's standing-instructions file. ORION_INSTRUCTIONS seeds it, and a changed seed
   // replaces it as long as the owner never edited the file; an edited file is theirs.
-  const instructions = syncInstructions(state, env.INSTINCT_INSTRUCTIONS);
-  if (instructions === "created" || instructions === "updated") log(`${instructions} ${state.path("AGENTS.md")} from INSTINCT_INSTRUCTIONS`);
+  const instructions = syncInstructions(state, env.ORION_INSTRUCTIONS);
+  if (instructions === "created" || instructions === "updated") log(`${instructions} ${state.path("AGENTS.md")} from ORION_INSTRUCTIONS`);
 
   const audit = new AuditLog(state);
   const policy = new PolicyEngine(loadPolicy(state), {
@@ -208,8 +208,8 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   const triggerPrefs = new TriggerPrefs(state);
   const embedKey = env.EMBED_API_KEY || env.OPENAI_API_KEY;
   // Meaning search sends memory text to the embeddings service, so it needs an explicit opt-in.
-  const embedder = env.INSTINCT_SEMANTIC_MEMORY === "1" && embedKey ? openAIEmbedder({ apiKey: embedKey, ...(env.EMBED_BASE_URL ? { baseUrl: env.EMBED_BASE_URL } : {}), ...(env.EMBED_MODEL ? { model: env.EMBED_MODEL } : {}), ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }) : undefined;
-  const places = env.INSTINCT_LOCATION === "1" ? new PlaceStore(state) : undefined;
+  const embedder = env.ORION_SEMANTIC_MEMORY === "1" && embedKey ? openAIEmbedder({ apiKey: embedKey, ...(env.EMBED_BASE_URL ? { baseUrl: env.EMBED_BASE_URL } : {}), ...(env.EMBED_MODEL ? { model: env.EMBED_MODEL } : {}), ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}) }) : undefined;
+  const places = env.ORION_LOCATION === "1" ? new PlaceStore(state) : undefined;
   const a2aStore = new A2AStore(state);
 
   const model = opts.model ?? resolveModel(config.model.primary, env);
@@ -346,7 +346,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   }
 
   // Keenable works without a key, so it needs its own switch; a key also turns it on.
-  // The switch takes what the gateway takes (1, true, yes): `instinct deploy` forwards it as written.
+  // The switch takes what the gateway takes (1, true, yes): `orion deploy` forwards it as written.
   if (/^(1|true|yes)$/i.test(env.KEENABLE_SEARCH?.trim() ?? "") || env.KEENABLE_API_KEY) {
     registry.registerMany(
       keenableTools({
@@ -357,7 +357,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   }
 
   // Messaging needs Inkbox. send_file does not: without a wire it still hands files
-  // to the dashboard chat, which is how `instinct chat` and the smoke test get them.
+  // to the dashboard chat, which is how `orion chat` and the smoke test get them.
   const callOrigination = callOriginationFrom(env);
   // send_file attaches files on Telegram and WhatsApp conversations through these.
   const fileChannels: NonNullable<Parameters<typeof sendFileTool>[0]["fileChannels"]> = { ...(telegramOut ? { telegram: telegramOut } : {}), ...(whatsapp ? { whatsapp } : {}) };
@@ -552,7 +552,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     if (!mod?.createEgpRail) {
       log("payments: EGP_WALLET=1 but this @orion-ai/payments build has no EGP rail; skipping");
     } else {
-      const publicUrl = (env.INSTINCT_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`).replace(/\/+$/, "");
+      const publicUrl = (env.ORION_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`).replace(/\/+$/, "");
       const rail = await safely(log, "egp", () => mod.createEgpRail!({ state, outbox, config, audit, publicUrl }));
       if (rail) {
         egp = rail;
@@ -567,10 +567,10 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   const partnerRegistry = new PartnerRegistry();
   registry.registerMany(partnerTools({ registry: partnerRegistry, config, audit, state }));
 
-  // Shareable pages (E5): polls, sign-ups and RSVPs served by this agent. Opt-in with INSTINCT_PAGES=1.
+  // Shareable pages (E5): polls, sign-ups and RSVPs served by this agent. Opt-in with ORION_PAGES=1.
   let pagesRail: ReturnType<typeof createPages> | undefined;
-  if (env.INSTINCT_PAGES?.trim() === "1") {
-    const publicUrl = env.INSTINCT_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`;
+  if (env.ORION_PAGES?.trim() === "1") {
+    const publicUrl = env.ORION_PUBLIC_URL?.trim() || `http://127.0.0.1:${env.PORT?.trim() || "8080"}`;
     pagesRail = createPages({ state, publicUrl });
     registry.registerMany(pagesRail.tools);
     log(`pages: on, ${publicUrl}/p/...`);
@@ -598,20 +598,20 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
     return parts.length > 0 ? parts.join("\n\n") : undefined;
   };
 
-  // Phase C (C1 to C8). The runtime hooks are on by default; INSTINCT_SECURITY=0 turns them off.
+  // Phase C (C1 to C8). The runtime hooks are on by default; ORION_SECURITY=0 turns them off.
   const identity = Identity.load(state);
   const vaultKey = keyFromEnv(env);
-  const vault = vaultKey || env.INSTINCT_VAULT_PASSPHRASE ? new Vault(state, { key: vaultKey, passphrase: env.INSTINCT_VAULT_PASSPHRASE }) : undefined;
+  const vault = vaultKey || env.ORION_VAULT_PASSPHRASE ? new Vault(state, { key: vaultKey, passphrase: env.ORION_VAULT_PASSPHRASE }) : undefined;
   const stepUpStore = new StepUpStore(state);
   const stepUp = new StepUp({ secret: () => stepUpStore.secret() });
-  const opVaults = (env.INSTINCT_OP_VAULTS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const opVaults = (env.ORION_OP_VAULTS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const op = env.OP_SERVICE_ACCOUNT_TOKEN && opVaults.length > 0 ? new OnePasswordClient({ run: defaultOpRunner(env.OP_SERVICE_ACCOUNT_TOKEN), vaults: opVaults }) : undefined;
   const keyring = new AgentKeyring(state, identity);
   const pins = new ToolPins(state, identity);
   const quarantined = new Map<string, RegisteredTool>();
   const broker = new SecretBroker({ vault, op, issuer: new CredentialIssuer(identity) });
   // Only tools built to type into a page may be given {{secret:...}} references.
-  const takesSecrets = new Set(["computer", "computer_batch", ...(env.INSTINCT_SECRET_TOOLS ?? "").split(",").map((s) => s.trim()).filter(Boolean)]);
+  const takesSecrets = new Set(["computer", "computer_batch", ...(env.ORION_SECRET_TOOLS ?? "").split(",").map((s) => s.trim()).filter(Boolean)]);
   registry.registerMany(registry.all().filter((t) => takesSecrets.has(t.spec.name)).map((t) => ({ spec: { ...t.spec, meta: { ...t.spec.meta, acceptsSecrets: true } } })));
   registry.registerMany(securityTools({ audit, state, vault, stepUp, stepUpStore, op, keyring, pins, identity, registry, quarantined, issuer: "Orion AI", rewrap: (t) => (broker.available() ? broker.wrap(t) : t) }));
   // C5 on the wire: encrypted files and key exchange between agents over A2A (needs Inkbox A2A and a handle).
@@ -628,15 +628,15 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
   }
   if (pinCheck.changed.length > 0) log(`security: ${pinCheck.changed.length} tool(s) changed since they were pinned and are out of service: ${pinCheck.changed.join(", ")}`);
   if (broker.available()) for (const t of registry.all()) registry.register(broker.wrap(t));
-  const security = env.INSTINCT_SECURITY === "0" ? undefined : new SecurityLayer({ broker, stepUp, groundingMode: env.INSTINCT_GROUNDING === "off" ? "off" : "note", memoryText: () => memory.readDurable() });
+  const security = env.ORION_SECURITY === "0" ? undefined : new SecurityLayer({ broker, stepUp, groundingMode: env.ORION_GROUNDING === "off" ? "off" : "note", memoryText: () => memory.readDurable() });
 
   // eslint-disable-next-line prefer-const
   let runtime: AgentRuntime;
   // Bring your own model, with automatic fallback to the default (see custom-model.ts). The dashboard hands the
   // key over with PUT /model; this wraps the stream so a failing key never breaks a turn.
   const customModel = new CustomModelStore(state.root);
-  const webUrl = env.INSTINCT_WEB_URL?.trim().replace(/\/+$/, "");
-  const webSecret = env.INSTINCT_WEB_SECRET?.trim();
+  const webUrl = env.ORION_WEB_URL?.trim().replace(/\/+$/, "");
+  const webSecret = env.ORION_WEB_SECRET?.trim();
   const failoverStream = createFailoverStreamFn(
     opts.streamFn ?? (streamSimple as StreamFn),
     customModel,
@@ -679,7 +679,7 @@ export async function boot(env: NodeJS.ProcessEnv, opts: BootOptions = {}): Prom
         apps: apps ? { connected: appsConnected ?? [], anyApp: apps.allToolkits, toolkits: apps.toolkitSlugs } : undefined,
         wallet: wallet ? { connected: wallet.isConnected() } : undefined,
       }),
-    ...(env.INSTINCT_REPLY_BUDGET_MS ? { replyBudgetMs: Number(env.INSTINCT_REPLY_BUDGET_MS) } : {}),
+    ...(env.ORION_REPLY_BUDGET_MS ? { replyBudgetMs: Number(env.ORION_REPLY_BUDGET_MS) } : {}),
   });
 
   // Proactive triggers (B1). Off unless the owner turned them on and a Composio session exists,
@@ -858,7 +858,7 @@ export const PROVIDER_KEY_ENV: Record<string, string[]> = {
 /**
  * Provider key from the env the server was handed (not process.env, so tests and
  * embedders control it). Pi would read process.env itself; passing the key keeps
- * the lookup in one place and lets `instinct dev` and embedders inject keys.
+ * the lookup in one place and lets `orion dev` and embedders inject keys.
  */
 export function apiKeyFor(provider: string, env: NodeJS.ProcessEnv): string | undefined {
   const names = PROVIDER_KEY_ENV[provider] ?? [`${provider.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_API_KEY`];
@@ -898,7 +898,7 @@ interface InkboxSettings {
   identityId?: string;
 }
 
-function inkboxSettings(env: NodeJS.ProcessEnv, config: InstinctConfig): InkboxSettings | undefined {
+function inkboxSettings(env: NodeJS.ProcessEnv, config: OrionConfig): InkboxSettings | undefined {
   const apiKey = env.INKBOX_API_KEY;
   const handle = env.INKBOX_AGENT_HANDLE ?? config.agent.handle;
   if (!apiKey || !handle) return undefined;

@@ -5,7 +5,7 @@ const proposal: OipMessage = {
   oip: "1",
   intent: "propose_times",
   subject: "dinner with Maria and Sam",
-  on_behalf_of: { handle: "maria-instinct", display: "Maria" },
+  on_behalf_of: { handle: "maria-orion", display: "Maria" },
   payload: {
     slots: [
       { start: "2026-10-07T19:00:00-04:00", end: "2026-10-07T22:00:00-04:00" },
@@ -28,7 +28,7 @@ describe("encodeOip / decodeOip", () => {
   it("round-trips the full proposal and keeps optional fields", () => {
     const wire = encodeOip(proposal);
     expect(wire.oip).toBe("1");
-    expect(wire.on_behalf_of).toEqual({ handle: "maria-instinct", display: "Maria" });
+    expect(wire.on_behalf_of).toEqual({ handle: "maria-orion", display: "Maria" });
     expect(decodeOip(wire)).toEqual(proposal);
   });
 
@@ -68,7 +68,7 @@ describe("describeOip", () => {
     const text = describeOip(proposal);
     expect(text).toContain('intent "propose_times"');
     expect(text).toContain("dinner with Maria and Sam");
-    expect(text).toContain("Maria (@maria-instinct)");
+    expect(text).toContain("Maria (@maria-orion)");
     expect(text).toContain("place_hint");
     expect(text).toContain("2026-10-06T12:00:00-04:00");
     expect(text).not.toContain("\n");
@@ -83,7 +83,7 @@ describe("oipToText", () => {
   it("renders propose_times as numbered options with the sender's wall clock", () => {
     const text = oipToText(proposal, "Maria");
     const lines = text.split("\n");
-    expect(lines[0]).toBe("Hi, this is Maria's Instinct.");
+    expect(lines[0]).toBe("Hi, this is Maria's Orion.");
     expect(text).toContain("dinner with Maria and Sam");
     expect(text).toMatch(/1\) .*Oct 7.*7:00 PM to 10:00 PM/);
     expect(text).toMatch(/2\) .*Oct 9.*7:00 PM to 10:00 PM/);

@@ -47,8 +47,8 @@ what you assumed.
   number in the description.
 - Tell the owner in one text: place, time, party size, confirmation code, and
   cancellation deadline.
-- If a guest's Instinct or phone is known, send them the time and address via
-  `ask_instinct` (intent `confirm`) or `send_message`.
+- If a guest's Orion or phone is known, send them the time and address via
+  `ask_orion` (intent `confirm`) or `send_message`.
 - `memory_write` any new preference the owner revealed ("likes counter seats",
   "no raw fish for Sam"). `journal_append` one line.
 

@@ -66,16 +66,16 @@ export function rawIdentity(overrides: Record<string, unknown> = {}) {
   return {
     id: "ident_1",
     organization_id: "org_1",
-    agent_handle: "maria-instinct",
-    display_name: "Maria's Instinct",
+    agent_handle: "maria-orion",
+    display_name: "Maria's Orion",
     description: null,
-    email_address: "maria-instinct@inkbox.ai",
+    email_address: "maria-orion@inkbox.ai",
     imessage_enabled: true,
     created_at: "2026-10-01T00:00:00Z",
     updated_at: "2026-10-01T00:00:00Z",
     mailbox: {
       id: "mb_1",
-      email_address: "maria-instinct@inkbox.ai",
+      email_address: "maria-orion@inkbox.ai",
       created_at: "2026-10-01T00:00:00Z",
       updated_at: "2026-10-01T00:00:00Z",
     },
@@ -90,7 +90,7 @@ export function rawIdentity(overrides: Record<string, unknown> = {}) {
       updated_at: "2026-10-01T00:00:00Z",
     },
     imessage_number: null,
-    tunnel: { id: "tn_1", tunnel_name: "maria-instinct", tls_mode: "edge", status: "active", public_host: "maria-instinct.tunnels.inkbox.ai", zone: "tunnels.inkbox.ai", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" },
+    tunnel: { id: "tn_1", tunnel_name: "maria-orion", tls_mode: "edge", status: "active", public_host: "maria-orion.tunnels.inkbox.ai", zone: "tunnels.inkbox.ai", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" },
     ...overrides,
   };
 }

@@ -104,8 +104,8 @@ describe("splitText", () => {
 });
 
 describe("groups", () => {
-  const g = (extra: Partial<TgMessage> = {}): TgMessage => msg({ chat: { id: -100123, type: "supergroup", title: "Trip crew" }, text: "@instinct_bot what's the weather in Rome?", ...extra });
-  const bot = { groups: { botUsername: "instinct_bot", botId: 99 } };
+  const g = (extra: Partial<TgMessage> = {}): TgMessage => msg({ chat: { id: -100123, type: "supergroup", title: "Trip crew" }, text: "@orion_bot what's the weather in Rome?", ...extra });
+  const bot = { groups: { botUsername: "orion_bot", botId: 99 } };
 
   it("ignores groups unless enabled, and unaddressed chatter even when enabled", () => {
     expect(parseUpdate(upd(g()))).toBeUndefined();
@@ -118,7 +118,7 @@ describe("groups", () => {
     expect(a).toMatchObject({ conversationKey: "telegram:-100123", from: "telegram:42", text: "what's the weather in Rome?", meta: { isGroup: true, groupTitle: "Trip crew", pushName: "Maria G" } });
     expect(parseUpdate(upd(g({ text: "and tomorrow?", reply_to_message: { from: { id: 99, is_bot: true } } })), bot)).toBeDefined();
     expect(parseUpdate(upd(g({ text: "and tomorrow?", reply_to_message: { from: { id: 1 } } })), bot)).toBeUndefined();
-    expect(parseUpdate(upd(g({ text: "/help@instinct_bot" })), bot)).toBeDefined();
-    expect(parseUpdate(upd(g({ text: "hey @instinct_botfake hi" })), bot)).toBeUndefined();
+    expect(parseUpdate(upd(g({ text: "/help@orion_bot" })), bot)).toBeDefined();
+    expect(parseUpdate(upd(g({ text: "hey @orion_botfake hi" })), bot)).toBeUndefined();
   });
 });

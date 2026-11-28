@@ -5,9 +5,9 @@
 # reserved inside the VM); docker-compose sets PORT=8080 explicitly;
 # the server itself falls back to 8080 for a bare local run. EXPOSE and HEALTHCHECK follow $PORT.
 #
-# User: the process runs as the unprivileged `instinct` user. The entrypoint starts as root only
+# User: the process runs as the unprivileged `orion` user. The entrypoint starts as root only
 # long enough to make /data writable by that user (Maritime mounts it root-owned) and then drops
-# privileges with setpriv. The owner's bash tool therefore runs as `instinct`, not root.
+# privileges with setpriv. The owner's bash tool therefore runs as `orion`, not root.
 FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -50,12 +50,12 @@ RUN pnpm -r --filter './packages/*' run build \
 
 FROM base AS runtime
 ENV NODE_ENV=production \
-    INSTINCT_DATA_DIR=/data \
-    INSTINCT_SKILLS_DIR=/app/skills
-RUN groupadd --system instinct \
-  && useradd --system --gid instinct --uid 10001 --create-home --home-dir /home/instinct --shell /usr/sbin/nologin instinct \
+    ORION_DATA_DIR=/data \
+    ORION_SKILLS_DIR=/app/skills
+RUN groupadd --system orion \
+  && useradd --system --gid orion --uid 10001 --create-home --home-dir /home/orion --shell /usr/sbin/nologin orion \
   && mkdir -p /data \
-  && chown instinct:instinct /data \
+  && chown orion:orion /data \
   && chmod 0750 /data
 # The Ample CLI, for ample_deploy (packages/ample). A static binary, pinned and checksummed.
 # dpkg names the image's own architecture, so this is right for any builder and platform.
@@ -72,8 +72,8 @@ RUN arch="$(dpkg --print-architecture)" \
   && echo "$sha  /usr/local/bin/ample" | sha256sum -c - \
   && chmod 0755 /usr/local/bin/ample \
   && ample --version
-COPY --from=build --chown=instinct:instinct /app /app
-COPY --chown=instinct:instinct deploy/entrypoint.sh /app/deploy/entrypoint.sh
+COPY --from=build --chown=orion:orion /app /app
+COPY --chown=orion:orion deploy/entrypoint.sh /app/deploy/entrypoint.sh
 RUN chmod 0755 /app/deploy/entrypoint.sh
 VOLUME ["/data"]
 # Documentation only: the real port is $PORT at runtime (see the note at the top).

@@ -1,5 +1,5 @@
 /**
- * Inkbox credentials written by `instinct init` and read by `dev` and
+ * Inkbox credentials written by `orion init` and read by `dev` and
  * `deploy`. They live outside config.json so the config can be committed or
  * shared without leaking keys. File mode is 0600.
  */

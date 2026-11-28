@@ -5,19 +5,21 @@
  * Listeners. The owner's surface (/chat, /status, /schedules) binds loopback by
  * default. It binds 0.0.0.0 only when the environment says this is a container
  * (PORT injected by Maritime or set by docker-compose, or MARITIME_* present) or
- * when INSTINCT_BIND asks for it. The Inkbox tunnel never points at that
+ * when ORION_BIND asks for it. The Inkbox tunnel never points at that
  * listener: it forwards to a second, loopback-only server that serves /health
  * and /webhooks/inkbox and nothing else.
  */
 import type http from "node:http";
+import { applyLegacyEnv } from "@orion-ai/core";
 import { Inkbox } from "@inkbox/sdk";
 import { bindHostFor } from "./bind.js";
 import { boot } from "./boot.js";
 import { closeInkboxInbox, createHttpServer, listenTunnelServer } from "./http.js";
 import { ensureWebhookSubscription, readWebhookSecrets } from "./webhook-setup.js";
 
+applyLegacyEnv(process.env);
 const env = process.env;
-const log = (m: string): void => console.log(`[instinct] ${m}`);
+const log = (m: string): void => console.log(`[orion] ${m}`);
 
 async function main(): Promise<void> {
   const port = Number(env.PORT ?? 8080);
@@ -35,13 +37,13 @@ async function main(): Promise<void> {
     server.listen(port, host, () => resolve());
   });
   log(`listening on ${host}:${port}`);
-  if (host !== "127.0.0.1" && !env.INSTINCT_CHAT_TOKEN) {
-    log("warning: /chat is reachable beyond loopback with no INSTINCT_CHAT_TOKEN; rely on this only behind Maritime or a private network");
+  if (host !== "127.0.0.1" && !env.ORION_CHAT_TOKEN) {
+    log("warning: /chat is reachable beyond loopback with no ORION_CHAT_TOKEN; rely on this only behind Maritime or a private network");
   }
 
   let tunnelServer: http.Server | undefined;
   let closeTunnel: (() => Promise<void>) | undefined;
-  if (env.INSTINCT_TUNNEL === "1" && env.INKBOX_API_KEY) {
+  if (env.ORION_TUNNEL === "1" && env.INKBOX_API_KEY) {
     tunnelServer = await listenTunnelServer(app, httpOpts);
     const tunnelPort = (tunnelServer.address() as { port: number }).port;
     log(`tunnel listener on 127.0.0.1:${tunnelPort} (webhooks only)`);
@@ -109,6 +111,6 @@ async function startTunnel(port: number, state: Awaited<ReturnType<typeof boot>>
 }
 
 main().catch((err: Error) => {
-  console.error(`[instinct] fatal: ${err.stack ?? err.message}`);
+  console.error(`[orion] fatal: ${err.stack ?? err.message}`);
   process.exit(1);
 });

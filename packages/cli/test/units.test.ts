@@ -31,10 +31,10 @@ describe("extractDataDir", () => {
 });
 
 describe("resolveCliDataDir", () => {
-  it("prefers the flag, then env, then ./.instinct", () => {
-    expect(resolveCliDataDir({ INSTINCT_DATA_DIR: "/env" }, "/cwd", "/flag")).toBe("/flag");
-    expect(resolveCliDataDir({ INSTINCT_DATA_DIR: "rel" }, "/cwd")).toBe("/cwd/rel");
-    expect(resolveCliDataDir({}, "/cwd")).toBe("/cwd/.instinct");
+  it("prefers the flag, then env, then ./.orion", () => {
+    expect(resolveCliDataDir({ ORION_DATA_DIR: "/env" }, "/cwd", "/flag")).toBe("/flag");
+    expect(resolveCliDataDir({ ORION_DATA_DIR: "rel" }, "/cwd")).toBe("/cwd/rel");
+    expect(resolveCliDataDir({}, "/cwd")).toBe("/cwd/.orion");
   });
 });
 
@@ -136,11 +136,11 @@ describe("appsWarning", () => {
 });
 
 describe("modelSpecFor", () => {
-  it("prefers the flag, then INSTINCT_MARITIME_MODEL, then the default; config otherwise", () => {
+  it("prefers the flag, then ORION_MARITIME_MODEL, then the default; config otherwise", () => {
     const config = { ...defaultConfig(), model: { ...defaultConfig().model, primary: "anthropic/x" } };
     expect(modelSpecFor({ maritimeLlm: true, config, env: {} })).toBe("openai-compatible/gpt-5.4");
-    expect(modelSpecFor({ maritimeLlm: true, config, env: { INSTINCT_MARITIME_MODEL: "gpt-5" } })).toBe("openai-compatible/gpt-5");
-    expect(modelSpecFor({ maritimeLlm: true, model: "gpt-5.5", config, env: { INSTINCT_MARITIME_MODEL: "gpt-5" } })).toBe("openai-compatible/gpt-5.5");
+    expect(modelSpecFor({ maritimeLlm: true, config, env: { ORION_MARITIME_MODEL: "gpt-5" } })).toBe("openai-compatible/gpt-5");
+    expect(modelSpecFor({ maritimeLlm: true, model: "gpt-5.5", config, env: { ORION_MARITIME_MODEL: "gpt-5" } })).toBe("openai-compatible/gpt-5.5");
     expect(modelSpecFor({ maritimeLlm: true, model: "openai-compatible/custom", config, env: {} })).toBe("openai-compatible/custom");
     expect(modelSpecFor({ config, env: {} })).toBe("anthropic/x");
     expect(modelSpecFor({ model: "anthropic/y", config, env: {} })).toBe("anthropic/y");

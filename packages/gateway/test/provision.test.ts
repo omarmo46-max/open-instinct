@@ -13,7 +13,7 @@ function deps(ink = fakeInkbox(), mar = fakeMaritime(), store = new UserStore(te
     store,
     deps: {
       inkbox: ink.provisioner,
-      maritime: { apiKey: "mk_test", baseUrl: "https://maritime.test", agentImage: "ghcr.io/x/agent:1", extraEnv: { INSTINCT_MODEL: "anthropic/claude-fable-5-1", EXTRA_TOKEN: "t" } },
+      maritime: { apiKey: "mk_test", baseUrl: "https://maritime.test", agentImage: "ghcr.io/x/agent:1", extraEnv: { ORION_MODEL: "anthropic/claude-fable-5-1", EXTRA_TOKEN: "t" } },
       publicUrl: "https://gw.example.com/",
       store,
       anthropicApiKey: "sk-ant",
@@ -75,7 +75,7 @@ describe("provisionUser", () => {
     const user = await provisionUser(input, d.deps);
     const body = d.mar.calls[1]?.body as Record<string, unknown>;
     expect(body).toMatchObject({
-      name: "instinct-maria",
+      name: "orion-maria",
       framework: "custom",
       imageName: "ghcr.io/x/agent:1",
       exposedPort: MARITIME_AGENT_PORT,
@@ -95,15 +95,15 @@ describe("provisionUser", () => {
     expect(byKey["INKBOX_API_KEY"]).toEqual({ key: "INKBOX_API_KEY", value: "ik_idn_maria", isSecret: true });
     expect(byKey["INKBOX_AGENT_HANDLE"]?.value).toBe("maria");
     expect(byKey["INKBOX_IDENTITY_ID"]?.value).toBe("idn_maria");
-    expect(byKey["INSTINCT_OWNER_NAME"]?.value).toBe("Maria");
-    expect(byKey["INSTINCT_OWNER_PHONE"]?.value).toBe("+14155550123");
-    expect(byKey["INSTINCT_OWNER_EMAIL"]?.value).toBe("maria@example.com");
+    expect(byKey["ORION_OWNER_NAME"]?.value).toBe("Maria");
+    expect(byKey["ORION_OWNER_PHONE"]?.value).toBe("+14155550123");
+    expect(byKey["ORION_OWNER_EMAIL"]?.value).toBe("maria@example.com");
     expect(byKey["ANTHROPIC_API_KEY"]).toMatchObject({ isSecret: true });
     expect(byKey["COMPOSIO_API_KEY"]).toMatchObject({ isSecret: true });
     // Without COMPOSIO_TOOLKITS core keeps apps disabled, so the key alone would be useless.
     expect(byKey["COMPOSIO_TOOLKITS"]).toEqual({ key: "COMPOSIO_TOOLKITS", value: "gmail,googlecalendar,googlecontacts", isSecret: false });
-    expect(byKey["INSTINCT_COMPUTER"]?.value).toBe("auto");
-    expect(byKey["INSTINCT_MODEL"]).toMatchObject({ isSecret: false });
+    expect(byKey["ORION_COMPUTER"]?.value).toBe("auto");
+    expect(byKey["ORION_MODEL"]).toMatchObject({ isSecret: false });
     expect(byKey["EXTRA_TOKEN"]).toMatchObject({ isSecret: true });
     // The signing key verifies webhooks in the gateway and must not travel to the agent.
     expect(env.some((e) => e.value === "whsec_maria")).toBe(false);
@@ -123,11 +123,11 @@ describe("provisionUser", () => {
   it("omits optional env when not configured", () => {
     const env = agentEnvFor(readyUser({ email: undefined }), { maritime: { apiKey: "k", agentImage: "img" } });
     const keys = env.map((e) => e.key);
-    expect(keys).not.toContain("INSTINCT_OWNER_EMAIL");
+    expect(keys).not.toContain("ORION_OWNER_EMAIL");
     expect(keys).not.toContain("ANTHROPIC_API_KEY");
     expect(keys).not.toContain("COMPOSIO_API_KEY");
     expect(keys).not.toContain("COMPOSIO_TOOLKITS");
-    expect(keys).not.toContain("INSTINCT_MODEL");
+    expect(keys).not.toContain("ORION_MODEL");
     expect(keys).not.toContain("LINK_CLIENT_ID");
     expect(maritimeCreateBody(readyUser(), { maritime: { apiKey: "k", agentImage: "img", idleTtlSeconds: 60 } })["idleTtlSeconds"]).toBe(60);
     expect(maritimeCreateBody(readyUser(), { maritime: { apiKey: "k", agentImage: "img" } })["desktop"]).toBe(true);
@@ -151,15 +151,15 @@ describe("provisionUser", () => {
     expect(env.filter((e) => e.key === "COMPOSIO_TOOLKITS")).toHaveLength(1);
   });
 
-  it("asks for Maritime's metered LLM and points INSTINCT_MODEL at it", () => {
+  it("asks for Maritime's metered LLM and points ORION_MODEL at it", () => {
     const deps = { maritime: { apiKey: "k", agentImage: "img", useMaritimeLlm: true } };
     const body = maritimeCreateBody(readyUser(), deps);
     expect(body["useMaritimeLlm"]).toBe(true);
     const byKey = Object.fromEntries((body["initialEnvVars"] as Array<{ key: string; value: string; isSecret: boolean }>).map((e) => [e.key, e]));
-    expect(byKey["INSTINCT_MODEL"]).toEqual({ key: "INSTINCT_MODEL", value: `openai-compatible/${DEFAULT_MARITIME_LLM_MODEL}`, isSecret: false });
+    expect(byKey["ORION_MODEL"]).toEqual({ key: "ORION_MODEL", value: `openai-compatible/${DEFAULT_MARITIME_LLM_MODEL}`, isSecret: false });
 
-    const custom = agentEnvFor(readyUser(), { maritime: { apiKey: "k", agentImage: "img", useMaritimeLlm: true, maritimeModel: "gpt-5.5", extraEnv: { INSTINCT_MODEL: "anthropic/x" } } });
-    expect(custom.filter((e) => e.key === "INSTINCT_MODEL")).toEqual([{ key: "INSTINCT_MODEL", value: "openai-compatible/gpt-5.5", isSecret: false }]);
+    const custom = agentEnvFor(readyUser(), { maritime: { apiKey: "k", agentImage: "img", useMaritimeLlm: true, maritimeModel: "gpt-5.5", extraEnv: { ORION_MODEL: "anthropic/x" } } });
+    expect(custom.filter((e) => e.key === "ORION_MODEL")).toEqual([{ key: "ORION_MODEL", value: "openai-compatible/gpt-5.5", isSecret: false }]);
   });
 
   it("passes Link credentials through with a redirect URI on this gateway", () => {
@@ -222,7 +222,7 @@ describe("provisionUser", () => {
     renamed.provisioner.provisionIdentity = async (i) => ({ ...(await original(i)), handle: `${i.handle}-2` });
     const user = await provisionUser(input, { ...d.deps, inkbox: renamed.provisioner });
     expect(user.handle).toBe("maria-2");
-    expect((d.mar.calls[1]?.body as { name: string }).name).toBe("instinct-maria-2");
+    expect((d.mar.calls[1]?.body as { name: string }).name).toBe("orion-maria-2");
   });
 
   it("stores the subscription signing key as a fallback", async () => {

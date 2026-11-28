@@ -1,5 +1,5 @@
 /**
- * `instinct prompt`: print the system prompt the owner conversation would get right
+ * `orion prompt`: print the system prompt the owner conversation would get right
  * now, built from the local data dir (config, PERSONA.md, AGENTS.md, memory, policy,
  * pending approvals, skills). No server, no model, no key needed. Tool groups and the
  * computer or apps guidance depend on what boots, so this is the owner's view of the
@@ -101,7 +101,7 @@ export async function runPrompt(ctx: CliContext, argv: string[]): Promise<number
     ctx.print(ctx.c.bold(`System prompt layers for ${input.config.owner.name} on ${input.channel} (data: ${ctx.dataDir})`));
     ctx.print(renderLayerTable(layers));
     ctx.print();
-    ctx.print(ctx.c.dim("instinct prompt prints the full text; docs/CUSTOMIZE.md explains how to change each layer."));
+    ctx.print(ctx.c.dim("orion prompt prints the full text; docs/CUSTOMIZE.md explains how to change each layer."));
     return 0;
   }
   ctx.print(layers.map((l) => l.text).join("\n\n"));

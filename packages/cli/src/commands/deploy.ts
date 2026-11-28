@@ -1,9 +1,9 @@
 /**
- * `instinct deploy`: create one Maritime agent for this owner from a built
+ * `orion deploy`: create one Maritime agent for this owner from a built
  * image. The body mirrors the gateway's provisionUser step so a single-user
  * deploy and a multi-user deploy produce the same kind of agent.
  */
-import { loadConfig, type InstinctConfig } from "@orion-ai/core";
+import { loadConfig, type OrionConfig } from "@orion-ai/core";
 import { parse, str, num, flag, type OptionSpec } from "../args.js";
 import type { CliContext } from "../context.js";
 import { CliError, fetchOf } from "../io.js";
@@ -37,7 +37,7 @@ export interface DeployInput {
   maritimeLlm?: boolean;
   /** Model id. With maritimeLlm it names the proxy model; otherwise it overrides config.model.primary. */
   model?: string;
-  config: InstinctConfig;
+  config: OrionConfig;
   secrets?: InkboxSecrets;
   env: NodeJS.ProcessEnv;
 }
@@ -55,10 +55,10 @@ function pushVar(vars: MaritimeEnvVar[], key: string, value: string | undefined,
   vars.push({ key, value, isSecret });
 }
 
-/** The INSTINCT_MODEL the agent boots with. */
+/** The ORION_MODEL the agent boots with. */
 export function modelSpecFor(input: Pick<DeployInput, "maritimeLlm" | "model" | "config" | "env">): string {
   if (input.maritimeLlm) {
-    const id = input.model?.trim() || input.env.INSTINCT_MARITIME_MODEL?.trim() || DEFAULT_MARITIME_LLM_MODEL;
+    const id = input.model?.trim() || input.env.ORION_MARITIME_MODEL?.trim() || DEFAULT_MARITIME_LLM_MODEL;
     return id.includes("/") ? id : `openai-compatible/${id}`;
   }
   return input.model?.trim() || input.config.model.primary;
@@ -68,17 +68,17 @@ export function modelSpecFor(input: Pick<DeployInput, "maritimeLlm" | "model" | 
 export function buildCreateBody(input: DeployInput): CreateAgentBody {
   const { config, secrets, env } = input;
   const handle = secrets?.handle ?? config.agent.handle ?? env.INKBOX_AGENT_HANDLE;
-  if (!handle) throw new CliError("No agent handle. Run `instinct init --handle <handle>` first.");
+  if (!handle) throw new CliError("No agent handle. Run `orion init --handle <handle>` first.");
   const vars: MaritimeEnvVar[] = [];
   pushVar(vars, "PORT", String(MARITIME_AGENT_PORT), false);
-  pushVar(vars, "INSTINCT_DATA_DIR", "/data", false);
-  pushVar(vars, "INSTINCT_OWNER_NAME", config.owner.name, false);
-  pushVar(vars, "INSTINCT_OWNER_PHONE", config.owner.phones[0], false);
-  pushVar(vars, "INSTINCT_OWNER_EMAIL", config.owner.emails[0], false);
-  pushVar(vars, "INSTINCT_OWNER_TIMEZONE", config.owner.timezone, false);
-  pushVar(vars, "INSTINCT_AGENT_NAME", config.agent.name, false);
-  pushVar(vars, "INSTINCT_MODEL", modelSpecFor(input), false);
-  pushVar(vars, "INSTINCT_COMPUTER", input.desktop ? "auto" : "none", false);
+  pushVar(vars, "ORION_DATA_DIR", "/data", false);
+  pushVar(vars, "ORION_OWNER_NAME", config.owner.name, false);
+  pushVar(vars, "ORION_OWNER_PHONE", config.owner.phones[0], false);
+  pushVar(vars, "ORION_OWNER_EMAIL", config.owner.emails[0], false);
+  pushVar(vars, "ORION_OWNER_TIMEZONE", config.owner.timezone, false);
+  pushVar(vars, "ORION_AGENT_NAME", config.agent.name, false);
+  pushVar(vars, "ORION_MODEL", modelSpecFor(input), false);
+  pushVar(vars, "ORION_COMPUTER", input.desktop ? "auto" : "none", false);
   pushVar(vars, "INKBOX_AGENT_HANDLE", handle, false);
   pushVar(vars, "INKBOX_IDENTITY_ID", secrets?.identityId ?? env.INKBOX_IDENTITY_ID, false);
   pushVar(vars, "INKBOX_API_KEY", secrets?.apiKey ?? env.INKBOX_API_KEY, true);
@@ -111,7 +111,7 @@ export function buildCreateBody(input: DeployInput): CreateAgentBody {
   }
 
   const body: CreateAgentBody = {
-    name: input.name ?? `instinct-${handle}`,
+    name: input.name ?? `orion-${handle}`,
     framework: "custom",
     imageName: input.image,
     exposedPort: MARITIME_AGENT_PORT,
@@ -178,7 +178,7 @@ export async function runDeploy(ctx: CliContext, argv: string[]): Promise<number
 
   ctx.print(`${c.green("Agent created")}: ${agent.id}${agent.status ? `  (${agent.status})` : ""}`);
   ctx.print(`  dashboard  ${dashboardUrl(ctx.env, agent.id)}`);
-  ctx.print(`  chat       instinct chat "hello" --agent ${agent.id}`);
+  ctx.print(`  chat       orion chat "hello" --agent ${agent.id}`);
   ctx.print(`  saved      ${state.path("maritime.json")}`);
   if (maritimeLlm) ctx.print(`  model      ${modelSpecFor({ maritimeLlm, model: str(values, "model"), config, env: ctx.env })} through Maritime's metered proxy`);
   ctx.print();
@@ -186,6 +186,6 @@ export async function runDeploy(ctx: CliContext, argv: string[]): Promise<number
   ctx.print("  Maritime agents sleep between messages, so Inkbox must hit something that is always up:");
   ctx.print(`  a) run the gateway (packages/gateway) and point it at agent ${agent.id}; it verifies the`);
   ctx.print("     signature and relays each event through POST /api/agents/<id>/chat, which wakes the VM;");
-  ctx.print("  b) or self-host instead: `instinct dev --tunnel` keeps an Inkbox tunnel open from your machine.");
+  ctx.print("  b) or self-host instead: `orion dev --tunnel` keeps an Inkbox tunnel open from your machine.");
   return 0;
 }

@@ -96,7 +96,7 @@ export function renderLanding(opts: LandingOptions): string {
   const err = (k: string) => (opts.errors?.[k] ? `<div class="error">${escapeHtml(opts.errors[k] ?? "")}</div>` : "");
   const form = opts.signupEnabled
     ? `<form class="card" method="post" action="/api/signup">
-  <h2 style="margin-top:0">Get your Instinct</h2>
+  <h2 style="margin-top:0">Get your Orion</h2>
   ${err("form")}
   <label for="name">Your name</label>
   <input id="name" name="name" required maxlength="80" autocomplete="name" value="${v("name")}">
@@ -104,10 +104,10 @@ export function renderLanding(opts: LandingOptions): string {
   <label for="phone">Phone <small>the number you will text from</small></label>
   <input id="phone" name="phone" type="tel" required inputmode="tel" autocomplete="tel" placeholder="+1 415 555 0123" value="${v("phone")}">
   ${err("phone")}
-  <label for="email">Email <small>optional, lets your Instinct know it is you on email</small></label>
+  <label for="email">Email <small>optional, lets your Orion know it is you on email</small></label>
   <input id="email" name="email" type="email" autocomplete="email" value="${v("email")}">
   ${err("email")}
-  <label for="handle">Handle <small>your Instinct's address: letters, digits, dashes</small></label>
+  <label for="handle">Handle <small>your Orion's address: letters, digits, dashes</small></label>
   <input id="handle" name="handle" required minlength="3" maxlength="40" pattern="[A-Za-z0-9-]{3,40}" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="maria" value="${v("handle")}">
   ${err("handle")}
   ${
@@ -117,7 +117,7 @@ export function renderLanding(opts: LandingOptions): string {
   ${err("inviteCode")}`
       : ""
   }
-  <button class="btn" type="submit">Create my Instinct</button>
+  <button class="btn" type="submit">Create my Orion</button>
   <p class="hint">Setup takes about a minute. You will get a number to text and a short connect command.</p>
 </form>`
     : `<div class="card"><h2 style="margin-top:0">Signups are closed here</h2><p class="hint">This gateway only relays messages. To run your own, follow the README on GitHub.</p></div>`;
@@ -125,7 +125,7 @@ export function renderLanding(opts: LandingOptions): string {
   return layout(
     "Orion AI",
     `<h1>A personal agent you text.</h1>
-<p class="lead">It has its own computer, does real tasks, and coordinates with the Instincts of the people you trust. Open source, yours to run.</p>
+<p class="lead">It has its own computer, does real tasks, and coordinates with the Orions of the people you trust. Open source, yours to run.</p>
 <div class="grid three" style="margin-bottom:24px">
   <div class="card feature"><h3>Text it</h3><p>iMessage, SMS or email. Ask for research, plans, bookings, reminders.</p></div>
   <div class="card feature"><h3>It has a computer</h3><p>A Linux desktop in its own VM. Websites, files, logins you hand over live.</p></div>
@@ -232,7 +232,7 @@ ${qr ? `<p class="hint" style="text-align:center;margin-top:22px">Or scan from a
   return layout(
     `Connect @${user.handle}`,
     `<h1>Hi ${escapeHtml(user.name)}.</h1>
-<p class="lead">Your Instinct is <b>@${escapeHtml(user.handle)}</b>. Connect it to your phone in two steps.</p>
+<p class="lead">Your Orion is <b>@${escapeHtml(user.handle)}</b>. Connect it to your phone in two steps.</p>
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><b>Status</b>${statusPill(user)}</div>
   ${statusBlock}
@@ -243,7 +243,7 @@ ${telegramBlock}
 <ol class="steps">
   <li><b>Inkbox links your phone</b> to @${escapeHtml(user.handle)} and the agent gets a message from you.</li>
   <li><b>Your agent introduces itself</b> and asks what you want it to know about you.</li>
-  <li><b>Add people.</b> Say "Sam is my partner" or "invite Priya's Instinct" to build your trusted network.</li>
+  <li><b>Add people.</b> Say "Sam is my partner" or "invite Priya's Orion" to build your trusted network.</li>
 </ol>
 <p class="hint">Bookmark this page: <a href="/connect/${encodeURIComponent(user.id)}">/connect/${escapeHtml(user.id)}</a></p>`,
     { refreshSeconds: provisioning ? 5 : undefined },
@@ -253,7 +253,7 @@ ${telegramBlock}
 /**
  * Shown when the phone or handle already belongs to a record. It says the same
  * thing whether or not an account exists, so the form cannot be used to check
- * who has an Instinct. The connect command is built from what the caller typed.
+ * who has an Orion. The connect command is built from what the caller typed.
  */
 export function renderPending(handle: string, router: ConnectRouter | undefined): string {
   const command = connectCommandFor(handle);
@@ -267,9 +267,9 @@ ${smsHref ? `<a class="btn" href="${smsHref}">Open Messages with it filled in</a
   return layout(
     "Check your phone",
     `<h1>Check your phone.</h1>
-<p class="lead">If this number is new here, your Instinct is being set up. If it already has one, nothing changed.</p>
+<p class="lead">If this number is new here, your Orion is being set up. If it already has one, nothing changed.</p>
 <div class="card">
-  <p class="hint">Setup takes about a minute. Your Instinct replies on iMessage once it is ready. If you saved a connect link earlier, keep using that one.</p>
+  <p class="hint">Setup takes about a minute. Your Orion replies on iMessage once it is ready. If you saved a connect link earlier, keep using that one.</p>
   ${routerBlock}
 </div>`,
   );
@@ -280,8 +280,8 @@ export function renderLinkDone(ok: boolean): string {
   return layout(
     ok ? "Connected" : "Not connected",
     ok
-      ? `<h1>Connected.</h1><div class="card"><p>Your Link wallet is on its way to your Instinct. Go back to your messages; it will confirm there.</p></div>`
-      : `<h1>Not connected.</h1><div class="card"><div class="error">The wallet connection could not be handed to your Instinct right now. Ask it to try again from your messages.</div></div>`,
+      ? `<h1>Connected.</h1><div class="card"><p>Your Link wallet is on its way to your Orion. Go back to your messages; it will confirm there.</p></div>`
+      : `<h1>Not connected.</h1><div class="card"><div class="error">The wallet connection could not be handed to your Orion right now. Ask it to try again from your messages.</div></div>`,
   );
 }
 

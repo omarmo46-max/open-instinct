@@ -70,7 +70,7 @@ function tools(opts: { run: RunCli; fetchImpl?: typeof fetch; root?: string; cre
     credentials: opts.credentials ?? { clientId: "agent_test", clientSecret: "client-secret-value" },
     workspaceDir: root,
     resolvePath: resolver(root),
-    env: { PATH: "/usr/bin", HOME: "/home/instinct", ANTHROPIC_API_KEY: "sk-ant-secret", INKBOX_API_KEY: "ik_secret" },
+    env: { PATH: "/usr/bin", HOME: "/home/orion", ANTHROPIC_API_KEY: "sk-ant-secret", INKBOX_API_KEY: "ik_secret" },
     fetchImpl: (opts.fetchImpl ?? tokenFetch()) as typeof fetch,
     run: opts.run,
   });

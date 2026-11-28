@@ -15,13 +15,13 @@ button you start it from depends on the model (see [Start it](#4-start-it)).
 | Need | Why |
 |---|---|
 | A server URL your phone can reach over **HTTPS** | The Shortcut is an HTTP client. A Maritime VM has no public port ([DEPLOY-MARITIME.md](DEPLOY-MARITIME.md)), so use a self-hosted agent behind a reverse proxy, a Cloudflare Tunnel, or Tailscale ([SELF-HOST.md](SELF-HOST.md)). Never expose it over plain HTTP. |
-| `INSTINCT_CHAT_TOKEN` set on the agent | `/voice` is the owner's surface. Without a token it is open to anyone who can reach the port. The Shortcut sends this token. |
+| `ORION_CHAT_TOKEN` set on the agent | `/voice` is the owner's surface. Without a token it is open to anyone who can reach the port. The Shortcut sends this token. |
 | Speech to text: `STT_API_KEY` (or `OPENAI_API_KEY`) | Without it the agent cannot hear you and `/voice` answers `422` with an explanation. `STT_BASE_URL`, `STT_MODEL` and `STT_LANGUAGE` are optional ([KEYS.md](KEYS.md)). |
 
 ## 1. Check the server first (2 minutes, from a computer)
 
 ```bash
-node examples/voice-check.mjs https://your-agent.example.com/voice ./hello.m4a "$INSTINCT_CHAT_TOKEN"
+node examples/voice-check.mjs https://your-agent.example.com/voice ./hello.m4a "$ORION_CHAT_TOKEN"
 ```
 
 It prints the HTTP status, what the agent heard (`transcript`) and its answer (`response`). If this
@@ -40,7 +40,7 @@ Open **Shortcuts**, tap **+**, and add these four actions in order.
 3. **Get Dictionary Value**. Get **Value** for key `response` in *Contents of URL*.
 4. **Speak Text** with *Dictionary Value*.
 
-Name it for how you will call it, for example "Ask Instinct". Optionally add **Show Result** with the
+Name it for how you will call it, for example "Ask Orion". Optionally add **Show Result** with the
 `transcript` value (a second *Get Dictionary Value*) to see what the agent heard.
 
 Why the `Content-Type` header: the server accepts `audio/*`, `video/mp4` and `application/octet-stream`.
@@ -56,7 +56,7 @@ Set it explicitly so the request never goes out as JSON or form data.
 | Status | Meaning | What to do |
 |---|---|---|
 | `200` | Heard and answered. `response` is the reply. | Nothing. |
-| `200` with `response` "On it. I will send the result when it is done." | The agent needs longer than `INSTINCT_REPLY_BUDGET_MS` (default 20 s). | Replies that finish later are held for the voice conversation and come back in `pending` on your next recording. Ask "anything new?" to collect it. |
+| `200` with `response` "On it. I will send the result when it is done." | The agent needs longer than `ORION_REPLY_BUDGET_MS` (default 20 s). | Replies that finish later are held for the voice conversation and come back in `pending` on your next recording. Ask "anything new?" to collect it. |
 | `401` | Missing or wrong token. | Check the `Authorization` header: `Bearer ` then the token, nothing else. |
 | `415` | The request was not audio. | Check the `Content-Type` header and that the body is *File*. |
 | `400` / `413` | Empty recording, or over 25 MB. | Record again; keep it short. |
@@ -66,9 +66,9 @@ Set it explicitly so the request never goes out as JSON or form data.
 
 ## 4. Start it
 
-- **iPhone 15 Pro and later (iOS 17.2+), Action Button**: Settings, Action Button, **Shortcut**, pick "Ask Instinct".
+- **iPhone 15 Pro and later (iOS 17.2+), Action Button**: Settings, Action Button, **Shortcut**, pick "Ask Orion".
 - **Any iPhone, Back Tap** (iOS 14+): Settings, Accessibility, Touch, **Back Tap**, Double Tap, then pick the Shortcut under *Shortcuts*.
-- **Any iPhone, Siri**: say "Hey Siri, Ask Instinct".
+- **Any iPhone, Siri**: say "Hey Siri, Ask Orion".
 - **Home Screen**: in the Shortcut, tap the name at the top, **Add to Home Screen**.
 - **Lock Screen / Control Center** on newer iOS versions also offer a Shortcut control.
 
@@ -88,7 +88,7 @@ Run this once on your iPhone and tick every line before you call it done.
 
 ## الخلاصة بالعربي
 
-1. شغّل الوكيل على سيرفر له رابط HTTPS، واضبط `INSTINCT_CHAT_TOKEN` و`STT_API_KEY`.
+1. شغّل الوكيل على سيرفر له رابط HTTPS، واضبط `ORION_CHAT_TOKEN` و`STT_API_KEY`.
 2. جرّب السيرفر من الكمبيوتر بـ `examples/voice-check.mjs` قبل ما تبني الاختصار.
 3. في تطبيق الاختصارات: **Record Audio** ثم **Get Contents of URL** (POST على `/voice`، الهيدر `Authorization: Bearer ...` و`Content-Type: audio/mp4`، والـ Body ملف التسجيل) ثم **Get Dictionary Value** للمفتاح `response` ثم **Speak Text**.
 4. شغّله بزر الأكشن (iPhone 15 Pro وأحدث) أو النقر على الظهر (Back Tap) أو "Hey Siri".

@@ -4,7 +4,7 @@ import { ANY, LOOPBACK, bindHostFor } from "../src/bind.js";
 describe("bindHostFor", () => {
   it("is loopback for a bare local run", () => {
     expect(bindHostFor({})).toBe(LOOPBACK);
-    expect(bindHostFor({ INSTINCT_TUNNEL: "1", INKBOX_API_KEY: "k" })).toBe(LOOPBACK);
+    expect(bindHostFor({ ORION_TUNNEL: "1", INKBOX_API_KEY: "k" })).toBe(LOOPBACK);
     expect(bindHostFor({ PORT: "  " })).toBe(LOOPBACK);
   });
 
@@ -15,8 +15,8 @@ describe("bindHostFor", () => {
     expect(bindHostFor({ MARITIME_DESKTOP: "1" })).toBe(ANY);
   });
 
-  it("INSTINCT_BIND wins", () => {
-    expect(bindHostFor({ INSTINCT_BIND: "10.0.0.5", PORT: "8080" })).toBe("10.0.0.5");
-    expect(bindHostFor({ INSTINCT_BIND: "127.0.0.1", MARITIME_AGENT_ID: "a" })).toBe(LOOPBACK);
+  it("ORION_BIND wins", () => {
+    expect(bindHostFor({ ORION_BIND: "10.0.0.5", PORT: "8080" })).toBe("10.0.0.5");
+    expect(bindHostFor({ ORION_BIND: "127.0.0.1", MARITIME_AGENT_ID: "a" })).toBe(LOOPBACK);
   });
 });

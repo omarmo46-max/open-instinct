@@ -14,7 +14,7 @@ it("waits for admitted work before allowing the same app's inbox to reopen", asy
   const started = new Promise<void>((resolve) => { began = resolve; });
   const app: HttpApp = {
     state,
-    config: loadConfig(state, { INSTINCT_OWNER_NAME: "Test" }),
+    config: loadConfig(state, { ORION_OWNER_NAME: "Test" }),
     startedAt: Date.now(),
     modelSpec: "test/model",
     scheduler: { toMaritimeSchedules: () => [] },

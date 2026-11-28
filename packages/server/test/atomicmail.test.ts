@@ -61,18 +61,18 @@ afterEach(() => {
 });
 
 async function bootWith(extra: NodeJS.ProcessEnv, fetchImpl: typeof fetch) {
-  const dataDir = mkdtempSync(join(tmpdir(), "instinct-boot-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "orion-boot-"));
   dirs.push(dataDir);
   const env: NodeJS.ProcessEnv = {
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Test Owner",
-    INSTINCT_OWNER_PHONE: "+15550001111",
-    INSTINCT_OWNER_EMAIL: "owner@example.com",
-    INSTINCT_OWNER_TIMEZONE: "America/New_York",
-    INSTINCT_AGENT_NAME: "Test",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Test Owner",
+    ORION_OWNER_PHONE: "+15550001111",
+    ORION_OWNER_EMAIL: "owner@example.com",
+    ORION_OWNER_TIMEZONE: "America/New_York",
+    ORION_AGENT_NAME: "Test",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
     ...extra,
   };
   const faux = fauxProvider({ provider: "faux", models: [{ id: "faux-1" }] });

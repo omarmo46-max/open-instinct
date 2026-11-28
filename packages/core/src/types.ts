@@ -197,7 +197,7 @@ export interface OutboundMessage {
 }
 
 /** The envelope the gateway wraps Inkbox events in when relaying through Maritime /chat. */
-export const EVENT_ENVELOPE_PREFIX = "@@instinct-event@@";
+export const EVENT_ENVELOPE_PREFIX = "@@orion-event@@";
 
 // ---------------------------------------------------------------------------
 // Scheduling
@@ -314,7 +314,7 @@ export interface TriggersConfig {
   maxPerRun: number;
 }
 
-export interface InstinctConfig {
+export interface OrionConfig {
   version: 1;
   owner: OwnerProfile;
   agent: { name: string; handle?: string; persona?: string; /** Inkbox Voice AI voice id for phone calls. INKBOX_VOICE overrides it. */ voice?: string };

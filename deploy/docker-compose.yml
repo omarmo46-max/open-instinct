@@ -4,7 +4,7 @@
 #
 # The agent answers on http://127.0.0.1:8080 (POST /chat {"message": "hi"}). The port is
 # published on loopback only: /chat is the owner's surface and has no login of its own.
-# Set INSTINCT_CHAT_TOKEN in deploy/.env and send it as `Authorization: Bearer <token>`
+# Set ORION_CHAT_TOKEN in deploy/.env and send it as `Authorization: Bearer <token>`
 # if anything but this machine should be able to talk to the agent.
 # Without Inkbox keys the agent still runs: replies go to its console outbox (docker logs).
 #
@@ -24,8 +24,8 @@ services:
       - .env
     environment:
       PORT: "8080"
-      INSTINCT_DATA_DIR: /data
-      INSTINCT_SKILLS_DIR: /app/skills
+      ORION_DATA_DIR: /data
+      ORION_SKILLS_DIR: /app/skills
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

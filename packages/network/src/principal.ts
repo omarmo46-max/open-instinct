@@ -1,6 +1,6 @@
 import type { Contact, ContactStore, Tier } from "@orion-ai/core";
 
-/** Inkbox handles arrive as `@maria-instinct`, `maria-instinct` or mixed case. Compare in one form. */
+/** Inkbox handles arrive as `@maria-orion`, `maria-orion` or mixed case. Compare in one form. */
 export function normalizeAgentHandle(handle: string): string {
   return handle.trim().replace(/^@+/, "").toLowerCase();
 }

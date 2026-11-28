@@ -6,14 +6,12 @@ Short answers to the questions people ask first. Longer explanations live in
 
 ## The project
 
-### 1. How is this different from Instinct?
+### 1. What is Orion AI?
 
-Instinct is a closed, invite-only product by Spear Street Technology. You cannot read its
-code, pick its model or see its permission rules. Orion AI keeps the same shape (a
-phone number, its own computer, a trusted network of other agents) and opens the box. The
-code is MIT. The model is yours to choose. The tier table is a JSON file with tests. Memory
-is Markdown you can read. Every side effect is in an audit log. Background on Instinct:
-[research/INSTINCT.md](research/INSTINCT.md).
+A personal agent you text. It has its own computer, a chat line (Telegram, iMessage, SMS,
+email or WhatsApp) and a trusted network of other agents. The code is MIT. The model is yours
+to choose. The tier table is a JSON file with tests. Memory is Markdown you can read. Every
+side effect is in an audit log.
 
 ### 2. How is this different from OpenClaw?
 
@@ -22,14 +20,11 @@ store. It needs a signed-in Mac for iMessage. Orion AI is a narrower product: on
 per person, text-first, with a trust network between agents. It uses Pi, the same agent
 loop OpenClaw grew out of, and gets iMessage through Inkbox, so no Mac is involved.
 
-### 3. How is this different from Merit Systems' OpenInstinct?
+### 3. What is it built on?
 
-They are unrelated projects with similar names. Merit Systems' OpenInstinct is a Next.js
-app on Vercel with Postgres, a cloud browser from Kernel and an iMessage line from Linq.
-Orion AI (this project, package scope `@orion-ai/*`) is a Node service that runs
-one process per person on Maritime or on your own machine, uses Inkbox for identity and
-Pi for the agent loop, and adds the tiered trust network and the OIP/1 protocol between
-agents.
+A Node service that runs one process per person on Maritime or on your own machine. It uses
+Inkbox for identity and Pi for the agent loop (package scope `@orion-ai/*`), and adds the
+tiered trust network and the OIP/1 protocol between agents.
 
 ### 4. What does "version 0.1" mean for me?
 
@@ -42,15 +37,15 @@ Expect rough edges.
 
 ### 5. Do I need Maritime?
 
-No. `instinct dev` runs the agent on your own machine. Maritime gives the agent its own
+No. `orion dev` runs the agent on your own machine. Maritime gives the agent its own
 Linux desktop in a microVM that sleeps when idle and wakes on a message. Without Maritime
 there are two choices for the desktop: the hosted Computers MCP (needs `MARITIME_API_KEY`)
-or no desktop at all (`INSTINCT_COMPUTER=none`). Everything else works without it.
+or no desktop at all (`ORION_COMPUTER=none`). Everything else works without it.
 
 ### 6. Do I need Inkbox?
 
-Only for a phone number. Without it, `instinct init --skip-inkbox` and `instinct dev` give
-you an agent you talk to with `instinct chat "..."`. Nothing leaves the process on the
+Only for a phone number. Without it, `orion init --skip-inkbox` and `orion dev` give
+you an agent you talk to with `orion chat "..."`. Nothing leaves the process on the
 messaging side. With Inkbox you get iMessage, SMS, email and the agent-to-agent endpoint.
 
 ### 7. Can I use OpenAI or a local model?
@@ -59,12 +54,12 @@ Yes. The model is `provider/model-id` from the Pi catalog.
 
 | Want | Set |
 |---|---|
-| Claude (default) | `INSTINCT_MODEL=anthropic/claude-fable-5-1`, `ANTHROPIC_API_KEY` |
-| OpenAI | `INSTINCT_MODEL=openai/gpt-5.4`, `OPENAI_API_KEY` |
-| Ollama, vLLM, LiteLLM, any OpenAI-compatible server | `INSTINCT_MODEL=openai-compatible/<model-id>`, `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_API_KEY` if the server checks it |
-| No key of your own, on Maritime | `instinct deploy --maritime-llm`; Maritime injects its metered proxy |
+| Claude (default) | `ORION_MODEL=anthropic/claude-fable-5-1`, `ANTHROPIC_API_KEY` |
+| OpenAI | `ORION_MODEL=openai/gpt-5.4`, `OPENAI_API_KEY` |
+| Ollama, vLLM, LiteLLM, any OpenAI-compatible server | `ORION_MODEL=openai-compatible/<model-id>`, `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_API_KEY` if the server checks it |
+| No key of your own, on Maritime | `orion deploy --maritime-llm`; Maritime injects its metered proxy |
 
-`instinct init --model provider/id` writes the choice into `config.json`. A small local
+`orion init --model provider/id` writes the choice into `config.json`. A small local
 model will be slower and will make more mistakes with tools; the policy guard still holds.
 
 ### 8. How much does it cost to run?
@@ -85,38 +80,37 @@ change; check each provider.
 ### 9. Do I need an iPhone?
 
 No. iMessage is the nicest path, but the Inkbox identity also has an email address, and
-`instinct init --phone-number` buys an SMS line. Android users text the SMS line or email
+`orion init --phone-number` buys an SMS line. Android users text the SMS line or email
 the agent.
 
 ### 10. How do I give it an iMessage line?
 
 ```bash
 export INKBOX_ADMIN_API_KEY=ApiKey_...
-instinct init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-instinct
-instinct dev --tunnel
-instinct connect
+orion init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-orion
+orion dev --tunnel
+orion connect
 ```
 
-`instinct connect` prints a router number and the text `connect @maria-instinct`. Send that
+`orion connect` prints a router number and the text `connect @maria-orion`. Send that
 text from your phone. Your agent answers on iMessage.
 
 ### 11. What is the gateway and when do I need it?
 
 Only when you run Orion AI for many people. The gateway is a signup page plus a
 stateless relay: it provisions one Inkbox identity and one Maritime agent per person and
-forwards their webhooks to the right agent. For one person, `instinct dev` or
-`instinct deploy` is enough. Details: [../packages/gateway/README.md](../packages/gateway/README.md).
+forwards their webhooks to the right agent. For one person, `orion dev` or
+`orion deploy` is enough. Details: [../packages/gateway/README.md](../packages/gateway/README.md).
 
 ## Trust and the network
 
-### 12. Can two Orion AI agents coordinate with an Instinct user?
+### 12. Can an Orion AI agent coordinate with agents from other products?
 
 Two Orion AI agents talk to each other over A2A through Inkbox with the OIP/1 intents
-described in [PROTOCOL.md](PROTOCOL.md). An Instinct user's agent speaks a different,
-closed protocol, so the two agents cannot talk directly. The fallback is the same as for
-anyone without an agent: your Orion AI texts or emails the human, offers the options
-in plain words, and reads their reply. A dinner still gets booked. It takes a few more
-messages.
+described in [PROTOCOL.md](PROTOCOL.md). An agent from another product that speaks a
+different protocol cannot talk to it directly. The fallback is the same as for anyone
+without an agent: your Orion AI texts or emails the human, offers the options in plain
+words, and reads their reply. A dinner still gets booked. It takes a few more messages.
 
 ### 13. What can my partner's agent see?
 
@@ -131,10 +125,10 @@ In chat: "Sam is my partner", "Let Alex see my calendar this week", "Stop sharin
 location with family". Or from the terminal:
 
 ```bash
-instinct trust list
-instinct trust set sam-lee partner
-instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150
-instinct trust revoke <grantId>
+orion trust list
+orion trust set sam-lee partner
+orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150
+orion trust revoke <grantId>
 ```
 
 ### 15. Can the agent spend my money?
@@ -146,7 +140,7 @@ is shown once to the model and is never written to disk. Link Agent Wallet serve
 the United States and Canada. The operator first needs a Link OAuth client, which Stripe
 grants by application (a short form, reviewed every 3 to 5 days); see
 [PAYMENTS.md](PAYMENTS.md#registering-an-oauth-client). Then the owner connects with
-`instinct payments connect` or by texting "connect my wallet".
+`orion payments connect` or by texting "connect my wallet".
 Details: [../packages/payments/README.md](../packages/payments/README.md).
 
 ### 16. Should I give it my passwords?
@@ -175,7 +169,7 @@ web requests the agent makes on purpose.
 
 ### 18. Where is my data and can I read it?
 
-All state is plain files under the data directory (`./.instinct` locally, `/data` on
+All state is plain files under the data directory (`./.orion` locally, `/data` on
 Maritime). `memory/MEMORY.md` is the agent's notebook. `memory/journal/` has one file per
 day. `contacts.json` is the people and their tiers. `audit.jsonl` is every action.
 `sessions/` holds the transcripts. You can open, edit or delete any of them. Layout:

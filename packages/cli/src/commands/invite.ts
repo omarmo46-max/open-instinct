@@ -1,5 +1,5 @@
 /**
- * `instinct invite <name> --tier friend`: put a person in the trusted network
+ * `orion invite <name> --tier friend`: put a person in the trusted network
  * and, when we have an admin key, create an Inkbox A2A invitation their agent
  * can accept.
  */
@@ -31,7 +31,7 @@ export function parseTier(value: string | undefined, command: string): Tier {
 export async function runInvite(ctx: CliContext, argv: string[]): Promise<number> {
   const { values, positionals } = parse("invite", argv, inviteOptions);
   const name = positionals.join(" ").trim();
-  if (!name) throw new UsageError("invite needs a contact name: instinct invite \"Sam Lee\" --tier friend", "invite");
+  if (!name) throw new UsageError("invite needs a contact name: orion invite \"Sam Lee\" --tier friend", "invite");
   const tier = parseTier(str(values, "tier"), "invite");
   const email = str(values, "email");
   const phone = str(values, "phone");
@@ -62,7 +62,7 @@ export async function runInvite(ctx: CliContext, argv: string[]): Promise<number
   const secrets = readSecrets(ctx.dataDir);
   const ourHandle = secrets?.handle ?? ctx.env.INKBOX_AGENT_HANDLE ?? loadConfig(ctx.state(), ctx.env).agent.handle;
   if (!ourHandle) {
-    ctx.warn("Our own handle is unknown; run `instinct init --handle` before inviting agents.");
+    ctx.warn("Our own handle is unknown; run `orion init --handle` before inviting agents.");
     return 0;
   }
   const provisioner = makeProvisioner(ctx.io, ctx.env, adminKey);
@@ -77,7 +77,7 @@ export async function runInvite(ctx: CliContext, argv: string[]): Promise<number
   if (invitation.invitationUrl) ctx.print(`  link    ${invitation.invitationUrl}`);
   if (invitation.invitationToken) ctx.print(`  token   ${invitation.invitationToken}`);
   if (invitation.agentHandoffPrompt) {
-    ctx.print("  Forward this to their Instinct (or paste it into any agent):");
+    ctx.print("  Forward this to their Orion (or paste it into any agent):");
     ctx.print(indent(invitation.agentHandoffPrompt, "    "));
   }
   if (email) ctx.print(c.dim(`  Inkbox also emailed ${email}.`));

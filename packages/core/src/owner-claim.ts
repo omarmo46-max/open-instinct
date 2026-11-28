@@ -9,7 +9,7 @@
  * Texting first is not enough: without a valid code configured, claiming is off.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
-import type { InstinctConfig } from "./types.js";
+import type { OrionConfig } from "./types.js";
 
 /** Shortest code (letters and digits only) we accept. Front doors should use 16+ random characters. */
 export const MIN_CLAIM_CODE_LENGTH = 8;
@@ -28,12 +28,12 @@ export function normalizeClaimCode(s: string): string {
 export type ClaimStatus = { enabled: true; code: string } | { enabled: false; reason: string };
 
 /** Whether this config can be claimed right now, and if not, why (for the boot warning). */
-export function ownerClaimStatus(config: InstinctConfig, now: Date = new Date()): ClaimStatus {
+export function ownerClaimStatus(config: OrionConfig, now: Date = new Date()): ClaimStatus {
   const owner = config.owner;
   if (!owner.claimOnFirstContact) return { enabled: false, reason: "claimOnFirstContact is not set" };
   if (owner.phones.length > 0 || (owner.telegramIds?.length ?? 0) > 0) return { enabled: false, reason: "the owner already has a phone or Telegram account" };
   const code = normalizeClaimCode(owner.claimCode ?? "");
-  if (!code) return { enabled: false, reason: "no claim code is configured (INSTINCT_OWNER_CLAIM_CODE)" };
+  if (!code) return { enabled: false, reason: "no claim code is configured (ORION_OWNER_CLAIM_CODE)" };
   if (code.length < MIN_CLAIM_CODE_LENGTH) return { enabled: false, reason: `the claim code is shorter than ${MIN_CLAIM_CODE_LENGTH} letters and digits` };
   if (owner.claimExpiresAt !== undefined) {
     const expires = Date.parse(owner.claimExpiresAt);

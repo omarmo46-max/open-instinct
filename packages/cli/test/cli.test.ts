@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ContactStore, Scheduler, StateDir, loadPolicy, type InstinctConfig } from "@orion-ai/core";
+import { ContactStore, Scheduler, StateDir, loadPolicy, type OrionConfig } from "@orion-ai/core";
 import { COMMAND_NAMES, keepsRunning } from "../src/cli.js";
 import { fakeFetch, json, readJson, run, tmpDir } from "./helpers.js";
 
@@ -10,7 +10,7 @@ describe("help", () => {
     const r = await run([]);
     expect(r.code).toBe(0);
     for (const name of COMMAND_NAMES) expect(r.out).toContain(name);
-    expect(r.out).toContain("instinct init --name");
+    expect(r.out).toContain("orion init --name");
     expect(r.out).toContain("--data-dir");
   });
 
@@ -36,7 +36,7 @@ describe("help", () => {
 
   it("prints the version", async () => {
     const r = await run(["--version"]);
-    expect(r.out).toMatch(/^instinct \d+\.\d+\.\d+/);
+    expect(r.out).toMatch(/^orion \d+\.\d+\.\d+/);
   });
 });
 
@@ -44,17 +44,17 @@ describe("init", () => {
   it("writes config.json from flags and reports no Inkbox provisioning without an admin key", async () => {
     const dir = tmpDir();
     const r = await run(
-      ["init", "--name", "Maria", "--phone", "+14155550100", "--email", "maria@example.com", "--handle", "maria-instinct", "--model", "anthropic/claude-fable-5-1", "--timezone", "America/New_York"],
-      { INSTINCT_DATA_DIR: dir },
+      ["init", "--name", "Maria", "--phone", "+14155550100", "--email", "maria@example.com", "--handle", "maria-orion", "--model", "anthropic/claude-fable-5-1", "--timezone", "America/New_York"],
+      { ORION_DATA_DIR: dir },
     );
     expect(r.code, r.err).toBe(0);
     expect(r.out).toContain("Wrote");
-    const config = readJson<InstinctConfig>(dir, "config.json");
+    const config = readJson<OrionConfig>(dir, "config.json");
     expect(config.owner.name).toBe("Maria");
     expect(config.owner.phones).toContain("+14155550100");
     expect(config.owner.emails).toContain("maria@example.com");
     expect(config.owner.timezone).toBe("America/New_York");
-    expect(config.agent.handle).toBe("maria-instinct");
+    expect(config.agent.handle).toBe("maria-orion");
     expect(config.model.primary).toBe("anthropic/claude-fable-5-1");
     expect(r.out).toContain("No INKBOX_ADMIN_API_KEY");
     expect(fs.existsSync(path.join(dir, "secrets", "inkbox.json"))).toBe(false);
@@ -62,11 +62,11 @@ describe("init", () => {
 
   it("updates an existing config instead of discarding it", async () => {
     const dir = tmpDir();
-    await run(["init", "--name", "Maria", "--phone", "+14155550100"], { INSTINCT_DATA_DIR: dir });
-    const r = await run(["init", "--name", "Maria G", "--email", "m@example.com"], { INSTINCT_DATA_DIR: dir });
+    await run(["init", "--name", "Maria", "--phone", "+14155550100"], { ORION_DATA_DIR: dir });
+    const r = await run(["init", "--name", "Maria G", "--email", "m@example.com"], { ORION_DATA_DIR: dir });
     expect(r.code, r.err).toBe(0);
     expect(r.out).toContain("Updated");
-    const config = readJson<InstinctConfig>(dir, "config.json");
+    const config = readJson<OrionConfig>(dir, "config.json");
     expect(config.owner.name).toBe("Maria G");
     expect(config.owner.phones).toContain("+14155550100");
     expect(config.owner.emails).toContain("m@example.com");
@@ -75,14 +75,14 @@ describe("init", () => {
   it("honours --data-dir over the environment", async () => {
     const envDir = tmpDir();
     const flagDir = path.join(tmpDir(), "nested", "state");
-    const r = await run(["init", "--name", "Maria", "--data-dir", flagDir], { INSTINCT_DATA_DIR: envDir });
+    const r = await run(["init", "--name", "Maria", "--data-dir", flagDir], { ORION_DATA_DIR: envDir });
     expect(r.code, r.err).toBe(0);
     expect(fs.existsSync(path.join(flagDir, "config.json"))).toBe(true);
     expect(fs.existsSync(path.join(envDir, "config.json"))).toBe(false);
   });
 
   it("requires --name", async () => {
-    const r = await run(["init"], { INSTINCT_DATA_DIR: tmpDir() });
+    const r = await run(["init"], { ORION_DATA_DIR: tmpDir() });
     expect(r.code).toBe(2);
     expect(r.err).toContain("--name is required");
   });
@@ -90,53 +90,53 @@ describe("init", () => {
   it("refuses the reserved handle `owner` and writes nothing", async () => {
     const dir = tmpDir();
     for (const handle of ["owner", "@Owner"]) {
-      const r = await run(["init", "--name", "Maria", "--handle", handle, "--skip-inkbox"], { INSTINCT_DATA_DIR: dir });
+      const r = await run(["init", "--name", "Maria", "--handle", handle, "--skip-inkbox"], { ORION_DATA_DIR: dir });
       expect(r.code).toBe(2);
       expect(r.err).toContain("reserved");
     }
     expect(fs.existsSync(path.join(dir, "config.json"))).toBe(false);
-    const ok = await run(["init", "--name", "Maria", "--handle", "owner-2", "--skip-inkbox"], { INSTINCT_DATA_DIR: dir });
+    const ok = await run(["init", "--name", "Maria", "--handle", "owner-2", "--skip-inkbox"], { ORION_DATA_DIR: dir });
     expect(ok.code).toBe(0);
   });
 
   it("turns Composio apps on from --apps, --toolkits or a COMPOSIO_API_KEY in env, also on re-run", async () => {
     const dir = tmpDir();
-    await run(["init", "--name", "Maria"], { INSTINCT_DATA_DIR: dir });
-    expect(readJson<InstinctConfig>(dir, "config.json").apps.enabled).toBe(false);
+    await run(["init", "--name", "Maria"], { ORION_DATA_DIR: dir });
+    expect(readJson<OrionConfig>(dir, "config.json").apps.enabled).toBe(false);
 
     // config.json exists now, so core's env seeding no longer applies; init must do it.
-    const viaEnv = await run(["init", "--name", "Maria"], { INSTINCT_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" });
+    const viaEnv = await run(["init", "--name", "Maria"], { ORION_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" });
     expect(viaEnv.code, viaEnv.err).toBe(0);
     expect(viaEnv.out).toContain("apps   on");
-    let config = readJson<InstinctConfig>(dir, "config.json");
+    let config = readJson<OrionConfig>(dir, "config.json");
     expect(config.apps.enabled).toBe(true);
     expect(config.apps.toolkits).toEqual(["gmail", "googlecalendar", "googlecontacts"]);
 
-    await run(["init", "--name", "Maria", "--toolkits", "Gmail, slack"], { INSTINCT_DATA_DIR: dir });
-    config = readJson<InstinctConfig>(dir, "config.json");
+    await run(["init", "--name", "Maria", "--toolkits", "Gmail, slack"], { ORION_DATA_DIR: dir });
+    config = readJson<OrionConfig>(dir, "config.json");
     expect(config.apps.toolkits).toEqual(["gmail", "slack"]);
     expect(config.apps.enabled).toBe(true);
 
-    await run(["init", "--name", "Maria"], { INSTINCT_DATA_DIR: dir, COMPOSIO_TOOLKITS: "notion" });
-    expect(readJson<InstinctConfig>(dir, "config.json").apps.toolkits).toEqual(["notion"]);
+    await run(["init", "--name", "Maria"], { ORION_DATA_DIR: dir, COMPOSIO_TOOLKITS: "notion" });
+    expect(readJson<OrionConfig>(dir, "config.json").apps.toolkits).toEqual(["notion"]);
 
-    const off = await run(["init", "--name", "Maria", "--no-apps"], { INSTINCT_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" });
+    const off = await run(["init", "--name", "Maria", "--no-apps"], { ORION_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" });
     expect(off.code, off.err).toBe(0);
-    config = readJson<InstinctConfig>(dir, "config.json");
+    config = readJson<OrionConfig>(dir, "config.json");
     expect(config.apps.enabled).toBe(false);
     expect(config.apps.toolkits).toEqual(["notion"]);
 
     const fresh = tmpDir();
-    await run(["init", "--name", "Maria", "--apps"], { INSTINCT_DATA_DIR: fresh });
-    expect(readJson<InstinctConfig>(fresh, "config.json").apps.enabled).toBe(true);
-    expect((await run(["init", "--name", "Maria", "--apps", "--no-apps"], { INSTINCT_DATA_DIR: fresh })).code).toBe(2);
+    await run(["init", "--name", "Maria", "--apps"], { ORION_DATA_DIR: fresh });
+    expect(readJson<OrionConfig>(fresh, "config.json").apps.enabled).toBe(true);
+    expect((await run(["init", "--name", "Maria", "--apps", "--no-apps"], { ORION_DATA_DIR: fresh })).code).toBe(2);
   });
 });
 
 describe("trust", () => {
   it("set creates the contact when unknown and changes the tier when known", async () => {
     const dir = tmpDir();
-    const env = { INSTINCT_DATA_DIR: dir };
+    const env = { ORION_DATA_DIR: dir };
     let r = await run(["trust", "set", "Sam Lee", "friend"], env);
     expect(r.code, r.err).toBe(0);
     expect(r.out).toContain("Added");
@@ -151,14 +151,14 @@ describe("trust", () => {
   });
 
   it("rejects an unknown tier and never lets anyone become owner", async () => {
-    const env = { INSTINCT_DATA_DIR: tmpDir() };
+    const env = { ORION_DATA_DIR: tmpDir() };
     expect((await run(["trust", "set", "Sam", "boss"], env)).code).toBe(2);
     expect((await run(["trust", "set", "Sam", "owner"], env)).code).toBe(2);
   });
 
   it("grant writes a scoped, time-boxed grant to policy.json; list shows it; revoke removes it", async () => {
     const dir = tmpDir();
-    const env = { INSTINCT_DATA_DIR: dir };
+    const env = { ORION_DATA_DIR: dir };
     await run(["trust", "set", "Sam Lee", "partner"], env);
     const r = await run(
       ["trust", "grant", "sam-lee", "calendar.write,plans.commit", "--until", "2026-12-31", "--max-usd", "150", "--note", "dinner this week"],
@@ -187,7 +187,7 @@ describe("trust", () => {
 
   it("set refuses staff for a contact without an agent handle, new or existing, and allows it with one", async () => {
     const dir = tmpDir();
-    const env = { INSTINCT_DATA_DIR: dir };
+    const env = { ORION_DATA_DIR: dir };
     const fresh = await run(["trust", "set", "Research", "staff"], env);
     expect(fresh.code).toBe(2);
     expect(fresh.err).toContain('Tier "staff" is only for agents');
@@ -206,7 +206,7 @@ describe("trust", () => {
   });
 
   it("grant refuses unknown capabilities and unknown contacts", async () => {
-    const env = { INSTINCT_DATA_DIR: tmpDir() };
+    const env = { ORION_DATA_DIR: tmpDir() };
     await run(["trust", "set", "Sam", "friend"], env);
     const bad = await run(["trust", "grant", "sam", "launch.rockets"], env);
     expect(bad.code).toBe(2);
@@ -222,7 +222,7 @@ describe("schedules", () => {
     const dir = tmpDir();
     const result = await run(
       ["schedules", "add", "0 9 * * mon-fri", "Morning brief", "--tz", "UTC"],
-      { INSTINCT_DATA_DIR: dir },
+      { ORION_DATA_DIR: dir },
     );
 
     expect(result.code, result.err).toBe(0);
@@ -233,7 +233,7 @@ describe("schedules", () => {
 
   it("adds a cron job, lists it and removes it", async () => {
     const dir = tmpDir();
-    const env = { INSTINCT_DATA_DIR: dir };
+    const env = { ORION_DATA_DIR: dir };
     const add = await run(["schedules", "add", "0 8 * * 1-5", "Morning briefing", "--tz", "America/New_York", "--name", "briefing"], env);
     expect(add.code, add.err).toBe(0);
     const entries = new Scheduler(new StateDir(dir)).list();
@@ -254,7 +254,7 @@ describe("schedules", () => {
 
   it("adds a one-shot job with --at", async () => {
     const dir = tmpDir();
-    const r = await run(["schedules", "add", "--at", "2030-01-01T09:00:00Z", "Remind me about the trip"], { INSTINCT_DATA_DIR: dir });
+    const r = await run(["schedules", "add", "--at", "2030-01-01T09:00:00Z", "Remind me about the trip"], { ORION_DATA_DIR: dir });
     expect(r.code, r.err).toBe(0);
     const [entry] = new Scheduler(new StateDir(dir)).list();
     expect(entry?.cron).toBeUndefined();
@@ -263,15 +263,15 @@ describe("schedules", () => {
 
   it.each(["0 9 * * monkey", "0 9 * janitor *"])("rejects malformed names without saving %s", async (cron) => {
     const dir = tmpDir();
-    const result = await run(["schedules", "add", cron, "Morning brief", "--tz", "UTC"], { INSTINCT_DATA_DIR: dir });
+    const result = await run(["schedules", "add", cron, "Morning brief", "--tz", "UTC"], { ORION_DATA_DIR: dir });
     expect(result.code).toBe(2);
     expect(result.err).toContain("bad value");
-    expect(result.err).toContain("instinct schedules --help");
+    expect(result.err).toContain("orion schedules --help");
     expect(new Scheduler(new StateDir(dir)).list()).toHaveLength(0);
   });
 
   it("rejects malformed cron", async () => {
-    const r = await run(["schedules", "add", "0 8 * *", "too few fields"], { INSTINCT_DATA_DIR: tmpDir() });
+    const r = await run(["schedules", "add", "0 8 * *", "too few fields"], { ORION_DATA_DIR: tmpDir() });
     expect(r.code).toBe(2);
     expect(r.err).toContain("5 fields");
   });
@@ -280,7 +280,7 @@ describe("schedules", () => {
 describe("chat", () => {
   it("posts to the local server and prints the reply", async () => {
     const { fetch, calls } = fakeFetch({ "http://127.0.0.1:8080/chat": () => json({ response: "Hi Maria" }) });
-    const r = await run(["chat", "hello", "there"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
+    const r = await run(["chat", "hello", "there"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     expect(r.out.trim()).toBe("Hi Maria");
     expect(calls).toHaveLength(1);
@@ -290,7 +290,7 @@ describe("chat", () => {
 
   it("goes through api.maritime.sh when --agent is given", async () => {
     const { fetch, calls } = fakeFetch({ "https://api.maritime.sh/api/agents/agt_1/chat": () => json({ response: "ok" }) });
-    const r = await run(["chat", "ping", "--agent", "agt_1", "--conversation", "c1"], { INSTINCT_DATA_DIR: tmpDir(), MARITIME_API_KEY: "mk_test" }, { fetchImpl: fetch });
+    const r = await run(["chat", "ping", "--agent", "agt_1", "--conversation", "c1"], { ORION_DATA_DIR: tmpDir(), MARITIME_API_KEY: "mk_test" }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     const headers = calls[0]!.init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer mk_test");
@@ -298,39 +298,39 @@ describe("chat", () => {
   });
 
   it("fails clearly without MARITIME_API_KEY and when the agent returns no response", async () => {
-    const noKey = await run(["chat", "ping", "--agent", "agt_1"], { INSTINCT_DATA_DIR: tmpDir() });
+    const noKey = await run(["chat", "ping", "--agent", "agt_1"], { ORION_DATA_DIR: tmpDir() });
     expect(noKey.code).toBe(1);
     expect(noKey.err).toContain("MARITIME_API_KEY");
     const { fetch } = fakeFetch({ "http://127.0.0.1:8080/chat": () => json({ response: null, error: "asleep" }) });
-    const r = await run(["chat", "ping"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
+    const r = await run(["chat", "ping"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
     expect(r.code).toBe(1);
     expect(r.err).toContain("asleep");
   });
 
-  it("sends INSTINCT_CHAT_TOKEN as a Bearer header on chat and status, and explains a 401", async () => {
+  it("sends ORION_CHAT_TOKEN as a Bearer header on chat and status, and explains a 401", async () => {
     const { fetch, calls } = fakeFetch({
       "http://127.0.0.1:8080/chat": () => json({ response: "ok" }),
       "http://127.0.0.1:8080/": () => json({ ok: true }),
     });
-    const env = { INSTINCT_DATA_DIR: tmpDir(), INSTINCT_CHAT_TOKEN: "tok_1" };
+    const env = { ORION_DATA_DIR: tmpDir(), ORION_CHAT_TOKEN: "tok_1" };
     expect((await run(["chat", "ping"], env, { fetchImpl: fetch })).code).toBe(0);
     expect((await run(["status"], env, { fetchImpl: fetch })).code).toBe(0);
     for (const c of calls) expect((c.init.headers as Record<string, string>).Authorization).toBe("Bearer tok_1");
 
     const locked = fakeFetch({ "http://127.0.0.1:8080/chat": () => json({ error: "missing or invalid token" }, 401), "http://127.0.0.1:8080/": () => json({}, 401) });
-    const chat = await run(["chat", "ping"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: locked.fetch });
+    const chat = await run(["chat", "ping"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: locked.fetch });
     expect(chat.code).toBe(1);
-    expect(chat.err).toContain("INSTINCT_CHAT_TOKEN");
-    const status = await run(["status"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: locked.fetch });
+    expect(chat.err).toContain("ORION_CHAT_TOKEN");
+    const status = await run(["status"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: locked.fetch });
     expect(status.code).toBe(1);
-    expect(status.err).toContain("INSTINCT_CHAT_TOKEN");
+    expect(status.err).toContain("ORION_CHAT_TOKEN");
   });
 });
 
 describe("status", () => {
   it("prints a flattened table of GET /", async () => {
-    const { fetch } = fakeFetch({ "http://localhost:9999/": () => json({ name: "Maria's Instinct", owner: { name: "Maria" }, conversations: 3 }) });
-    const r = await run(["status", "--url", "http://localhost:9999"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
+    const { fetch } = fakeFetch({ "http://localhost:9999/": () => json({ name: "Maria's Orion", owner: { name: "Maria" }, conversations: 3 }) });
+    const r = await run(["status", "--url", "http://localhost:9999"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     expect(r.out).toContain("owner.name");
     expect(r.out).toContain("Maria");
@@ -341,16 +341,16 @@ describe("status", () => {
 describe("deploy", () => {
   async function seeded(): Promise<string> {
     const dir = tmpDir();
-    await run(["init", "--name", "Maria", "--phone", "+14155550100", "--email", "maria@example.com", "--handle", "maria-instinct"], { INSTINCT_DATA_DIR: dir });
+    await run(["init", "--name", "Maria", "--phone", "+14155550100", "--email", "maria@example.com", "--handle", "maria-orion"], { ORION_DATA_DIR: dir });
     fs.mkdirSync(path.join(dir, "secrets"));
-    fs.writeFileSync(path.join(dir, "secrets", "inkbox.json"), JSON.stringify({ handle: "maria-instinct", identityId: "idn_1", apiKey: "ik_secret", signingKey: "whsec_x" }));
+    fs.writeFileSync(path.join(dir, "secrets", "inkbox.json"), JSON.stringify({ handle: "maria-orion", identityId: "idn_1", apiKey: "ik_secret", signingKey: "whsec_x" }));
     return dir;
   }
 
   it("--dry-run prints the create body with secrets redacted", async () => {
     const dir = await seeded();
     const r = await run(["deploy", "--image", "ghcr.io/maria/orion-ai-agent:v1", "--dry-run"], {
-      INSTINCT_DATA_DIR: dir,
+      ORION_DATA_DIR: dir,
       ANTHROPIC_API_KEY: "sk-ant-x",
       CONTEXT_DEV_API_KEY: "ctxt_secret_test",
       KEENABLE_SEARCH: "1",
@@ -361,14 +361,14 @@ describe("deploy", () => {
     });
     expect(r.code, r.err).toBe(0);
     const body = JSON.parse(r.out);
-    expect(body.name).toBe("instinct-maria-instinct");
+    expect(body.name).toBe("orion-maria-orion");
     expect(body.framework).toBe("custom");
     expect(body.desktop).toBe(true);
     // Maritime injects PORT=18789 for framework "custom"; the exposed port must be the same number.
     expect(body.exposedPort).toBe(18789);
     expect(body.useMaritimeLlm).toBeUndefined();
     expect(body.healthCheckPath).toBe("/health");
-    expect(body.externalId).toBe("orion-ai:maria-instinct");
+    expect(body.externalId).toBe("orion-ai:maria-orion");
     expect(body.idleTtlSeconds).toBe(900);
     const vars = Object.fromEntries(body.initialEnvVars.map((v: { key: string; value: string; isSecret: boolean }) => [v.key, v]));
     expect(vars.PORT).toEqual({ key: "PORT", value: String(body.exposedPort), isSecret: false });
@@ -381,9 +381,9 @@ describe("deploy", () => {
     expect(vars.AMPLE_CLIENT_SECRET.value).toBe("<redacted>");
     expect(vars.AMPLE_TOKEN).toBeUndefined();
     expect(vars.COMPOSIO_MODE).toEqual({ key: "COMPOSIO_MODE", value: "router", isSecret: false });
-    expect(vars.INSTINCT_OWNER_PHONE).toEqual({ key: "INSTINCT_OWNER_PHONE", value: "+14155550100", isSecret: false });
-    expect(vars.INSTINCT_DATA_DIR.value).toBe("/data");
-    expect(vars.INSTINCT_MODEL.value).toBe("anthropic/claude-fable-5-1");
+    expect(vars.ORION_OWNER_PHONE).toEqual({ key: "ORION_OWNER_PHONE", value: "+14155550100", isSecret: false });
+    expect(vars.ORION_DATA_DIR.value).toBe("/data");
+    expect(vars.ORION_MODEL.value).toBe("anthropic/claude-fable-5-1");
     expect(vars.LINK_CLIENT_ID).toBeUndefined();
     expect(r.out).not.toContain("ik_secret");
     expect(r.out).not.toContain("ample_agent_secret_test");
@@ -392,33 +392,33 @@ describe("deploy", () => {
   it("keeps the Inkbox endpoint with the deployed identity credentials", async () => {
     const dir = await seeded();
     const result = await run(["deploy", "--image", "img:1", "--dry-run"], {
-      INSTINCT_DATA_DIR: dir, ANTHROPIC_API_KEY: "model_test", INKBOX_BASE_URL: "https://inkbox.example",
+      ORION_DATA_DIR: dir, ANTHROPIC_API_KEY: "model_test", INKBOX_BASE_URL: "https://inkbox.example",
     });
     expect(result.code, result.err).toBe(0);
     const body = JSON.parse(result.out);
     expect(body.initialEnvVars).toContainEqual({ key: "INKBOX_BASE_URL", value: "https://inkbox.example", isSecret: false });
   });
 
-  it("--maritime-llm asks Maritime for its metered model and points INSTINCT_MODEL at it", async () => {
+  it("--maritime-llm asks Maritime for its metered model and points ORION_MODEL at it", async () => {
     const dir = await seeded();
-    const r = await run(["deploy", "--image", "img:1", "--maritime-llm", "--dry-run"], { INSTINCT_DATA_DIR: dir, OPENAI_API_KEY: "sk-mine", OPENAI_BASE_URL: "http://mine" });
+    const r = await run(["deploy", "--image", "img:1", "--maritime-llm", "--dry-run"], { ORION_DATA_DIR: dir, OPENAI_API_KEY: "sk-mine", OPENAI_BASE_URL: "http://mine" });
     expect(r.code, r.err).toBe(0);
     expect(r.err).not.toContain("no model");
     const body = JSON.parse(r.out);
     expect(body.useMaritimeLlm).toBe(true);
     const vars = Object.fromEntries(body.initialEnvVars.map((v: { key: string; value: string }) => [v.key, v.value]));
-    expect(vars.INSTINCT_MODEL).toBe("openai-compatible/gpt-5.4");
+    expect(vars.ORION_MODEL).toBe("openai-compatible/gpt-5.4");
     // Our own OPENAI_* would shadow the injected proxy credentials, so they stay home.
     expect(vars.OPENAI_API_KEY).toBeUndefined();
     expect(vars.OPENAI_BASE_URL).toBeUndefined();
 
-    const picked = await run(["deploy", "--image", "img:1", "--maritime-llm", "--model", "gpt-5.5", "--dry-run"], { INSTINCT_DATA_DIR: dir, INSTINCT_MARITIME_MODEL: "gpt-5" });
-    expect(JSON.parse(picked.out).initialEnvVars.find((v: { key: string }) => v.key === "INSTINCT_MODEL").value).toBe("openai-compatible/gpt-5.5");
-    const fromEnv = await run(["deploy", "--image", "img:1", "--maritime-llm", "--dry-run"], { INSTINCT_DATA_DIR: dir, INSTINCT_MARITIME_MODEL: "gpt-5" });
-    expect(JSON.parse(fromEnv.out).initialEnvVars.find((v: { key: string }) => v.key === "INSTINCT_MODEL").value).toBe("openai-compatible/gpt-5");
+    const picked = await run(["deploy", "--image", "img:1", "--maritime-llm", "--model", "gpt-5.5", "--dry-run"], { ORION_DATA_DIR: dir, ORION_MARITIME_MODEL: "gpt-5" });
+    expect(JSON.parse(picked.out).initialEnvVars.find((v: { key: string }) => v.key === "ORION_MODEL").value).toBe("openai-compatible/gpt-5.5");
+    const fromEnv = await run(["deploy", "--image", "img:1", "--maritime-llm", "--dry-run"], { ORION_DATA_DIR: dir, ORION_MARITIME_MODEL: "gpt-5" });
+    expect(JSON.parse(fromEnv.out).initialEnvVars.find((v: { key: string }) => v.key === "ORION_MODEL").value).toBe("openai-compatible/gpt-5");
 
     // Without the flag and without any key, the warning names the flag.
-    const none = await run(["deploy", "--image", "img:1", "--dry-run"], { INSTINCT_DATA_DIR: dir });
+    const none = await run(["deploy", "--image", "img:1", "--dry-run"], { ORION_DATA_DIR: dir });
     expect(none.err).toContain("--maritime-llm");
     expect(JSON.parse(none.out).useMaritimeLlm).toBeUndefined();
   });
@@ -426,7 +426,7 @@ describe("deploy", () => {
   it("passes LINK_* and STRIPE_PUBLISHABLE_KEY into the agent when LINK_CLIENT_ID is set", async () => {
     const dir = await seeded();
     const r = await run(["deploy", "--image", "img:1", "--dry-run"], {
-      INSTINCT_DATA_DIR: dir,
+      ORION_DATA_DIR: dir,
       ANTHROPIC_API_KEY: "sk",
       LINK_CLIENT_ID: "lc_1",
       LINK_CLIENT_SECRET: "ls_1",
@@ -441,19 +441,19 @@ describe("deploy", () => {
     expect(vars.STRIPE_PUBLISHABLE_KEY).toEqual({ key: "STRIPE_PUBLISHABLE_KEY", value: "pk_test_1", isSecret: false });
     expect(r.err).not.toContain("LINK_REDIRECT_URI");
 
-    const noRedirect = await run(["deploy", "--image", "img:1", "--dry-run"], { INSTINCT_DATA_DIR: dir, ANTHROPIC_API_KEY: "sk", LINK_CLIENT_ID: "lc_1" });
+    const noRedirect = await run(["deploy", "--image", "img:1", "--dry-run"], { ORION_DATA_DIR: dir, ANTHROPIC_API_KEY: "sk", LINK_CLIENT_ID: "lc_1" });
     expect(noRedirect.err).toContain("LINK_REDIRECT_URI");
     // A secret without a client id is not copied: it would be useless and leak for nothing.
-    const orphan = await run(["deploy", "--image", "img:1", "--dry-run"], { INSTINCT_DATA_DIR: dir, ANTHROPIC_API_KEY: "sk", LINK_CLIENT_SECRET: "ls_1" });
+    const orphan = await run(["deploy", "--image", "img:1", "--dry-run"], { ORION_DATA_DIR: dir, ANTHROPIC_API_KEY: "sk", LINK_CLIENT_SECRET: "ls_1" });
     expect(JSON.parse(orphan.out).initialEnvVars.some((v: { key: string }) => v.key.startsWith("LINK_"))).toBe(false);
   });
 
   it("creates the agent through POST /api/agents and records the id", async () => {
     const dir = await seeded();
-    const { fetch, calls } = fakeFetch({ "https://api.maritime.sh/api/agents": () => json({ id: "agt_42", name: "instinct-maria-instinct", status: "deploying" }) });
+    const { fetch, calls } = fakeFetch({ "https://api.maritime.sh/api/agents": () => json({ id: "agt_42", name: "orion-maria-orion", status: "deploying" }) });
     const r = await run(
-      ["deploy", "--image", "ghcr.io/maria/orion-ai-agent:v1", "--idle", "600", "--name", "my-instinct"],
-      { INSTINCT_DATA_DIR: dir, MARITIME_API_KEY: "mk_live", ANTHROPIC_API_KEY: "sk-ant-x" },
+      ["deploy", "--image", "ghcr.io/maria/orion-ai-agent:v1", "--idle", "600", "--name", "my-orion"],
+      { ORION_DATA_DIR: dir, MARITIME_API_KEY: "mk_live", ANTHROPIC_API_KEY: "sk-ant-x" },
       { fetchImpl: fetch },
     );
     expect(r.code, r.err).toBe(0);
@@ -461,7 +461,7 @@ describe("deploy", () => {
     expect(calls[0]!.init.method).toBe("POST");
     expect((calls[0]!.init.headers as Record<string, string>).Authorization).toBe("Bearer mk_live");
     const body = JSON.parse(String(calls[0]!.init.body));
-    expect(body.name).toBe("my-instinct");
+    expect(body.name).toBe("my-orion");
     expect(body.idleTtlSeconds).toBe(600);
     expect(body.initialEnvVars.find((v: { key: string }) => v.key === "INKBOX_API_KEY").value).toBe("ik_secret");
     expect(r.out).toContain("agt_42");
@@ -474,7 +474,7 @@ describe("deploy", () => {
   it("surfaces a 402 with the server's detail", async () => {
     const dir = await seeded();
     const { fetch } = fakeFetch({ "https://api.maritime.sh/api/agents": () => json({ detail: "Plan allows 3 agents. Upgrade at https://maritime.sh/billing" }, 402) });
-    const r = await run(["deploy", "--image", "img:1"], { INSTINCT_DATA_DIR: dir, MARITIME_API_KEY: "mk_live" }, { fetchImpl: fetch });
+    const r = await run(["deploy", "--image", "img:1"], { ORION_DATA_DIR: dir, MARITIME_API_KEY: "mk_live" }, { fetchImpl: fetch });
     expect(r.code).toBe(1);
     expect(r.err).toContain("402");
     expect(r.err).toContain("maritime.sh/billing");
@@ -482,8 +482,8 @@ describe("deploy", () => {
 
   it("needs --image and MARITIME_API_KEY", async () => {
     const dir = await seeded();
-    expect((await run(["deploy"], { INSTINCT_DATA_DIR: dir })).err).toContain("--image is required");
-    const r = await run(["deploy", "--image", "img:1"], { INSTINCT_DATA_DIR: dir });
+    expect((await run(["deploy"], { ORION_DATA_DIR: dir })).err).toContain("--image is required");
+    const r = await run(["deploy", "--image", "img:1"], { ORION_DATA_DIR: dir });
     expect(r.code).toBe(1);
     expect(r.err).toContain("MARITIME_API_KEY");
   });
@@ -526,13 +526,13 @@ describe("dev", () => {
     fs.mkdirSync(path.join(dir, "secrets"));
     fs.writeFileSync(path.join(dir, "secrets", "inkbox.json"), JSON.stringify({ handle: "h", identityId: "i", apiKey: "k", signingKey: "s" }));
     const { mod, seen } = fakeServer();
-    const env: NodeJS.ProcessEnv = { INSTINCT_DATA_DIR: dir, INKBOX_API_KEY: "already-set" };
+    const env: NodeJS.ProcessEnv = { ORION_DATA_DIR: dir, INKBOX_API_KEY: "already-set" };
     const r = await run(["dev", "--port", "9123"], env, { importServer: async () => mod, installSignalHandlers: false });
     expect(r.code, r.err).toBe(0);
     expect(seen.listened).toEqual([9123, "127.0.0.1"]);
     expect(seen.bootEnv?.PORT).toBe("9123");
-    expect(seen.bootEnv?.INSTINCT_TUNNEL).toBeUndefined();
-    expect(seen.bootEnv?.INSTINCT_DATA_DIR).toBe(dir);
+    expect(seen.bootEnv?.ORION_TUNNEL).toBeUndefined();
+    expect(seen.bootEnv?.ORION_DATA_DIR).toBe(dir);
     expect(seen.bootEnv?.INKBOX_AGENT_HANDLE).toBe("h");
     expect(seen.bootEnv?.INKBOX_SIGNING_KEY).toBe("s");
     // Existing env wins over the secrets file.
@@ -546,21 +546,21 @@ describe("dev", () => {
   it("--tunnel opens the Inkbox tunnel and subscribes the webhook at <publicUrl>/webhooks/inkbox", async () => {
     const dir = tmpDir();
     fs.mkdirSync(path.join(dir, "secrets"));
-    fs.writeFileSync(path.join(dir, "secrets", "inkbox.json"), JSON.stringify({ handle: "maria-instinct", identityId: "idn_1", apiKey: "ik" }));
+    fs.writeFileSync(path.join(dir, "secrets", "inkbox.json"), JSON.stringify({ handle: "maria-orion", identityId: "idn_1", apiKey: "ik" }));
     const { mod, seen } = fakeServer();
     const tunnels: unknown[] = [];
-    const r = await run(["dev", "--tunnel"], { INSTINCT_DATA_DIR: dir, INKBOX_ADMIN_API_KEY: "ak" }, {
+    const r = await run(["dev", "--tunnel"], { ORION_DATA_DIR: dir, INKBOX_ADMIN_API_KEY: "ak" }, {
       importServer: async () => mod,
       installSignalHandlers: false,
       connectTunnel: async (opts) => {
         tunnels.push(opts);
-        return { publicUrl: "https://maria-instinct.inkboxwire.com", close: async () => undefined };
+        return { publicUrl: "https://maria-orion.inkboxwire.com", close: async () => undefined };
       },
     });
     expect(r.code, r.err).toBe(0);
-    expect(seen.bootEnv?.INSTINCT_TUNNEL).toBe("1");
-    expect(tunnels[0]).toMatchObject({ apiKey: "ik", handle: "maria-instinct", forwardTo: "http://127.0.0.1:9124" });
-    expect(seen.webhook).toMatchObject({ adminApiKey: "ak", handle: "maria-instinct", identityId: "idn_1", url: "https://maria-instinct.inkboxwire.com/webhooks/inkbox" });
+    expect(seen.bootEnv?.ORION_TUNNEL).toBe("1");
+    expect(tunnels[0]).toMatchObject({ apiKey: "ik", handle: "maria-orion", forwardTo: "http://127.0.0.1:9124" });
+    expect(seen.webhook).toMatchObject({ adminApiKey: "ak", handle: "maria-orion", identityId: "idn_1", url: "https://maria-orion.inkboxwire.com/webhooks/inkbox" });
     expect(r.out).toContain("sub_1");
     // Without a signing key in env, the provider falls back to the server's webhook file.
     expect((seen.httpOpts?.signingKeyProvider as () => string)()).toBe("from-webhook-file");
@@ -568,7 +568,7 @@ describe("dev", () => {
 
   it("--tunnel without Inkbox credentials warns and keeps the server up", async () => {
     const { mod, seen } = fakeServer();
-    const r = await run(["dev", "--tunnel"], { INSTINCT_DATA_DIR: tmpDir() }, { importServer: async () => mod, installSignalHandlers: false });
+    const r = await run(["dev", "--tunnel"], { ORION_DATA_DIR: tmpDir() }, { importServer: async () => mod, installSignalHandlers: false });
     expect(r.code, r.err).toBe(0);
     expect(seen.listened).toBeDefined();
     expect(r.err).toContain("tunnel not started");
@@ -576,17 +576,17 @@ describe("dev", () => {
 
   it("warns when COMPOSIO_API_KEY is set but config.json has apps off, and names the fix", async () => {
     const dir = tmpDir();
-    await run(["init", "--name", "Maria"], { INSTINCT_DATA_DIR: dir });
+    await run(["init", "--name", "Maria"], { ORION_DATA_DIR: dir });
     const { mod } = fakeServer();
-    const r = await run(["dev"], { INSTINCT_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" }, { importServer: async () => mod, installSignalHandlers: false });
+    const r = await run(["dev"], { ORION_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" }, { importServer: async () => mod, installSignalHandlers: false });
     expect(r.code, r.err).toBe(0);
     expect(r.err).toContain("apps.enabled=false");
     expect(r.err).toContain("--apps");
 
-    await run(["init", "--name", "Maria", "--apps"], { INSTINCT_DATA_DIR: dir });
-    const quiet = await run(["dev"], { INSTINCT_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" }, { importServer: async () => mod, installSignalHandlers: false });
+    await run(["init", "--name", "Maria", "--apps"], { ORION_DATA_DIR: dir });
+    const quiet = await run(["dev"], { ORION_DATA_DIR: dir, COMPOSIO_API_KEY: "cmp" }, { importServer: async () => mod, installSignalHandlers: false });
     expect(quiet.err).not.toContain("apps.enabled");
-    const noKey = await run(["dev"], { INSTINCT_DATA_DIR: tmpDir() }, { importServer: async () => mod, installSignalHandlers: false });
+    const noKey = await run(["dev"], { ORION_DATA_DIR: tmpDir() }, { importServer: async () => mod, installSignalHandlers: false });
     expect(noKey.err).not.toContain("apps.enabled");
   });
 
@@ -607,7 +607,7 @@ describe("payments", () => {
     const { fetch, calls } = fakeFetch({
       "http://127.0.0.1:8080/oauth/link/start": () => json({ url: "https://login.link.com/auth?client_id=lc_1&state=srv" }),
     });
-    const r = await run(["payments", "connect"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
+    const r = await run(["payments", "connect"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     expect(r.out).toContain("https://login.link.com/auth?client_id=lc_1&state=srv");
     expect(r.err).toBe("");
@@ -616,14 +616,14 @@ describe("payments", () => {
     const redirecting = fakeFetch({
       "http://localhost:9000/oauth/link/start": () => new Response(null, { status: 302, headers: { Location: "https://login.link.com/auth?x=1" } }),
     });
-    const r2 = await run(["payments", "connect", "--url", "http://localhost:9000"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: redirecting.fetch });
+    const r2 = await run(["payments", "connect", "--url", "http://localhost:9000"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: redirecting.fetch });
     expect(r2.code, r2.err).toBe(0);
     expect(r2.out).toContain("https://login.link.com/auth?x=1");
   });
 
   it("connect falls back to LINK_CLIENT_ID when the server has no Link route, and fails clearly without either", async () => {
     const { fetch } = fakeFetch({ "http://127.0.0.1:8080/oauth/link/start": () => json({ error: "not found" }, 404) });
-    const r = await run(["payments", "connect"], { INSTINCT_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc_1", LINK_REDIRECT_URI: "https://gw.example.com/oauth/link/callback/usr_1" }, { fetchImpl: fetch });
+    const r = await run(["payments", "connect"], { ORION_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc_1", LINK_REDIRECT_URI: "https://gw.example.com/oauth/link/callback/usr_1" }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     const url = new URL(r.out.trim());
     expect(url.origin + url.pathname).toBe("https://login.link.com/auth");
@@ -634,7 +634,7 @@ describe("payments", () => {
     expect(url.searchParams.get("state")).toMatch(/^[0-9a-f]{24}$/);
     expect(r.err).toContain("built from LINK_CLIENT_ID");
 
-    const none = await run(["payments", "connect"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
+    const none = await run(["payments", "connect"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: fetch });
     expect(none.code).toBe(1);
     expect(none.err).toContain("LINK_CLIENT_ID");
 
@@ -642,14 +642,14 @@ describe("payments", () => {
     down.fetch = (async () => {
       throw new Error("ECONNREFUSED");
     }) as unknown as typeof fetch;
-    const unreachable = await run(["payments", "connect"], { INSTINCT_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc" }, { fetchImpl: down.fetch });
+    const unreachable = await run(["payments", "connect"], { ORION_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc" }, { fetchImpl: down.fetch });
     expect(unreachable.code).toBe(1);
-    expect(unreachable.err).toContain("instinct dev");
+    expect(unreachable.err).toContain("orion dev");
   });
 
   it("status prints the server's payments report and the local LINK_* configuration", async () => {
     const { fetch } = fakeFetch({ "http://127.0.0.1:8080/payments/status": () => json({ connected: true, wallet: "link", expiresAt: "2026-10-04T00:00:00Z" }) });
-    const r = await run(["payments", "status"], { INSTINCT_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc_1" }, { fetchImpl: fetch });
+    const r = await run(["payments", "status"], { ORION_DATA_DIR: tmpDir(), LINK_CLIENT_ID: "lc_1" }, { fetchImpl: fetch });
     expect(r.code, r.err).toBe(0);
     expect(r.out).toMatch(/connected\s+true/);
     expect(r.out).toMatch(/wallet\s+link/);
@@ -661,7 +661,7 @@ describe("payments", () => {
       "http://127.0.0.1:8080/payments/status": () => json({ error: "not found" }, 404),
       "http://127.0.0.1:8080/": () => json({ ok: true, payments: { connected: false } }),
     });
-    const r2 = await run(["payments", "status"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: old.fetch });
+    const r2 = await run(["payments", "status"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: old.fetch });
     expect(r2.code, r2.err).toBe(0);
     expect(r2.out).toMatch(/connected\s+false/);
 
@@ -669,15 +669,15 @@ describe("payments", () => {
       "http://127.0.0.1:8080/payments/status": () => json({ error: "not found" }, 404),
       "http://127.0.0.1:8080/": () => json({ ok: true }),
     });
-    const r3 = await run(["payments", "status"], { INSTINCT_DATA_DIR: tmpDir() }, { fetchImpl: bare.fetch });
+    const r3 = await run(["payments", "status"], { ORION_DATA_DIR: tmpDir() }, { fetchImpl: bare.fetch });
     expect(r3.code, r3.err).toBe(0);
     expect(r3.out).toContain("does not report payments");
   });
 
   it("needs a subcommand", async () => {
-    const r = await run(["payments"], { INSTINCT_DATA_DIR: tmpDir() });
+    const r = await run(["payments"], { ORION_DATA_DIR: tmpDir() });
     expect(r.code).toBe(2);
     expect(r.err).toContain("connect | status");
-    expect((await run(["payments", "refund"], { INSTINCT_DATA_DIR: tmpDir() })).code).toBe(2);
+    expect((await run(["payments", "refund"], { ORION_DATA_DIR: tmpDir() })).code).toBe(2);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * The state directory. Everything the agent persists lives under one root
- * (`/data` on Maritime, `./.instinct` locally). All stores in core take a
+ * (`/data` on Maritime, `./.orion` locally). All stores in core take a
  * StateDir instead of touching the filesystem on their own so tests can run
  * against a temp directory and so nothing in core reads process.env.
  */
@@ -9,10 +9,10 @@ import path from "node:path";
 
 /** Pick the data directory from the environment. Only the server passes env in. */
 export function resolveDataDir(env: NodeJS.ProcessEnv): string {
-  const fromEnv = env.INSTINCT_DATA_DIR?.trim();
+  const fromEnv = env.ORION_DATA_DIR?.trim();
   if (fromEnv) return path.resolve(fromEnv);
   if (fs.existsSync("/data") && fs.statSync("/data").isDirectory()) return "/data";
-  return path.resolve(".instinct");
+  return path.resolve(".orion");
 }
 
 export class StateDir {

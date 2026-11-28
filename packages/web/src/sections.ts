@@ -105,7 +105,7 @@ export function skillsPage(_c: SecCtx, d: Rec): string {
 }
 
 export function pagesPage(c: SecCtx, d: Rec): string {
-  if (!d.enabled) return panel("Shareable pages", `<p>Polls, sign-ups and RSVPs are off on your assistant. Set <code>INSTINCT_PAGES=1</code> to turn them on.</p>`);
+  if (!d.enabled) return panel("Shareable pages", `<p>Polls, sign-ups and RSVPs are off on your assistant. Set <code>ORION_PAGES=1</code> to turn them on.</p>`);
   const rows = (d.pages as Rec[]).map((p) => [`<b>${esc(p.title)}</b>`, tag(String(p.kind)), String(p.responses), p.open ? tag("Open", "ok") : tag("Closed"), when(p.expiresAt), p.open ? act(c, `Close the page "${p.title}".`, "Close") : ""]);
   return panel("Your pages", rows.length ? table(["Title", "Type", "Responses", "State", "Ends", ""], rows) : empty("No pages yet."));
 }

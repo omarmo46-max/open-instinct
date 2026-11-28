@@ -25,7 +25,7 @@ describe("normalizePhone", () => {
 
 describe("normalizeHandle", () => {
   it("strips @ and lowercases", () => {
-    expect(normalizeHandle("@Maria-Instinct")).toBe("maria-instinct");
+    expect(normalizeHandle("@Maria-Orion")).toBe("maria-orion");
     expect(normalizeHandle("  sam_bot ")).toBe("sam_bot");
     expect(normalizeHandle("@@x")).toBe("x");
   });
@@ -36,7 +36,7 @@ describe("resolvePrincipal", () => {
 
   function contacts(): ContactStore {
     const store = new ContactStore(tempState());
-    store.upsert({ name: "Sam Lee", tier: "partner", phones: ["(415) 555-0199"], emails: ["Sam@Example.com"], agentHandle: "@Sam-Instinct" });
+    store.upsert({ name: "Sam Lee", tier: "partner", phones: ["(415) 555-0199"], emails: ["Sam@Example.com"], agentHandle: "@Sam-Orion" });
     store.upsert({ name: "Alex Kim", tier: "friend", emails: ["alex@example.com"] });
     return store;
   }
@@ -84,24 +84,24 @@ describe("resolvePrincipal", () => {
     expect(resolvePrincipal(inbound({ channel: "a2a", from: "@Owner" }), config, c).kind).toBe("stranger");
     expect(resolvePrincipal(inbound({ channel: "email", from: "owner" }), config, c).kind).toBe("stranger");
     expect(isReservedHandle("@OWNER")).toBe(true);
-    expect(isReservedHandle("sam-instinct")).toBe(false);
+    expect(isReservedHandle("sam-orion")).toBe(false);
   });
 
   it("resolves contacts by phone and email with their tier", () => {
     const c = contacts();
     const byPhone = resolvePrincipal(inbound({ channel: "sms", from: "415-555-0199" }), config, c);
-    expect(byPhone).toMatchObject({ kind: "contact", id: "contact:sam-lee", tier: "partner", displayName: "Sam Lee", contactId: "sam-lee", phone: "+14155550199", agentHandle: "sam-instinct" });
+    expect(byPhone).toMatchObject({ kind: "contact", id: "contact:sam-lee", tier: "partner", displayName: "Sam Lee", contactId: "sam-lee", phone: "+14155550199", agentHandle: "sam-orion" });
     const byEmail = resolvePrincipal(inbound({ channel: "email", from: "ALEX@example.com" }), config, c);
     expect(byEmail).toMatchObject({ kind: "contact", id: "contact:alex-kim", tier: "friend", email: "alex@example.com" });
   });
 
   it("maps an A2A caller handle to the contact's agent", () => {
     const c = contacts();
-    const p = resolvePrincipal(inbound({ channel: "a2a", from: "@Sam-Instinct" }), config, c);
+    const p = resolvePrincipal(inbound({ channel: "a2a", from: "@Sam-Orion" }), config, c);
     expect(p.kind).toBe("agent");
-    expect(p.id).toBe("agent:sam-instinct");
+    expect(p.id).toBe("agent:sam-orion");
     expect(p.tier).toBe("partner");
-    expect(p.agentHandle).toBe("sam-instinct");
+    expect(p.agentHandle).toBe("sam-orion");
     expect(p.contactId).toBe("sam-lee");
     expect(p.onBehalfOf).toEqual({ displayName: "Sam Lee", contactId: "sam-lee" });
   });

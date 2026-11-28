@@ -4,7 +4,7 @@ import type {
   Contact,
   ContactStore,
   Grant,
-  InstinctConfig,
+  OrionConfig,
   Outbox,
   OutboundMessage,
   Policy,
@@ -152,11 +152,11 @@ export function fakeProvisioner(): ProvisionerLike & { invitations: unknown[]; r
   };
 }
 
-export function config(overrides: Partial<InstinctConfig> = {}): InstinctConfig {
+export function config(overrides: Partial<OrionConfig> = {}): OrionConfig {
   return {
     version: 1,
     owner: { name: "Maria", phones: ["+16175550100"], emails: ["maria@example.com"], timezone: "America/New_York" },
-    agent: { name: "Maria's Instinct", handle: "maria-instinct" },
+    agent: { name: "Maria's Orion", handle: "maria-orion" },
     model: { primary: "anthropic/claude-fable-5-1" },
     computer: { mode: "none" },
     apps: { enabled: false, toolkits: [] },
@@ -172,7 +172,7 @@ export function contactPrincipal(c: Contact): Principal {
 }
 
 export function agentPrincipal(c: Contact): Principal {
-  return { kind: "agent", id: `agent:${c.agentHandle}`, tier: c.tier, displayName: `${c.name}'s Instinct`, agentHandle: c.agentHandle, contactId: c.id, onBehalfOf: { displayName: c.name, contactId: c.id } };
+  return { kind: "agent", id: `agent:${c.agentHandle}`, tier: c.tier, displayName: `${c.name}'s Orion`, agentHandle: c.agentHandle, contactId: c.id, onBehalfOf: { displayName: c.name, contactId: c.id } };
 }
 
 export const stranger: Principal = { kind: "stranger", id: "stranger:imessage:+15555550199", tier: "stranger", displayName: "+15555550199", phone: "+15555550199" };

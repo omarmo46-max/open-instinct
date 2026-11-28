@@ -4,7 +4,7 @@ import { NOTICE_WINDOW_MS, OwnerNotifier } from "../src/notifier.js";
 import { tempState } from "./helpers.js";
 
 describe("OwnerNotifier", () => {
-  const notice = { conversationKey: "a2a:ctx1", principal: "agent:sam-instinct", action: "see your calendar", outcome: "declined" as const };
+  const notice = { conversationKey: "a2a:ctx1", principal: "agent:sam-orion", action: "see your calendar", outcome: "declined" as const };
 
   it("texts the owner once per conversation per hour and audits it", async () => {
     let now = new Date("2026-10-03T12:00:00Z");
@@ -13,16 +13,16 @@ describe("OwnerNotifier", () => {
     const sent: string[] = [];
     const n = new OwnerNotifier({ state, audit, now: () => now, send: async (text) => void sent.push(text) });
 
-    expect(await n.notify(notice, "Sam's Instinct")).toBe(true);
-    expect(sent).toEqual(["Sam's Instinct asked to see your calendar; I declined."]);
-    expect(await n.notify({ ...notice, action: "read your email" }, "Sam's Instinct")).toBe(false);
+    expect(await n.notify(notice, "Sam's Orion")).toBe(true);
+    expect(sent).toEqual(["Sam's Orion asked to see your calendar; I declined."]);
+    expect(await n.notify({ ...notice, action: "read your email" }, "Sam's Orion")).toBe(false);
     expect(sent).toHaveLength(1);
     // A different conversation is not throttled by the first.
     expect(await n.notify({ ...notice, conversationKey: "imessage:alex" }, "Alex")).toBe(true);
     expect(sent).toHaveLength(2);
 
     now = new Date(now.getTime() + NOTICE_WINDOW_MS + 1);
-    expect(await n.notify(notice, "Sam's Instinct")).toBe(true);
+    expect(await n.notify(notice, "Sam's Orion")).toBe(true);
     expect(sent).toHaveLength(3);
     const entries = audit.read({ kinds: ["policy"] });
     expect(entries).toHaveLength(3);

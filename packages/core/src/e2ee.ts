@@ -10,7 +10,7 @@ import { canonicalJson, Identity, writePrivateFile } from "./tool-identity.js";
 
 export const MAX_E2EE_BYTES = 25 * 1024 * 1024;
 const ALG = "x25519-hkdf-sha256-aes256gcm";
-const INFO = Buffer.from("instinct-e2ee-v1");
+const INFO = Buffer.from("orion-e2ee-v1");
 
 export interface PeerBundle {
   x25519: string;

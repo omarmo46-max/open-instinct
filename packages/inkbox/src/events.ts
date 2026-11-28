@@ -378,7 +378,7 @@ export function parseInkboxEvent(payload: unknown): InboundMessage | undefined {
     case "a2a.task.canceled":
       return parseA2ATaskCanceled(p, data, eventType);
     case "a2a.sent_task.updated":
-      // The peer's progress or answer on a task we sent with ask_instinct.
+      // The peer's progress or answer on a task we sent with ask_orion.
       return parseA2ATask(p, data, eventType, "sent");
     default:
       // sent, delivered, bounced, failed, read: nothing to prompt with. call.ended is

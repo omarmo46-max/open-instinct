@@ -3,7 +3,7 @@
  * request, wait for the owner, pick up once, report the outcome. Budget rules run before anything is asked.
  */
 import { Type } from "typebox";
-import type { AuditLog, Capability, InstinctConfig, Outbox, Principal, RegisteredTool, StateDir } from "@orion-ai/core";
+import type { AuditLog, Capability, OrionConfig, Outbox, Principal, RegisteredTool, StateDir } from "@orion-ai/core";
 import { defineTool, errorResult, textResult } from "../define.js";
 import { EgpBudget } from "./budget.js";
 import { CARD_TTL_MS, EgpCardStore } from "./cards.js";
@@ -12,7 +12,7 @@ import { MAX_EGP, fmtEgp, toPiasters } from "./money.js";
 
 export interface EgpToolDeps {
   outbox: Outbox;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: Pick<AuditLog, "append">;
   state: Pick<StateDir, "readJson" | "writeJson" | "path">;
   budget: EgpBudget;

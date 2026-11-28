@@ -7,7 +7,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "bin": { "instinct-web": "./dist/main.js" },
+  "bin": { "orion-web": "./dist/main.js" },
   "files": ["dist", "README.md"],
   "engines": { "node": ">=22.19.0" },
   "scripts": {

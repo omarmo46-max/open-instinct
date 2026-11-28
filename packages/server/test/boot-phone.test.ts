@@ -16,13 +16,13 @@ function fakeInkboxFetch(): typeof fetch {
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
     requests.push({ method, path: url.pathname, body });
     const json = (status: number, payload: unknown) => new Response(JSON.stringify(payload), { status, headers: { "content-type": "application/json" } });
-    if (method === "GET" && url.pathname === "/api/v1/identities/smoke-instinct") {
+    if (method === "GET" && url.pathname === "/api/v1/identities/smoke-orion") {
       return json(200, {
         id: "ident_1",
         organization_id: "org_1",
-        agent_handle: "smoke-instinct",
+        agent_handle: "smoke-orion",
         display_name: "Smoke",
-        email_address: "smoke-instinct@inkbox.ai",
+        email_address: "smoke-orion@inkbox.ai",
         imessage_enabled: true,
         created_at: "2026-10-01T00:00:00Z",
         updated_at: "2026-10-01T00:00:00Z",
@@ -47,21 +47,21 @@ describe("boot: phone voice", () => {
   let app: BootResult | undefined;
   const logs: string[] = [];
   const env = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Maria",
-    INSTINCT_OWNER_PHONE: "+14155550000",
-    INSTINCT_AGENT_NAME: "Smoke",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Maria",
+    ORION_OWNER_PHONE: "+14155550000",
+    ORION_AGENT_NAME: "Smoke",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
     INKBOX_API_KEY: "ik_identity",
-    INKBOX_AGENT_HANDLE: "smoke-instinct",
+    INKBOX_AGENT_HANDLE: "smoke-orion",
     INKBOX_BASE_URL: "https://inkbox.test",
     ...extra,
   });
 
   beforeEach(() => {
-    dataDir = mkdtempSync(join(tmpdir(), "instinct-boot-phone-"));
+    dataDir = mkdtempSync(join(tmpdir(), "orion-boot-phone-"));
     requests = [];
     logs.length = 0;
     vi.stubGlobal("fetch", fakeInkboxFetch());

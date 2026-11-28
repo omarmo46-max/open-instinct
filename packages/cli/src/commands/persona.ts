@@ -1,5 +1,5 @@
 /**
- * `instinct persona ...`: read and change <dataDir>/PERSONA.md, the identity section of
+ * `orion persona ...`: read and change <dataDir>/PERSONA.md, the identity section of
  * the agent's system prompt. The server reads the file on every message, so a change
  * made here applies to the next reply without a restart.
  */
@@ -39,7 +39,7 @@ export async function runPersona(ctx: CliContext, argv: string[]): Promise<numbe
     case undefined:
     case "show": {
       const custom = readPersona(state);
-      ctx.print(c.dim(custom ? `# ${file}` : `# built-in default; ${file} does not exist yet (instinct persona edit writes it)`));
+      ctx.print(c.dim(custom ? `# ${file}` : `# built-in default; ${file} does not exist yet (orion persona edit writes it)`));
       ctx.print(personaText(state));
       return 0;
     }
@@ -49,7 +49,7 @@ export async function runPersona(ctx: CliContext, argv: string[]): Promise<numbe
     }
     case "set": {
       const text = rest.join(" ").trim();
-      if (!text) throw new UsageError('usage: instinct persona set "<text>"', "persona");
+      if (!text) throw new UsageError('usage: orion persona set "<text>"', "persona");
       writePersona(state, text);
       ctx.print(`${c.green("Wrote")} ${file}`);
       ctx.print(c.dim("The agent uses it on its next message."));

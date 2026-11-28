@@ -11,10 +11,10 @@ starting or deploying the agent:
 
 ```bash
 export CONTEXT_DEV_API_KEY=ctxt_secret_...
-pnpm instinct dev
+pnpm orion dev
 ```
 
-`instinct deploy` forwards the key to Maritime as an encrypted secret. The
+`orion deploy` forwards the key to Maritime as an encrypted secret. The
 gateway also forwards its `CONTEXT_DEV_API_KEY` to each agent it provisions.
 
 ## How the agent uses it

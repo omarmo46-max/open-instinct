@@ -19,7 +19,7 @@ export interface CliContext {
 }
 
 export function resolveCliDataDir(env: NodeJS.ProcessEnv, cwd: string, explicit?: string): string {
-  const chosen = explicit ?? env.INSTINCT_DATA_DIR?.trim() ?? ".instinct";
+  const chosen = explicit ?? env.ORION_DATA_DIR?.trim() ?? ".orion";
   return path.resolve(cwd, chosen);
 }
 

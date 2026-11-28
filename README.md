@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/assets/brand/wordmark.png" alt="Orion AI" width="620"></p>
 
-<p align="center">An open-source personal agent you text. It has its own computer, does real tasks, and coordinates with the agents of the people you trust.<br>A from-scratch, documented clone of <a href="docs/research/INSTINCT.md">Instinct</a>, built so anyone can run one.</p>
+<p align="center">An open-source personal agent you text. It has its own computer, does real tasks, and coordinates with the agents of the people you trust.<br>Read every line, run it yourself, pick the model.</p>
 
 <p align="center"><img src="docs/assets/screenshots/imessage-mock.png" alt="Three iMessage threads with the agent" width="1000"></p>
 
@@ -12,7 +12,7 @@ You text a phone number. [Inkbox](https://inkbox.ai) gives the agent that number
 
 It makes phone calls, too: say yes to "call the restaurant and book 7pm" and Inkbox Voice AI dials, speaks and hangs up, then you get one text with the outcome and any follow-ups from the transcript (see [INKBOX.md](docs/INKBOX.md#phone-calls)).
 
-It writes real files, too: ask for a brief "as a PDF" and it creates one in its workspace and sends it to you as an iMessage or email attachment. Any app Composio supports can be connected by name ("connect my Notion"), and the prompt it runs with is a file you can read and edit (`instinct prompt`, `instinct persona`; see [CUSTOMIZE.md](docs/CUSTOMIZE.md)).
+It writes real files, too: ask for a brief "as a PDF" and it creates one in its workspace and sends it to you as an iMessage or email attachment. Any app Composio supports can be connected by name ("connect my Notion"), and the prompt it runs with is a file you can read and edit (`orion prompt`, `orion persona`; see [CUSTOMIZE.md](docs/CUSTOMIZE.md)).
 
 <p align="center"><img src="docs/assets/brand/stack.png" alt="Who does what: you text; Inkbox is identity and messaging; Maritime hosts one microVM with a desktop per person; inside it Pi runs the loop, Claude is the model, Composio connects apps, Stripe Link pays" width="900"></p>
 
@@ -23,7 +23,7 @@ People can also message the agent on Telegram. Create a bot with [@BotFather](ht
 ```bash
 export TELEGRAM_BOT_TOKEN=123456789:AA...   # from @BotFather
 export TELEGRAM_OWNER_ID=123456789          # your numeric Telegram id (ask @userinfobot)
-pnpm instinct dev
+pnpm orion dev
 ```
 
 Open your bot in Telegram and send a message. No public URL is needed: the agent polls Telegram. Private chats only. Your id makes you the owner; everyone else is a stranger until you add them to `contacts.json` with `"telegramIds"`. Details: [packages/telegram](packages/telegram/README.md).
@@ -47,29 +47,29 @@ Node 22.19+ and pnpm 10. You bring your own keys; [KEYS.md](docs/KEYS.md) lists 
 **On your laptop, no phone number yet**
 
 ```bash
-git clone https://github.com/omarmo46-max/open-instinct && cd open-instinct
+git clone https://github.com/omarmo46-max/open-instinct && cd open-orion
 nvm use && corepack enable        # if corepack needs permissions: npm install -g pnpm@10
 pnpm install && pnpm build
 export ANTHROPIC_API_KEY=sk-ant-...
-pnpm instinct init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-instinct
-pnpm instinct dev                 # then, in another terminal:
-pnpm instinct chat "remember that I like window seats"
+pnpm orion init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-orion
+pnpm orion dev                 # then, in another terminal:
+pnpm orion chat "remember that I like window seats"
 ```
 
 **With an iMessage line**
 
 ```bash
 export INKBOX_ADMIN_API_KEY=...   # inkbox.ai console
-pnpm instinct init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-instinct
-pnpm instinct dev --tunnel
-pnpm instinct connect             # prints the number and the text to send: connect @maria-instinct
+pnpm orion init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-orion
+pnpm orion dev --tunnel
+pnpm orion connect             # prints the number and the text to send: connect @maria-orion
 ```
 
-**The Instinct way: one agent per person on Maritime**
+**One agent per person on Maritime**
 
 ```bash
 export MARITIME_API_KEY=mk_...    # maritime.sh, Settings, API keys
-pnpm instinct deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest
+pnpm orion deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest
 ```
 
 For many people, run the [gateway](packages/gateway/README.md): a signup page that provisions an identity and an agent per person. Guide: [DEPLOY-MARITIME.md](docs/DEPLOY-MARITIME.md).
@@ -78,7 +78,7 @@ For many people, run the [gateway](packages/gateway/README.md): a signup page th
 |---|---|
 | <img src="docs/assets/screenshots/gateway-landing.png" alt="Gateway signup page" width="480"> | <img src="docs/assets/screenshots/gateway-connect.png" alt="Connect page" width="480"> |
 
-<p align="center"><img src="docs/assets/screenshots/cli-help.png" alt="instinct --help" width="860"></p>
+<p align="center"><img src="docs/assets/screenshots/cli-help.png" alt="orion --help" width="860"></p>
 
 ## Repository
 
@@ -93,19 +93,24 @@ packages/network    contacts, tiers, grants, invitations, agent-to-agent tools
 packages/payments   Stripe Link wallet: one-time cards the owner approves
 packages/server     the agent process (/health, /chat, /schedules)
 packages/gateway    multi-user relay and signup
-packages/cli        the instinct command
+packages/cli        the orion command
+packages/media      voice notes to text, PDF/Word/text files made readable
+packages/web        website, accounts and the dashboard that talks to each agent
+packages/ample      publish web apps from the agent's workspace
+packages/atomicmail the agent's own inbox (Atomic Mail MCP)
+packages/context    live web answers (Context.dev)
+packages/keenable   web search and page fetch (Keenable)
 skills/             playbooks the agent follows
 docs/               architecture, permissions, protocol, keys, deploy, research
 ```
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [Customize](docs/CUSTOMIZE.md) · [Permissions](docs/PERMISSIONS.md) · [Protocol](docs/PROTOCOL.md) · [Keys](docs/KEYS.md) · [Deploy on Maritime](docs/DEPLOY-MARITIME.md) · [Self-host](docs/SELF-HOST.md) · [Inkbox](docs/INKBOX.md) · [Composio](docs/COMPOSIO.md) · [Context.dev](docs/CONTEXT.md) · [Keenable](docs/KEENABLE.md) · [Payments](docs/PAYMENTS.md) · [Security](docs/SECURITY.md) · [FAQ](docs/FAQ.md) · [Examples](examples/README.md) · Research: [What Instinct is](docs/research/INSTINCT.md), [Requirements](docs/research/REQUIREMENTS.md), [Tech reference](docs/research/TECH-REFERENCE.md)
+[Architecture](docs/ARCHITECTURE.md) · [Customize](docs/CUSTOMIZE.md) · [Permissions](docs/PERMISSIONS.md) · [Protocol](docs/PROTOCOL.md) · [Keys](docs/KEYS.md) · [Deploy on Maritime](docs/DEPLOY-MARITIME.md) · [Self-host](docs/SELF-HOST.md) · [Inkbox](docs/INKBOX.md) · [Composio](docs/COMPOSIO.md) · [Context.dev](docs/CONTEXT.md) · [Keenable](docs/KEENABLE.md) · [Payments](docs/PAYMENTS.md) · [Security](docs/SECURITY.md) · [FAQ](docs/FAQ.md) · [Examples](examples/README.md)
 
 ## Status
 
-Version 0.1. Nine packages, 837 tests, a scripted end-to-end smoke test, and a cold-start test from a fresh clone. Live iMessage and Maritime deployment were exercised against real identities during development; treat them as beta. Logins, 2FA and payments go to you through a desktop takeover or a Link approval, never to the model alone.
+Version 0.1. 17 packages, about 1,500 tests, a scripted end-to-end smoke test, and a cold-start test from a fresh clone. Live iMessage and Maritime deployment were exercised against real identities during development; treat them as beta. Logins, 2FA and payments go to you through a desktop takeover or a Link approval, never to the model alone.
 
-Merit Systems publishes an unrelated project called [OpenInstinct](https://github.com/Merit-Systems/OpenInstinct). This project is not affiliated with it or with Instinct.
 
 [Contributing](CONTRIBUTING.md) · MIT license

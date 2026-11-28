@@ -1,7 +1,7 @@
 {
   "name": "@orion-ai/cli",
   "version": "0.1.0",
-  "description": "instinct CLI: init, dev, deploy to Maritime, connect, invite, trust, status",
+  "description": "orion CLI: init, dev, deploy to Maritime, connect, invite, trust, status",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -40,6 +40,6 @@
     "tsx": "^4.19.0"
   },
   "bin": {
-    "instinct": "./dist/bin.js"
+    "orion": "./dist/bin.js"
   }
 }

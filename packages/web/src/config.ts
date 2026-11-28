@@ -28,7 +28,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, randomKey: () =
     publicUrl,
     brand: env.WEB_BRAND?.trim() || "Orion AI",
     ...(env.WEB_MONGODB_URI?.trim() ? { mongoUri: env.WEB_MONGODB_URI.trim() } : {}),
-    mongoDb: env.WEB_MONGODB_DB?.trim() || "instinct_web",
+    mongoDb: env.WEB_MONGODB_DB?.trim() || "orion_web",
     secretKey,
     allowPrivateAgents: env.WEB_ALLOW_PRIVATE_AGENTS?.trim() === "1",
     trustProxy: env.WEB_TRUST_PROXY?.trim() === "1",

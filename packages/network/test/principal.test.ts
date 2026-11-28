@@ -5,14 +5,14 @@ import { normalizeAgentHandle, resolveA2aPrincipal } from "../src/principal.js";
 import { agentPrincipal, contactPrincipal, fakeContacts, owner, stranger } from "./fakes.js";
 
 const contacts = fakeContacts([
-  { name: "Sam Lee", tier: "partner", agentHandle: "sam-instinct", phones: ["6175550101"] },
+  { name: "Sam Lee", tier: "partner", agentHandle: "sam-orion", phones: ["6175550101"] },
   { name: "Sam Lin", tier: "friend", emails: ["lin@example.com"] },
 ]);
 
 describe("resolveA2aPrincipal", () => {
   it("maps a caller handle to the contact's tier regardless of @ and case", () => {
-    expect(resolveA2aPrincipal("@Sam-Instinct", contacts)).toMatchObject({ tier: "partner", contact: { id: "sam-lee" } });
-    expect(resolveA2aPrincipal("sam-instinct", contacts).tier).toBe("partner");
+    expect(resolveA2aPrincipal("@Sam-Orion", contacts)).toMatchObject({ tier: "partner", contact: { id: "sam-lee" } });
+    expect(resolveA2aPrincipal("sam-orion", contacts).tier).toBe("partner");
   });
 
   it("treats unknown or empty callers as strangers", () => {
@@ -21,7 +21,7 @@ describe("resolveA2aPrincipal", () => {
   });
 
   it("normalizes handles", () => {
-    expect(normalizeAgentHandle("  @@Maria-Instinct ")).toBe("maria-instinct");
+    expect(normalizeAgentHandle("  @@Maria-Orion ")).toBe("maria-orion");
   });
 });
 
@@ -32,7 +32,7 @@ describe("lookupContact", () => {
     expect(lookupContact(contacts, "Sam Lee").contact?.name).toBe("Sam Lee");
     expect(lookupContact(contacts, "(617) 555-0101").contact?.name).toBe("Sam Lee");
     expect(lookupContact(contacts, "LIN@example.com").contact?.name).toBe("Sam Lin");
-    expect(lookupContact(contacts, "@sam-instinct").contact?.name).toBe("Sam Lee");
+    expect(lookupContact(contacts, "@sam-orion").contact?.name).toBe("Sam Lee");
   });
 
   it("refuses to guess between similar names", () => {
@@ -68,7 +68,7 @@ describe("lookupContact", () => {
 describe("networkGuidance", () => {
   it("tells the owner how to use the network tools", () => {
     const text = networkGuidance(owner);
-    expect(text).toContain("ask_instinct");
+    expect(text).toContain("ask_orion");
     expect(text).toContain("at most 3 options");
     expect(text).toContain("confirm with the owner");
   });
@@ -80,7 +80,7 @@ describe("networkGuidance", () => {
     expect(text).toContain("calendar details");
     expect(text).toContain("acting for Sam Lee");
     expect(text).toContain("say who you act for");
-    expect(text).toContain("reply_instinct");
+    expect(text).toContain("reply_orion");
     expect(text).toContain("at most 3 options");
     expect(text).toContain("declined with fail and reported to the owner");
   });
@@ -90,14 +90,14 @@ describe("networkGuidance", () => {
     const lin = contacts.get("sam-lin")!;
     const text = networkGuidance(contactPrincipal(lin));
     expect(text).toContain("tell the owner what was asked");
-    expect(text).toContain("reaching other people's Instincts");
+    expect(text).toContain("reaching other people's Orions");
   });
 
   it("gives strangers and contacts nothing about the owner", () => {
     expect(networkGuidance(stranger)).toContain("nothing about the owner");
     const lin = contacts.get("sam-lin")!;
     expect(networkGuidance(contactPrincipal(lin))).toContain("free/busy blocks only");
-    expect(networkGuidance(contactPrincipal(lin))).not.toContain("reply_instinct");
+    expect(networkGuidance(contactPrincipal(lin))).not.toContain("reply_orion");
   });
 });
 

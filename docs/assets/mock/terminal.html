@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><title>instinct --help</title>
+<!doctype html><html><head><meta charset="utf-8"><title>orion --help</title>
 <style>
 body{margin:0;background:#F2F2F7;display:flex;justify-content:center;padding:40px;font-family:-apple-system,Helvetica,Arial,sans-serif}
 .win{width:1040px;background:#1E1E1E;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,.3);overflow:hidden}
@@ -8,51 +8,51 @@ body{margin:0;background:#F2F2F7;display:flex;justify-content:center;padding:40p
 pre{margin:0;padding:22px 26px 28px;color:#E6E6E6;font:14px/1.5 "SF Mono",Menlo,Consolas,monospace;white-space:pre-wrap}
 .p{color:#7EE787} .c{color:#79C0FF}
 </style></head><body><div class="win"><div class="bar"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="t">orion-ai — zsh</span></div>
-<pre><span class="p">❯</span> <span class="c">pnpm instinct --help</span>
-instinct  Orion AI: a personal agent you text on iMessage, with its own computer.
+<pre><span class="p">❯</span> <span class="c">pnpm orion --help</span>
+orion  Orion AI: a personal agent you text on iMessage, with its own computer.
 
-Usage: instinct &lt;command&gt; [options]   (add --help to any command)
+Usage: orion &lt;command&gt; [options]   (add --help to any command)
 
 Set up
   init     Write config.json and, with INKBOX_ADMIN_API_KEY, provision the agent&#x27;s iMessage identity.
-           instinct init --name &quot;Maria&quot; --phone +14155550100 --email maria@example.com --handle maria-instinct
+           orion init --name &quot;Maria&quot; --phone +14155550100 --email maria@example.com --handle maria-orion
   connect  Print the router number and `connect @handle` text; save the QR to &lt;dataDir&gt;/connect-qr.png.
-           instinct connect
+           orion connect
 
 Run
   dev     Run the agent server in this process. --tunnel opens an Inkbox tunnel so iMessage reaches it.
-          instinct dev --port 8080 --tunnel
+          orion dev --port 8080 --tunnel
   chat    Send one message to a running agent, locally or through api.maritime.sh.
-          instinct chat &quot;what is on my calendar tomorrow&quot;
+          orion chat &quot;what is on my calendar tomorrow&quot;
   status  Show what a running server reports on GET /.
-          instinct status
+          orion status
 
 Deploy
   deploy  Create the Maritime agent (own microVM with a desktop) from a built image. Needs MARITIME_API_KEY.
-          instinct deploy --image ghcr.io/maria/orion-ai-agent:latest
+          orion deploy --image ghcr.io/maria/orion-ai-agent:latest
 
 Payments
   payments  Link the owner&#x27;s Stripe Link wallet to the agent (prints the authorize URL) and show what is connected.
-            instinct payments connect
+            orion payments connect
 
 People and trust
   invite  Add a person to the trusted network and create an Inkbox A2A invitation for their agent.
-          instinct invite &quot;Sam Lee&quot; --tier partner --email sam@example.com --handle sam-instinct
+          orion invite &quot;Sam Lee&quot; --tier partner --email sam@example.com --handle sam-orion
   trust   Change tiers and scoped grants. Tiers: partner, family, friend, contact, stranger.
-          instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note &quot;dinner this week&quot;
+          orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note &quot;dinner this week&quot;
 
 Customize
   persona  Read or change &lt;dataDir&gt;/PERSONA.md: the agent&#x27;s name, voice, texting style and limits.
-           instinct persona set &quot;You are Pip. Dry wit, short sentences, never emojis.&quot;
+           orion persona set &quot;You are Pip. Dry wit, short sentences, never emojis.&quot;
   prompt   Print the system prompt your own conversation would get right now, built from the data dir.
-           instinct prompt --layers
+           orion prompt --layers
 
 Proactive
   schedules  Cron or one-shot prompts the agent runs for you, delivered over iMessage.
-             instinct schedules add &quot;0 8 * * 1-5&quot; &quot;Morning briefing: calendar, weather, top emails&quot; --tz America/New_York
+             orion schedules add &quot;0 8 * * 1-5&quot; &quot;Morning briefing: calendar, weather, top emails&quot; --tz America/New_York
 
-Global: --data-dir &lt;dir&gt; (default $INSTINCT_DATA_DIR or ./.instinct), --help, --version
+Global: --data-dir &lt;dir&gt; (default $ORION_DATA_DIR or ./.orion), --help, --version
 
-Env: INSTINCT_DATA_DIR, INKBOX_ADMIN_API_KEY, MARITIME_API_KEY, ANTHROPIC_API_KEY, COMPOSIO_API_KEY, COMPOSIO_TOOLKITS, LINK_CLIENT_ID, EDITOR
+Env: ORION_DATA_DIR, INKBOX_ADMIN_API_KEY, MARITIME_API_KEY, ANTHROPIC_API_KEY, COMPOSIO_API_KEY, COMPOSIO_TOOLKITS, LINK_CLIENT_ID, EDITOR
 Customize the agent (persona, instructions, skills, memory, tiers): docs/CUSTOMIZE.md
 </pre></div></body></html>

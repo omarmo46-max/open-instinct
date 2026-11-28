@@ -1,7 +1,7 @@
 /**
  * C6 vault: logins, cards and addresses, encrypted at rest with AES-256-GCM. The key comes from
- * the environment (`INSTINCT_VAULT_KEY`, 32 bytes as base64 or hex) or a passphrase run through
- * scrypt (`INSTINCT_VAULT_PASSPHRASE`). Card security codes (CVV) are never stored.
+ * the environment (`ORION_VAULT_KEY`, 32 bytes as base64 or hex) or a passphrase run through
+ * scrypt (`ORION_VAULT_PASSPHRASE`). Card security codes (CVV) are never stored.
  * The model never needs the values: it writes `{{secret:vault:Label.field}}` and the runtime
  * fills it in after the owner says yes (see SecretBroker).
  */
@@ -53,11 +53,11 @@ interface Stored {
   ct: string;
 }
 
-export function keyFromEnv(env: { INSTINCT_VAULT_KEY?: string | undefined }): Buffer | undefined {
-  const raw = env.INSTINCT_VAULT_KEY?.trim();
+export function keyFromEnv(env: { ORION_VAULT_KEY?: string | undefined }): Buffer | undefined {
+  const raw = env.ORION_VAULT_KEY?.trim();
   if (!raw) return undefined;
   const buf = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
-  if (buf.length !== 32) throw new Error("INSTINCT_VAULT_KEY must be 32 bytes (64 hex characters or base64)");
+  if (buf.length !== 32) throw new Error("ORION_VAULT_KEY must be 32 bytes (64 hex characters or base64)");
   return buf;
 }
 
@@ -98,14 +98,14 @@ export class Vault {
 
   private load(): VaultEntry[] {
     if (this.cache) return this.cache;
-    if (!this.configured) throw new Error("the vault is locked: set INSTINCT_VAULT_KEY or INSTINCT_VAULT_PASSPHRASE");
+    if (!this.configured) throw new Error("the vault is locked: set ORION_VAULT_KEY or ORION_VAULT_PASSPHRASE");
     const stored = this.state.readJson<Partial<Stored>>(FILE, {});
     if (!stored.ct || !stored.nonce || !stored.tag) {
       this.cache = [];
       return this.cache;
     }
     const salt = stored.salt ? Buffer.from(stored.salt, "base64") : undefined;
-    if (stored.kdf === "scrypt" && !this.passphrase) throw new Error("this vault was made with a passphrase; set INSTINCT_VAULT_PASSPHRASE");
+    if (stored.kdf === "scrypt" && !this.passphrase) throw new Error("this vault was made with a passphrase; set ORION_VAULT_PASSPHRASE");
     this.salt = salt;
     try {
       const decipher = createDecipheriv("aes-256-gcm", this.keyFor(salt), Buffer.from(stored.nonce, "base64"));

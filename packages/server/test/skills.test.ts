@@ -26,7 +26,7 @@ const textOf = (r: ToolResultLike) => (typeof r === "string" ? r : r.content.map
 
 describe("skills", () => {
   let dir: string;
-  beforeEach(() => (dir = mkdtempSync(join(tmpdir(), "instinct-skills-"))));
+  beforeEach(() => (dir = mkdtempSync(join(tmpdir(), "orion-skills-"))));
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
   it("resolves explicit, then env, then the repo folder, skipping missing dirs", () => {
@@ -34,8 +34,8 @@ describe("skills", () => {
     const b = join(dir, "b");
     mkdirSync(a);
     mkdirSync(b);
-    expect(resolveSkillsDir({ explicit: a, env: { INSTINCT_SKILLS_DIR: b } })).toBe(a);
-    expect(resolveSkillsDir({ explicit: join(dir, "missing"), env: { INSTINCT_SKILLS_DIR: b } })).toBe(b);
+    expect(resolveSkillsDir({ explicit: a, env: { ORION_SKILLS_DIR: b } })).toBe(a);
+    expect(resolveSkillsDir({ explicit: join(dir, "missing"), env: { ORION_SKILLS_DIR: b } })).toBe(b);
     expect(resolveSkillsDir({ env: {} })).toBeUndefined();
     // The repo's own skills folder, relative to a module three levels down.
     const fakeModule = `file://${join(dir, "packages", "server", "dist", "boot.js")}`;

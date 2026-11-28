@@ -168,12 +168,12 @@ describe("parseInkboxEvent: message.received (mail)", () => {
       thread_id: "th_1",
       message_id: "<abc@mail.example>",
       from_address: "Sam@Example.com",
-      to_addresses: ["maria-instinct@inkbox.ai"],
+      to_addresses: ["maria-orion@inkbox.ai"],
       cc_addresses: null,
       subject: "Dinner next week",
       snippet: "Hi, are you free",
       body: "Hi, are you free Thursday?\n\nSam",
-      email_address: "maria-instinct@inkbox.ai",
+      email_address: "maria-orion@inkbox.ai",
       direction: "inbound",
       status: "received",
       has_attachments: false,
@@ -193,9 +193,9 @@ describe("parseInkboxEvent: message.received (mail)", () => {
       inkboxMessageId: "mail_1",
       threadId: "th_1",
       subject: "Dinner next week",
-      mailbox: "maria-instinct@inkbox.ai",
+      mailbox: "maria-orion@inkbox.ai",
     });
-    expect(m.meta).toMatchObject({ to: ["maria-instinct@inkbox.ai"], hasAttachments: false });
+    expect(m.meta).toMatchObject({ to: ["maria-orion@inkbox.ai"], hasAttachments: false });
   });
 
   it("falls back to the snippet and the Inkbox id when body and Message-ID are absent", () => {
@@ -217,10 +217,10 @@ describe("parseInkboxEvent: A2A", () => {
     task_id: "task_1",
     context_id: "ctx_1",
     state: "submitted",
-    caller: { handle: "sam-instinct", identity_id: "id_9", organization_id: "org_9" },
+    caller: { handle: "sam-orion", identity_id: "id_9", organization_id: "org_9" },
     message_id: "m_1",
     parts: [
-      { text: "Hi, this is Sam's Instinct. Is Maria free Thursday evening?" },
+      { text: "Hi, this is Sam's Orion. Is Maria free Thursday evening?" },
       { data: { oip: "1", intent: "request_freebusy", payload: { window: { from: "2026-10-08", to: "2026-10-09" } } } },
       { text: "Reply by noon." },
     ],
@@ -230,8 +230,8 @@ describe("parseInkboxEvent: A2A", () => {
     const m = parseInkboxEvent(envelope("a2a.task.created", data))!;
     expect(m.channel).toBe("a2a");
     expect(m.conversationKey).toBe("a2a:ctx_1");
-    expect(m.from).toBe("sam-instinct");
-    expect(m.text).toBe("Hi, this is Sam's Instinct. Is Maria free Thursday evening?\n\nReply by noon.");
+    expect(m.from).toBe("sam-orion");
+    expect(m.text).toBe("Hi, this is Sam's Orion. Is Maria free Thursday evening?\n\nReply by noon.");
     expect(m.data).toMatchObject({ oip: "1", intent: "request_freebusy" });
     expect(m.replyRef).toEqual({ taskId: "task_1", contextId: "ctx_1", messageId: "m_1" });
     expect(m.meta).toMatchObject({ eventType: "a2a.task.created", state: "submitted", callerIdentityId: "id_9" });
@@ -253,8 +253,8 @@ describe("parseInkboxEvent: A2A", () => {
     const m = parseInkboxEvent(envelope("a2a.task.canceled", { ...data, state: "canceled", message_id: undefined, parts: [] }, "evt_c"))!;
     expect(m.channel).toBe("a2a");
     expect(m.conversationKey).toBe("a2a:ctx_1");
-    expect(m.from).toBe("sam-instinct");
-    expect(m.text).toBe("[task task_1 canceled by @sam-instinct]");
+    expect(m.from).toBe("sam-orion");
+    expect(m.text).toBe("[task task_1 canceled by @sam-orion]");
     expect(m.replyRef).toEqual({ taskId: "task_1", contextId: "ctx_1", messageId: undefined });
     expect(m.meta).toMatchObject({ eventType: "a2a.task.canceled", state: "canceled", direction: "received" });
     expect(m.data).toBeUndefined();
@@ -273,8 +273,8 @@ describe("parseInkboxEvent: A2A", () => {
       task_id: "task_7",
       context_id: "ctx_7",
       state: "completed",
-      caller: { handle: "maria-instinct", identity_id: "id_me", organization_id: "org_me" },
-      sender: { handle: "sam-instinct", identity_id: "id_9", organization_id: "org_9" },
+      caller: { handle: "maria-orion", identity_id: "id_me", organization_id: "org_me" },
+      sender: { handle: "sam-orion", identity_id: "id_9", organization_id: "org_9" },
       message_id: "m_9",
       parts: [{ text: "Thu 7pm works for Sam." }, { data: { oip: "1", intent: "accept", payload: { slot: { start: "2026-10-08T19:00:00-07:00" } } } }],
     };
@@ -284,8 +284,8 @@ describe("parseInkboxEvent: A2A", () => {
       expect(m.channel).toBe("a2a");
       expect(m.id).toBe("evt_s");
       expect(m.conversationKey).toBe("a2a:ctx_7");
-      expect(m.from).toBe("sam-instinct");
-      expect(m.from).not.toBe("maria-instinct");
+      expect(m.from).toBe("sam-orion");
+      expect(m.from).not.toBe("maria-orion");
       expect(m.text).toBe("Thu 7pm works for Sam.");
       expect(m.data).toEqual({ oip: "1", intent: "accept", payload: { slot: { start: "2026-10-08T19:00:00-07:00" } } });
       expect(m.replyRef).toEqual({ taskId: "task_7", contextId: "ctx_7", messageId: "m_9" });
@@ -304,11 +304,11 @@ describe("parseInkboxEvent: A2A", () => {
     });
 
     it("falls back to the task id as context and reads other peer field names", () => {
-      const noCtx = parseInkboxEvent(envelope("a2a.sent_task.updated", { task_id: "task_8", state: "working", caller: { handle: "maria-instinct" }, worker: { handle: "alex-instinct" }, parts: [{ text: "on it" }] }))!;
+      const noCtx = parseInkboxEvent(envelope("a2a.sent_task.updated", { task_id: "task_8", state: "working", caller: { handle: "maria-orion" }, worker: { handle: "alex-orion" }, parts: [{ text: "on it" }] }))!;
       expect(noCtx.conversationKey).toBe("a2a:task_8");
       expect(noCtx.replyRef).toMatchObject({ taskId: "task_8", contextId: "task_8" });
-      expect(noCtx.from).toBe("alex-instinct");
-      const unknownPeer = parseInkboxEvent(envelope("a2a.sent_task.updated", { task_id: "task_9", context_id: "c9", state: "working", caller: { handle: "maria-instinct" } }))!;
+      expect(noCtx.from).toBe("alex-orion");
+      const unknownPeer = parseInkboxEvent(envelope("a2a.sent_task.updated", { task_id: "task_9", context_id: "c9", state: "working", caller: { handle: "maria-orion" } }))!;
       // Never present our own identity as the sender.
       expect(unknownPeer.from).toBe("");
       expect(unknownPeer.text).toBe("[working]");

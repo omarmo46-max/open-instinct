@@ -12,8 +12,8 @@ describe("setup summary", () => {
     expect(text).toContain("Payments: not set up");
   });
   it("describes a fully wired agent", () => {
-    const text = setupSummaryFor({ inkbox: { handle: "maria-instinct" }, computerKind: "desktopd", apps: { connected: ["gmail"], anyApp: true, toolkits: [] }, wallet: { connected: true } });
-    expect(text).toContain("@maria-instinct");
+    const text = setupSummaryFor({ inkbox: { handle: "maria-orion" }, computerKind: "desktopd", apps: { connected: ["gmail"], anyApp: true, toolkits: [] }, wallet: { connected: true } });
+    expect(text).toContain("@maria-orion");
     expect(text).toContain("own Linux desktop");
     expect(text).toContain("any app by name");
     expect(text).toContain("Connected: gmail");

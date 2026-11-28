@@ -65,8 +65,8 @@ describe("config", () => {
     expect(c).toMatchObject({ enabled: true, intervalMinutes: 5, maxPerRun: 20, quietFrom: "23:00" });
   });
   it("lets env win", () => {
-    expect(resolveTriggers({ enabled: true }, { INSTINCT_TRIGGERS: "0" }).enabled).toBe(false);
-    expect(resolveTriggers({}, { INSTINCT_TRIGGERS: "yes", INSTINCT_QUIET_HOURS: "22:30-06:15" })).toMatchObject({ enabled: true, quietFrom: "22:30", quietTo: "06:15" });
+    expect(resolveTriggers({ enabled: true }, { ORION_TRIGGERS: "0" }).enabled).toBe(false);
+    expect(resolveTriggers({}, { ORION_TRIGGERS: "yes", ORION_QUIET_HOURS: "22:30-06:15" })).toMatchObject({ enabled: true, quietFrom: "22:30", quietTo: "06:15" });
   });
   it("builds a valid cron", () => {
     expect(scanCron(30)).toBe("*/30 * * * *");

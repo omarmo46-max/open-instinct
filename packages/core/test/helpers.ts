@@ -2,17 +2,17 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { StateDir } from "../src/state.js";
-import type { InboundMessage, InstinctConfig, Principal, Tier } from "../src/types.js";
+import type { InboundMessage, OrionConfig, Principal, Tier } from "../src/types.js";
 import { defaultConfig } from "../src/config.js";
 
 export function tempState(): StateDir {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "instinct-core-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "orion-core-"));
   const state = new StateDir(root);
   state.ensure();
   return state;
 }
 
-export function testConfig(overrides: Partial<InstinctConfig["owner"]> = {}): InstinctConfig {
+export function testConfig(overrides: Partial<OrionConfig["owner"]> = {}): OrionConfig {
   const cfg = defaultConfig();
   cfg.owner = {
     name: "Maria",
@@ -21,7 +21,7 @@ export function testConfig(overrides: Partial<InstinctConfig["owner"]> = {}): In
     timezone: "America/New_York",
     ...overrides,
   };
-  cfg.agent = { name: "Instinct", handle: "maria-instinct" };
+  cfg.agent = { name: "Orion", handle: "maria-orion" };
   return cfg;
 }
 

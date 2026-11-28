@@ -1,7 +1,7 @@
 # Trust tiers and permissions
 
-Instinct's trusted network works because each person in your life gets a different amount
-of access. Your partner's Instinct can see your calendar; a friend's can only ask when you
+Orion's trusted network works because each person in your life gets a different amount
+of access. Your partner's Orion can see your calendar; a friend's can only ask when you
 are free; a stranger can leave a message. Orion AI makes that table explicit, editable
 in plain English, and enforced in code.
 
@@ -18,7 +18,7 @@ that commits you.
 | `staff` | your own agents working as a team (A2A only) | read your calendar, mail and contacts and use your connected apps, with your approval for bookings, payments, calendar writes and email; no shell, files or computer |
 | `partner` | spouse or partner | read your calendar, propose and hold bookings, book with your approval, see your location, know most of your preferences |
 | `family` | close family | see free/busy, coordinate plans, approximate location, some preferences |
-| `friend` | friends and their Instincts | see free/busy, propose plans, be told yes or no |
+| `friend` | friends and their Orions | see free/busy, propose plans, be told yes or no |
 | `contact` | people you know (colleagues, services) | converse, pass a message to you, get public facts about you |
 | `stranger` | anyone else | one short introduction, leave a message; rate limited |
 
@@ -83,7 +83,7 @@ spend or scope limit.
 | `computer.use` | yes | no | no | no | no | no | no |
 | `files.read`, `files.write` | yes | no | no | no | no | no | no |
 | `memory.write` | yes | no | no | no | no | no | no |
-| `network.ask` (ask another Instinct on the owner's behalf) | yes | yes | yes | yes | yes | no | no |
+| `network.ask` (ask another Orion on the owner's behalf) | yes | yes | yes | yes | yes | no | no |
 | `network.invite` | yes | no | no | no | no | no | no |
 | `trust.manage` | yes | no | no | no | no | no | no |
 | `schedule.manage` | yes | no | no | no | no | no | no |
@@ -116,7 +116,7 @@ the owner's own thread can carry text the owner did not write (a pasted page, a 
 injected "call this number" must never dial on its own. The model's reading of the owner's words
 (`approval_settle`) cannot settle a call either, the same rule as for payments. Staff asks the owner;
 everyone else is denied unless a grant names `phone.call` (a grant is the owner's standing yes, so it opens the
-call without a question each time), and a grant to a partner's Instinct still runs the call from the owner's
+call without a question each time), and a grant to a partner's Orion still runs the call from the owner's
 line. See [INKBOX.md](INKBOX.md#phone-calls).
 
 `phone.concierge` is `concierge_call` (E6): a call placed under a standing mandate the owner set earlier. The
@@ -126,7 +126,7 @@ time. Changing the mandate (`concierge_mandate_set`) carries `phone.call`, so it
 injected instruction cannot widen it. Owner only.
 
 `computer.use` covers every desktop tool, including `request_takeover` and `takeover_status`. Only the
-owner has it, so no other person's Instinct can drive the desktop or hand it to a human.
+owner has it, so no other person's Orion can drive the desktop or hand it to a human.
 
 Memory is the owner's notebook. Everyone else sees at most the `## Preferences` section of
 `MEMORY.md`: partners get the section ("most"), family and friends get a shorter cut with a reminder to
@@ -162,7 +162,7 @@ result, so an email from the owner's own address resolves to the `owner:email` p
 tier `partner`, wrapped as untrusted like any other contact, with no `bash`, files, computer, `email.read`
 or memory, and no power to settle approvals. Anything that needs the owner's say-so is still confirmed by
 text. The literal sender `owner` is never a sentinel on a network channel, and `owner` is a reserved agent
-handle that no contact may carry; the gateway signup form and `instinct init --handle` refuse it too.
+handle that no contact may carry; the gateway signup form and `orion init --handle` refuse it too.
 
 ## Group threads
 
@@ -177,22 +177,22 @@ approval. Approval texts always go to the owner's own thread or phone, never to 
 ## Group plans (fan-out)
 
 A group plan is different from a group thread. "Dinner with Sam and Priya" makes the owner's agent call
-`ask_instinct` with `contacts: ["Sam", "Priya"]`. The tool sends the same intent, subject and payload to
+`ask_orion` with `contacts: ["Sam", "Priya"]`. The tool sends the same intent, subject and payload to
 each person separately:
 
-- A contact with an Instinct gets an A2A task of their own. Their reply comes back in its own
+- A contact with an Orion gets an A2A task of their own. Their reply comes back in its own
   `a2a:<context_id>` conversation. The model combines the answers for the owner.
-- A contact without an Instinct gets the same request as a text or email, written by `oipToText`.
+- A contact without an Orion gets the same request as a text or email, written by `oipToText`.
   This fallback is the owner's alone.
 - The tool returns one line per person and `details.results` with each person's `ok`, `via`,
   `taskId` and `contextId`. `contextId` continues one peer's topic, so it is refused with several
   contacts.
 
-The tier rules apply per recipient on the receiving side: each Instinct answers with what the owner's
+The tier rules apply per recipient on the receiving side: each Orion answers with what the owner's
 tier on *their* side allows. On the sending side, a partner, family member or friend may use
-`ask_instinct` only to reach their own Instinct through this one. Any other name, known or not, gets
+`ask_orion` only to reach their own Orion through this one. Any other name, known or not, gets
 the same generic refusal; the contact list is never enumerated. Their request goes out prefixed with
-who asked ("From Jo, relayed by Maria's Instinct (not Maria's request): ...") and `on_behalf_of.display`
+who asked ("From Jo, relayed by Maria's Orion (not Maria's request): ...") and `on_behalf_of.display`
 names them, never the owner.
 
 ## Grants
@@ -212,7 +212,7 @@ words into a `trust_grant` call:
 
 Grants are additive and never widen past `owner`. They are listed with `trust_list`, revoked with
 `trust_revoke`, and expire on their own. The CLI can do the same from a terminal:
-`instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"`.
+`orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"`.
 
 A grant that covers `purchase` or `travel.book` is still spending. The spend policy below runs with the
 grant's `maxUsd` as the ask threshold: blocked merchants are denied, flights and hotels (anything in
@@ -287,7 +287,7 @@ happen:
    retry. Explain politely that you cannot do this for them."
 2. The owner hears that it was asked. The agent texts the owner's phone:
 
-   > Sam's agent (@sam-instinct) asked to read your calendar; I declined.
+   > Sam's agent (@sam-orion) asked to read your calendar; I declined.
 
    For an `ask` outcome the approval text itself is the notice ("... ; I am asking you first").
 
@@ -308,12 +308,12 @@ with a refusal, and nothing from `MEMORY.md` leaves the process.
 - "Let Alex see my calendar this week" → `trust_grant`
 - "Stop sharing my location with family" → `trust_revoke`
 - "Who can do what?" → `trust_list`
-- "Invite Priya's Instinct" → `invite_to_network`
+- "Invite Priya's Orion" → `invite_to_network`
 - "Connect my wallet" → `payment_connect`
 - "What did you do today?" → `audit_read`
 
-The same from a terminal: `instinct trust list | set <contact> <tier> | grant ... | revoke <grantId>`
-and `instinct invite "Sam Lee" --tier partner --handle sam-instinct`.
+The same from a terminal: `orion trust list | set <contact> <tier> | grant ... | revoke <grantId>`
+and `orion invite "Sam Lee" --tier partner --handle sam-orion`.
 
 ## Defaults for a new agent
 

@@ -4,7 +4,7 @@
  * the agent boots without payment tools. The contract below mirrors the package's
  * exports so this file typechecks on its own.
  */
-import type { AuditLog, InstinctConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
+import type { AuditLog, OrionConfig, Outbox, RegisteredTool, StateDir } from "@orion-ai/core";
 
 export interface LinkWalletLike {
   authorizeUrl(): { url: string; state: string };
@@ -26,7 +26,7 @@ export interface LinkWalletOptions {
 export interface PaymentsToolDeps {
   wallet: LinkWalletLike;
   outbox: Outbox;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: AuditLog;
   state: StateDir;
 }
@@ -41,7 +41,7 @@ export interface PaymentsModule {
   LinkWallet: new (opts: LinkWalletOptions) => LinkWalletLike;
   paymentsTools(deps: PaymentsToolDeps): RegisteredTool[];
   /** Egyptian-pound rail (Vodafone Cash temporary cards today, partners later). Optional in older builds. */
-  createEgpRail?(opts: { state: StateDir; outbox: Outbox; config: InstinctConfig; audit: AuditLog; publicUrl: string }): EgpRailLike;
+  createEgpRail?(opts: { state: StateDir; outbox: Outbox; config: OrionConfig; audit: AuditLog; publicUrl: string }): EgpRailLike;
 }
 
 /** The EGP rail is opt-in: EGP_WALLET=1. It needs no Stripe keys, so Egypt works without Link. */
@@ -61,8 +61,8 @@ export interface PaymentsEnv {
 
 /**
  * Payments are on when all three Link/Stripe variables are set. The redirect URI is
- * LINK_REDIRECT_URI, else INSTINCT_PUBLIC_URL + the callback path, else loopback on
- * the local port (fine for `instinct dev`; the gateway relays the callback otherwise).
+ * LINK_REDIRECT_URI, else ORION_PUBLIC_URL + the callback path, else loopback on
+ * the local port (fine for `orion dev`; the gateway relays the callback otherwise).
  */
 export function paymentsEnv(env: NodeJS.ProcessEnv): PaymentsEnv | undefined {
   const clientId = env.LINK_CLIENT_ID?.trim();
@@ -70,7 +70,7 @@ export function paymentsEnv(env: NodeJS.ProcessEnv): PaymentsEnv | undefined {
   const publishableKey = env.STRIPE_PUBLISHABLE_KEY?.trim();
   if (!clientId || !clientSecret || !publishableKey) return undefined;
   const explicit = env.LINK_REDIRECT_URI?.trim();
-  const publicUrl = env.INSTINCT_PUBLIC_URL?.trim().replace(/\/+$/, "");
+  const publicUrl = env.ORION_PUBLIC_URL?.trim().replace(/\/+$/, "");
   const port = env.PORT?.trim() || "8080";
   const redirectUri = explicit || (publicUrl ? `${publicUrl}${LINK_CALLBACK_PATH}` : `http://127.0.0.1:${port}${LINK_CALLBACK_PATH}`);
   return { clientId, clientSecret, publishableKey, redirectUri };

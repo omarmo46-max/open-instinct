@@ -14,7 +14,7 @@ export const MARITIME_APP_URL = "https://maritime.sh";
  * same constant for multi-user signups.
  */
 export const MARITIME_AGENT_PORT = 18789;
-/** A model id Maritime's metered OpenAI-compatible proxy serves. Override with --model or INSTINCT_MARITIME_MODEL. */
+/** A model id Maritime's metered OpenAI-compatible proxy serves. Override with --model or ORION_MARITIME_MODEL. */
 export const DEFAULT_MARITIME_LLM_MODEL = "gpt-5.4";
 
 export interface MaritimeEnvVar {

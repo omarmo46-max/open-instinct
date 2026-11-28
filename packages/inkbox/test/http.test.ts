@@ -58,10 +58,10 @@ describe("createRest", () => {
   it("retries a 429 with Retry-After: 1 once and returns the eventual body", async () => {
     let n = 0;
     const fake = fakeFetch({
-      "GET /api/v1/identities/maria-instinct/a2a/tasks/t1": () => (++n === 1 ? { status: 429, body: { detail: "slow down" }, headers: { "Retry-After": "1" } } : { body: { id: "t1", state: "completed" } }),
+      "GET /api/v1/identities/maria-orion/a2a/tasks/t1": () => (++n === 1 ? { status: 429, body: { detail: "slow down" }, headers: { "Retry-After": "1" } } : { body: { id: "t1", state: "completed" } }),
     });
     const sleeps: number[] = [];
-    const out = await rest(fake, sleeps).request<{ state: string }>("GET", "/identities/maria-instinct/a2a/tasks/t1");
+    const out = await rest(fake, sleeps).request<{ state: string }>("GET", "/identities/maria-orion/a2a/tasks/t1");
     expect(out.state).toBe("completed");
     expect(fake.calls).toHaveLength(2);
     expect(sleeps).toEqual([1000]);

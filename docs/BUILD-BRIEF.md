@@ -78,7 +78,7 @@ Wrap MCP tools as AgentTools exactly as pi-mcp's README shows (Type.Unsafe({...i
 ```ts
 import { Inkbox, verifyWebhook } from "@inkbox/sdk";
 const inkbox = new Inkbox({ apiKey });                              // admin key: org-wide; identity key: one identity
-const id = await inkbox.createIdentity("maria-instinct", { displayName: "Maria's Instinct", imessageEnabled: true, phoneNumber: { type: "local", incomingCallAction: "auto_reject" } });
+const id = await inkbox.createIdentity("maria-orion", { displayName: "Maria's Orion", imessageEnabled: true, phoneNumber: { type: "local", incomingCallAction: "auto_reject" } });
 const identity = await inkbox.getIdentity(handle);
 await identity.sendIMessage({ conversationId, text, replyToMessageId?, sendStyle?, mediaUrls?, idempotencyKey? });  // or { to: "+1..." } on a dedicated line
 await identity.sendIMessageTyping(conversationId); await identity.sendIMessageReaction({ ... }); await identity.markIMessageConversationRead(conversationId);

@@ -7,7 +7,7 @@
  */
 import { Type } from "typebox";
 import { defineTool, textResult } from "@orion-ai/core";
-import type { AuditLog, InstinctConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@orion-ai/core";
+import type { AuditLog, OrionConfig, Principal, RegisteredTool, StateDir, ToolResultLike } from "@orion-ai/core";
 import { CALL_REASON_MAX, E164, VOICEMAIL_MESSAGE_MAX } from "./tools.js";
 import type { CallOrigination, InkboxChannel } from "./channel.js";
 
@@ -49,7 +49,7 @@ export interface CallLogEntry {
 
 export interface ConciergeDeps {
   channel: Pick<InkboxChannel, "placeCall">;
-  config: InstinctConfig;
+  config: OrionConfig;
   audit: Pick<AuditLog, "append">;
   state: Pick<StateDir, "readJson" | "writeJson">;
   callOrigination?: CallOrigination;

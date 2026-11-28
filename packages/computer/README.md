@@ -23,7 +23,7 @@ screenshot. The default frame is 1200x750 (physical 1280x800); every result repo
 height. Prompts written for one backend work on the other.
 
 Every tool carries `meta: { capabilities: ["computer.use"], group: "computer" }`. The policy
-engine in `@orion-ai/core` allows `computer.use` for the owner only, so a friend's Instinct
+engine in `@orion-ai/core` allows `computer.use` for the owner only, so a friend's Orion
 can never drive the desktop, whatever it asks.
 
 ## Picking a backend

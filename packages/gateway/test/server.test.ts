@@ -484,7 +484,7 @@ describe("gateway http", () => {
     expect((await fetch(`${base}/nope`)).status).toBe(404);
     const connect = await fetch(`${base}/connect/usr_missing`);
     expect(connect.status).toBe(404);
-    expect(await connect.text()).toContain("No Instinct with that id");
+    expect(await connect.text()).toContain("No Orion with that id");
   });
 });
 

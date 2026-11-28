@@ -87,14 +87,14 @@ export function modelPage(c: AppCtx, m: ModelConfig | undefined, flash: Flash): 
 
 export function connectionPage(c: AppCtx, user: User, flash: Flash, newSecret?: string, publicUrl?: string): string {
   const secretBox = newSecret
-    ? `<div class="alert ok"><b>Callback secret (shown once)</b><br>Add these to your assistant's environment so it can report model problems here:<br><code>INSTINCT_WEB_URL=${esc(publicUrl ?? "")}</code><br><code>INSTINCT_WEB_SECRET=${esc(newSecret)}</code></div>`
+    ? `<div class="alert ok"><b>Callback secret (shown once)</b><br>Add these to your assistant's environment so it can report model problems here:<br><code>ORION_WEB_URL=${esc(publicUrl ?? "")}</code><br><code>ORION_WEB_SECRET=${esc(newSecret)}</code></div>`
     : "";
   return `${flashBox(flash)}${secretBox}
 <div class="panel"><div class="ph"><h3>Your assistant</h3>${user.agentUrl ? '<span class="tag ok">Connected</span>' : '<span class="tag gray">Not connected</span>'}</div><div class="pb">
 <form method="post" action="/app/connection" autocomplete="off">${hidden(c)}
 <label for="url">Address</label><input id="url" type="url" name="url" required placeholder="https://your-assistant.example.com" value="${esc(user.agentUrl ?? "")}">
 <label for="tok">Access token</label><input id="tok" type="password" name="token" ${user.agentUrl ? "" : "required"} autocomplete="off" placeholder="${user.agentUrl ? "Leave empty to keep the saved token" : ""}">
-<p class="hint">This is the <code>INSTINCT_CHAT_TOKEN</code> of your assistant. It is encrypted before it is stored. The address must be public and use https.</p>
+<p class="hint">This is the <code>ORION_CHAT_TOKEN</code> of your assistant. It is encrypted before it is stored. The address must be public and use https.</p>
 <div class="row" style="margin-top:22px"><button class="btn" type="submit">Save and check</button></div></form>
 ${user.agentUrl ? `<form method="post" action="/app/connection/disconnect" style="margin-top:14px">${hidden(c)}<button class="btn ghost sm" type="submit">Disconnect</button></form>` : ""}</div></div>`;
 }

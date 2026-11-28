@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EventDeduper, conversationIdOf, isDeliveryEvent, relayEvent } from "../src/relay.js";
 import { fakeMaritime, imessageEvent, readyUser, signHeaders } from "./helpers.js";
 
-const PREFIX = "@@instinct-event@@";
+const PREFIX = "@@orion-event@@";
 
 function deps(mar = fakeMaritime()) {
   return {

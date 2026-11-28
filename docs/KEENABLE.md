@@ -10,7 +10,7 @@ No account is needed. Turn it on before starting or deploying the agent:
 
 ```bash
 export KEENABLE_SEARCH=1
-pnpm instinct dev
+pnpm orion dev
 ```
 
 Keyless use is limited per IP address. For higher limits, create a key in the
@@ -21,7 +21,7 @@ key alone also turns the tools on:
 export KEENABLE_API_KEY=keen_...
 ```
 
-`instinct deploy` forwards both variables to Maritime, the key as an encrypted
+`orion deploy` forwards both variables to Maritime, the key as an encrypted
 secret. The gateway also forwards its `KEENABLE_SEARCH` and `KEENABLE_API_KEY`
 to each agent it provisions.
 

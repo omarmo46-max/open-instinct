@@ -2,9 +2,9 @@
 
 E3 (invite links, referrals) and E4 (group coordination of 10 to 100 people) are not built and are out of scope. The groups the agent may answer in (Phase A) are a different, smaller feature and stay.
 
-## E5: shareable pages (`INSTINCT_PAGES=1`)
+## E5: shareable pages (`ORION_PAGES=1`)
 
-The owner asks for a poll, a sign-up list or an RSVP. `page_create` returns a public link `INSTINCT_PUBLIC_URL/p/<id>`.
+The owner asks for a poll, a sign-up list or an RSVP. `page_create` returns a public link `ORION_PUBLIC_URL/p/<id>`.
 
 - The page is plain HTML, no scripts, a strict Content-Security-Policy, every value escaped, Arabic (right to left) by default or English.
 - Limits: 2 to 10 poll options, up to 500 responses, a name of at most 60 characters, a note of at most 300, 5 responses per visitor per hour, open for 14 days by default (up to 90).

@@ -20,11 +20,11 @@ Maritime runs any image that follows these rules. This server follows them.
 | Bind `0.0.0.0:$PORT` when `PORT` is injected (Maritime sets 18789); loopback for a bare local run | `src/main.ts`, `src/bind.ts` |
 | `GET /health` returns 200 JSON | `src/http.ts` |
 | `POST /chat { message, source?, conversation_id? }` returns `{ response }` within 30 s | `src/http.ts`, reply budget in `AgentRuntime` |
-| State persists under `/data` | `INSTINCT_DATA_DIR`, `resolveDataDir` |
+| State persists under `/data` | `ORION_DATA_DIR`, `resolveDataDir` |
 | `python3` on PATH | `deploy/Dockerfile.agent` |
 | Optional `GET /schedules` for proactive wakes | `src/http.ts`, `Scheduler.toMaritimeSchedules()` |
 
-Long work: `/chat` waits up to `INSTINCT_REPLY_BUDGET_MS` (default 20 s). If the
+Long work: `/chat` waits up to `ORION_REPLY_BUDGET_MS` (default 20 s). If the
 model is still working, the response is a one-line acknowledgement and the final
 text is sent through the outbox when the run finishes. Nothing is lost.
 
@@ -35,9 +35,9 @@ text is sent through the outbox when the run finishes. Nothing is lost.
 | GET | `/health` | open | `{ ok: true }` |
 | GET | `/` or `/status` | token | agent name, handle, model, conversations, busy, computer kind, connected apps, uptime, `pendingReplies` per chat conversation, `payments.connected` when Link is configured |
 | GET | `/schedules` | token | the schedule list in Maritime's shape |
-| GET | `/oauth/link/start` | token | `{ url }`: a fresh Link authorize URL; the server keeps the PKCE verifier. 404 without payments. Used by `instinct payments connect` |
-| GET | `/payments/status` | token | `{ connected }`. 404 without payments. Used by `instinct payments status` |
-| POST | `/chat` | token | Four cases, in this order. (1) `message` starts with `@@instinct-event@@` and the event is `{ type: "link.oauth_callback", code, state }`: the Link wallet handshake is completed, `response` is `""`. (2) The event is `{ type: "system.task", id, prompt, name?, quiet? }`: a task from whoever operates the agent (a front door that wants research done before the first text, a one-off reminder). It runs as the owner on `system:<id>` past the HTTP budget; the result is texted to the owner unless `quiet` is true, and `response` is `""` with `conversationKey` set. A runtime without `runSystemTask` answers `blocked`. (3) Any other envelope is an Inkbox event relayed by the gateway: parsed, handled, reply sent through Inkbox, `response` is `""`. (4) `source` is `"scheduled"`: a Maritime schedule wake, see below. (5) Otherwise the owner is talking on `chat:<conversation_id ?? "default">` and the reply comes back in `response`; replies the runtime finished after an earlier ack on that conversation come back in `pending`. |
+| GET | `/oauth/link/start` | token | `{ url }`: a fresh Link authorize URL; the server keeps the PKCE verifier. 404 without payments. Used by `orion payments connect` |
+| GET | `/payments/status` | token | `{ connected }`. 404 without payments. Used by `orion payments status` |
+| POST | `/chat` | token | Four cases, in this order. (1) `message` starts with `@@orion-event@@` and the event is `{ type: "link.oauth_callback", code, state }`: the Link wallet handshake is completed, `response` is `""`. (2) The event is `{ type: "system.task", id, prompt, name?, quiet? }`: a task from whoever operates the agent (a front door that wants research done before the first text, a one-off reminder). It runs as the owner on `system:<id>` past the HTTP budget; the result is texted to the owner unless `quiet` is true, and `response` is `""` with `conversationKey` set. A runtime without `runSystemTask` answers `blocked`. (3) Any other envelope is an Inkbox event relayed by the gateway: parsed, handled, reply sent through Inkbox, `response` is `""`. (4) `source` is `"scheduled"`: a Maritime schedule wake, see below. (5) Otherwise the owner is talking on `chat:<conversation_id ?? "default">` and the reply comes back in `response`; replies the runtime finished after an earlier ack on that conversation come back in `pending`. |
 | GET | `/oauth/link/callback?code&state` | open | Stripe Link redirects the owner here after they approve the wallet. Completes `wallet.handleCallback` and renders a small "Connected" page. 404 page when payments are not configured, 400 page on a missing code/state, a Link `error`, or a state mismatch. |
 | POST | `/webhooks/inkbox` | signature | Raw body. Verifies `X-Inkbox-Signature` (HMAC-SHA256 over `request_id.timestamp.body`, 5 min window). 503 when no signing key is configured, 401 when invalid, else 204 at once and the event is handled in the background. |
 
@@ -50,21 +50,21 @@ are JSON and never crash the process.
 with the full owner tool set (bash, files, computer, apps, purchases), and an envelope is
 trusted as a verified Inkbox event. So they are guarded twice.
 
-1. **Token.** With `INSTINCT_CHAT_TOKEN` set (or `chatToken` passed to `createHttpServer`),
-   every call must carry `Authorization: Bearer <token>` or `X-Instinct-Token: <token>`,
+1. **Token.** With `ORION_CHAT_TOKEN` set (or `chatToken` passed to `createHttpServer`),
+   every call must carry `Authorization: Bearer <token>` or `X-Orion-Token: <token>`,
    compared in constant time, or it gets `401` before the body is read. Envelopes without
    the token are rejected the same way, so nobody can forge an iMessage "from" the owner's
    number. `/health`, `/webhooks/inkbox` (signed) and `/oauth/link/callback` (state-bound,
    browser redirect) never need it.
 2. **Bind address.** Without a token the network is the guard. `main.ts` listens on
    `127.0.0.1` unless `PORT` or a `MARITIME_*` variable says this is a container
-   (`INSTINCT_BIND` overrides). Inside a Maritime VM the port is private and only
+   (`ORION_BIND` overrides). Inside a Maritime VM the port is private and only
    Maritime's own authenticated API reaches `/chat`, which is why Maritime's relay works
    without the token (Maritime cannot add our header). `deploy/docker-compose.yml`
    publishes `127.0.0.1:8080`. A warning is logged when the server binds beyond loopback
    with no token.
 
-The Inkbox tunnel never exposes this surface. With `INSTINCT_TUNNEL=1` the server starts a
+The Inkbox tunnel never exposes this surface. With `ORION_TUNNEL=1` the server starts a
 second, loopback-only listener (`listenTunnelServer`, `tunnelOnly: true`) that answers
 `GET /health` and `POST /webhooks/inkbox` and returns `404` for everything else, and points
 the tunnel at that. The public `https://<handle>.inkboxwire.com` URL therefore reaches
@@ -90,25 +90,25 @@ Only `server`, `gateway` and `cli` read `process.env`. Full list with comments:
 
 | Variable | Effect |
 |---|---|
-| `INSTINCT_DATA_DIR` | state root; default `/data` if it exists, else `./.instinct` |
-| `INSTINCT_MODEL` | `provider/model`; default `anthropic/claude-fable-5-1`; `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
-| `INSTINCT_OWNER_NAME/PHONE/EMAIL/TIMEZONE`, `INSTINCT_AGENT_NAME` | seed `config.json` on first boot |
+| `ORION_DATA_DIR` | state root; default `/data` if it exists, else `./.orion` |
+| `ORION_MODEL` | `provider/model`; default `anthropic/claude-fable-5-1`; `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
+| `ORION_OWNER_NAME/PHONE/EMAIL/TIMEZONE`, `ORION_AGENT_NAME` | seed `config.json` on first boot |
 | `INKBOX_API_KEY` + `INKBOX_AGENT_HANDLE` (+ `INKBOX_IDENTITY_ID`) | outbox becomes Inkbox; messaging tools and A2A appear |
 | `INKBOX_SIGNING_KEY` | webhook verification (also read from `<data>/secrets/webhook.json`) |
 | `INKBOX_ADMIN_API_KEY` | invitations and contact rules; with the tunnel, auto-subscribes the webhook |
-| `INSTINCT_TUNNEL=1` | open an Inkbox tunnel to a loopback webhook-only listener and print its public URL |
-| `INSTINCT_CHAT_TOKEN` | bearer token for `/chat`, `/status`, `/schedules` (see "Who may call /chat") |
-| `INSTINCT_BIND` | bind address override; default loopback, or `0.0.0.0` when `PORT` or `MARITIME_*` is set |
-| `INSTINCT_PUBLIC_URL` | this agent's public URL, used to build the Link callback URL |
-| `INSTINCT_COMPUTER` | `auto`, `desktopd`, `maritime`, `none` |
+| `ORION_TUNNEL=1` | open an Inkbox tunnel to a loopback webhook-only listener and print its public URL |
+| `ORION_CHAT_TOKEN` | bearer token for `/chat`, `/status`, `/schedules` (see "Who may call /chat") |
+| `ORION_BIND` | bind address override; default loopback, or `0.0.0.0` when `PORT` or `MARITIME_*` is set |
+| `ORION_PUBLIC_URL` | this agent's public URL, used to build the Link callback URL |
+| `ORION_COMPUTER` | `auto`, `desktopd`, `maritime`, `none` |
 | `MARITIME_DESKTOP=1` | injected by Maritime when the VM has a desktop; `auto` then waits up to 60 s for desktopd to start instead of giving up on the first refused probe |
 | `MARITIME_API_KEY`, `MARITIME_COMPUTERS_MCP_URL` | hosted computer when no in-VM desktop |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | Gmail, Calendar, Contacts and more through Composio; the key alone turns apps on |
 | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `STRIPE_PUBLISHABLE_KEY` | all three together turn on payments (Stripe Link agent wallet, `@orion-ai/payments`) |
-| `LINK_REDIRECT_URI` | where Link sends the owner back; default `INSTINCT_PUBLIC_URL` + `/oauth/link/callback`, else `http://127.0.0.1:$PORT/oauth/link/callback` |
+| `LINK_REDIRECT_URI` | where Link sends the owner back; default `ORION_PUBLIC_URL` + `/oauth/link/callback`, else `http://127.0.0.1:$PORT/oauth/link/callback` |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, ... | provider keys, looked up from the env the server was given (`apiKeyFor`), never from `process.env` behind its back |
 | `BRAVE_SEARCH_API_KEY` | better `web_search`; DuckDuckGo otherwise |
-| `INSTINCT_SKILLS_DIR` | SKILL.md folder; default `<repo>/skills` |
+| `ORION_SKILLS_DIR` | SKILL.md folder; default `<repo>/skills` |
 | `MARITIME_AGENT_ID`, `MARITIME_BACKEND_URL`, `MARITIME_INTERNAL_TOKEN` | injected by Maritime; schedules are pushed to the platform on boot and when they change |
 | `PORT` | listen port, default 8080 (Maritime injects 18789; the image sets none) |
 
@@ -135,7 +135,7 @@ handshake:
 3. Either that URI is this server's `GET /oauth/link/callback?code&state`, which calls
    `wallet.handleCallback(code, state)` and shows "Connected", or it is the gateway's
    callback, which relays `{ type: "link.oauth_callback", code, state }` to this agent as an
-   `@@instinct-event@@` envelope on `/chat`, and the server completes the same call.
+   `@@orion-event@@` envelope on `/chat`, and the server completes the same call.
 
 `GET /status` reports `payments: { connected }`. When the package is not installed the
 server logs `payments: ... not installed; skipping` and boots without payment tools.
@@ -188,13 +188,13 @@ and `bash` with `files.read` / `files.write` capabilities (owner only by default
 
 ```bash
 pnpm -r build
-INSTINCT_OWNER_PHONE=+15551234567 ANTHROPIC_API_KEY=... INSTINCT_CHAT_TOKEN=$(openssl rand -hex 24) node packages/server/dist/main.js
-curl -s 127.0.0.1:8080/chat -H "authorization: Bearer $INSTINCT_CHAT_TOKEN" -H 'content-type: application/json' -d '{"message":"hi"}'
+ORION_OWNER_PHONE=+15551234567 ANTHROPIC_API_KEY=... ORION_CHAT_TOKEN=$(openssl rand -hex 24) node packages/server/dist/main.js
+curl -s 127.0.0.1:8080/chat -H "authorization: Bearer $ORION_CHAT_TOKEN" -H 'content-type: application/json' -d '{"message":"hi"}'
 ```
 
 Without `PORT` the server listens on `127.0.0.1:8080`; the token is optional on loopback
 but cheap to set. With an Inkbox identity, add `INKBOX_API_KEY`, `INKBOX_AGENT_HANDLE` and
-`INSTINCT_TUNNEL=1`. The server prints the tunnel URL (it serves webhooks only) and, when
+`ORION_TUNNEL=1`. The server prints the tunnel URL (it serves webhooks only) and, when
 `INKBOX_ADMIN_API_KEY` is set, subscribes `imessage.received`, `text.received`,
 `message.received` and the A2A events to `<url>/webhooks/inkbox`. The signing key is
 stored in `<data>/secrets/webhook.json` (mode 0600).
@@ -234,7 +234,7 @@ skills loader.
 
 `deploy/Dockerfile.agent` builds this package into `ghcr.io/<owner>/orion-ai-agent`.
 The image sets no `PORT` (Maritime injects 18789; compose sets 8080), runs the server as
-the unprivileged `instinct` user through `deploy/entrypoint.sh` (which fixes `/data`
+the unprivileged `orion` user through `deploy/entrypoint.sh` (which fixes `/data`
 ownership and drops privileges with `setpriv`), and health-checks `${PORT:-8080}`.
 `deploy/docker-compose.yml` runs it next to the gateway for a local trial, publishing the
 agent on `127.0.0.1:8080` only.

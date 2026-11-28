@@ -366,9 +366,9 @@ describe("C6 vault", () => {
     expect(() => v.lookup("vault:Netflix.color")).toThrow("no field");
     expect(v.remove("netflix")).toBe(true);
     expect(v.remove("netflix")).toBe(false);
-    expect(keyFromEnv({ INSTINCT_VAULT_KEY: "07".repeat(32) })?.length).toBe(32);
+    expect(keyFromEnv({ ORION_VAULT_KEY: "07".repeat(32) })?.length).toBe(32);
     expect(keyFromEnv({})).toBeUndefined();
-    expect(() => keyFromEnv({ INSTINCT_VAULT_KEY: "short" })).toThrow("32 bytes");
+    expect(() => keyFromEnv({ ORION_VAULT_KEY: "short" })).toThrow("32 bytes");
   });
 });
 

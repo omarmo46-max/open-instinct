@@ -9,15 +9,15 @@ const ctx = (conversationKey: string) => ({ principal: owner, conversationKey })
 
 function sdkRoutes(extra: Record<string, unknown> = {}) {
   return {
-    "GET /api/v1/identities/maria-instinct": { body: rawIdentity(extra) },
+    "GET /api/v1/identities/maria-orion": { body: rawIdentity(extra) },
     "GET /api/v1/imessage/messages/msg_1": { body: { id: "msg_1", conversation_id: "conv_1", created_at: "2026-10-03T00:00:00Z", updated_at: "2026-10-03T00:00:00Z" } },
     "POST /api/v1/imessage/messages": (req: Recorded) => ({ body: { message: { id: "sent_1", conversation_id: req.body && (req.body as { conversation_id?: string }).conversation_id, created_at: "2026-10-03T00:00:00Z", updated_at: "2026-10-03T00:00:00Z" } } }),
     "POST /api/v1/phone/numbers/pn_1/texts": { body: { id: "txt_1", created_at: "2026-10-03T00:00:00Z", updated_at: "2026-10-03T00:00:00Z" } },
-    "POST /api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages": { body: { id: "mail_1", created_at: "2026-10-03T00:00:00Z" } },
+    "POST /api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages": { body: { id: "mail_1", created_at: "2026-10-03T00:00:00Z" } },
     "POST /api/v1/imessage/typing": { status: 204 },
     "POST /api/v1/imessage/reactions": { body: { id: "r_1", conversation_id: "conv_1", message_id: "msg_1", reaction: "love", created_at: "2026-10-03T00:00:00Z" } },
     "POST /api/v1/imessage/mark-read": { body: { conversation_id: "conv_1", updated_count: 2 } },
-    "POST /api/v1/identities/maria-instinct/a2a/tasks/task_1/reply": { body: { id: "task_1", context_id: "ctx_1", state: "completed", caller: { identity_id: "x", organization_id: "y", handle: "sam" }, messages: [], created_at: "2026-10-03T00:00:00Z", updated_at: "2026-10-03T00:00:00Z" } },
+    "POST /api/v1/identities/maria-orion/a2a/tasks/task_1/reply": { body: { id: "task_1", context_id: "ctx_1", state: "completed", caller: { identity_id: "x", organization_id: "y", handle: "sam" }, messages: [], created_at: "2026-10-03T00:00:00Z", updated_at: "2026-10-03T00:00:00Z" } },
   };
 }
 
@@ -31,7 +31,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 function channel() {
-  return new InkboxChannel({ apiKey: "ik_test", handle: "@maria-instinct", baseUrl: BASE, fetchImpl: fake.fetchImpl });
+  return new InkboxChannel({ apiKey: "ik_test", handle: "@maria-orion", baseUrl: BASE, fetchImpl: fake.fetchImpl });
 }
 
 function sends(path: string) {
@@ -43,7 +43,7 @@ describe("InkboxChannel routing", () => {
     const ch = channel();
     await ch.send({ channel: "imessage", conversationKey: "imessage:conv_1", text: "On it.", replyToMessageId: "msg_1" }, ctx("imessage:conv_1"));
     await ch.send({ channel: "imessage", conversationKey: "imessage:conv_1", text: "Done." }, ctx("imessage:conv_1"));
-    const idGets = fake.calls.filter((c) => c.path === "/api/v1/identities/maria-instinct");
+    const idGets = fake.calls.filter((c) => c.path === "/api/v1/identities/maria-orion");
     expect(idGets).toHaveLength(1);
     expect(idGets[0]?.headers["x-api-key"]).toBe("ik_test");
     const posts = sends("/api/v1/imessage/messages");
@@ -88,7 +88,7 @@ describe("InkboxChannel routing", () => {
     const ch = channel();
     const msg = { channel: "email" as const, conversationKey: "email:th_1", to: "sam@example.com", text: "Thursday works.", replyRef: { subject: "Dinner next week", messageId: "<abc@mail.example>" } };
     await ch.send(msg, ctx("email:th_1"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toEqual({ recipients: { to: ["sam@example.com"] }, subject: "Re: Dinner next week", body_text: "Thursday works.", in_reply_to_message_id: "<abc@mail.example>" });
   });
 
@@ -100,11 +100,11 @@ describe("InkboxChannel routing", () => {
       conversationKey: "email:th_2",
       from: "sam@example.com",
       text: "Subject: Re: Plans\n\nhi",
-      replyRef: { subject: "Re: Plans", messageId: "<m2@x>", threadId: "th_2", mailbox: "maria-instinct@inkbox.ai" },
+      replyRef: { subject: "Re: Plans", messageId: "<m2@x>", threadId: "th_2", mailbox: "maria-orion@inkbox.ai" },
       receivedAt: "2026-10-03T00:00:00Z",
     });
     await ch.send({ channel: "email", conversationKey: "email:th_2", text: "Sounds good." }, ctx("email:th_2"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toEqual({ recipients: { to: ["sam@example.com"] }, subject: "Re: Plans", body_text: "Sounds good.", in_reply_to_message_id: "<m2@x>" });
   });
 
@@ -112,7 +112,7 @@ describe("InkboxChannel routing", () => {
     // What core's runtime.deliver sends after a message.received webhook: no `to`, the inbound replyRef attached.
     const msg = { channel: "email" as const, conversationKey: "email:th_1", text: "Thursday works.", replyRef: { from: "sam@example.com", subject: "Dinner next week", messageId: "<abc@mail.example>", threadId: "th_1" } };
     await channel().send(msg, ctx("email:th_1"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toEqual({ recipients: { to: ["sam@example.com"] }, subject: "Re: Dinner next week", body_text: "Thursday works.", in_reply_to_message_id: "<abc@mail.example>" });
   });
 
@@ -120,7 +120,7 @@ describe("InkboxChannel routing", () => {
     const ch = channel();
     ch.remember({ id: "e", channel: "email", conversationKey: "email:th_3", from: "old@example.com", text: "x", replyRef: { subject: "Old", messageId: "<old@x>" }, receivedAt: "2026-10-03T00:00:00Z" });
     await ch.send({ channel: "email", conversationKey: "email:th_3", text: "hi", replyRef: { from: "new@example.com", subject: "New", messageId: "<new@x>" } } as Parameters<typeof ch.send>[0], ctx("email:th_3"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toEqual({ recipients: { to: ["new@example.com"] }, subject: "Re: New", body_text: "hi", in_reply_to_message_id: "<new@x>" });
   });
 
@@ -130,8 +130,8 @@ describe("InkboxChannel routing", () => {
 
   it("starts a new email with a plain subject", async () => {
     await channel().send({ channel: "email", to: ["a@b.co", "c@d.co"], text: "Hello" }, ctx("chat:x"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
-    expect(post?.body).toEqual({ recipients: { to: ["a@b.co", "c@d.co"] }, subject: "Message from your Instinct", body_text: "Hello" });
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
+    expect(post?.body).toEqual({ recipients: { to: ["a@b.co", "c@d.co"] }, subject: "Message from your Orion", body_text: "Hello" });
   });
 
   it("answers an A2A task with text and data parts", async () => {
@@ -139,16 +139,16 @@ describe("InkboxChannel routing", () => {
       { channel: "a2a", conversationKey: "a2a:ctx_1", text: "Maria is free Thursday after 7.", a2a: { taskId: "task_1", intent: "complete", data: { oip: "1", intent: "inform" } } },
       ctx("a2a:ctx_1"),
     );
-    const post = sends("/api/v1/identities/maria-instinct/a2a/tasks/task_1/reply")[0];
+    const post = sends("/api/v1/identities/maria-orion/a2a/tasks/task_1/reply")[0];
     expect(post?.body).toEqual({ intent: "complete", parts: [{ text: "Maria is free Thursday after 7." }, { data: { oip: "1", intent: "inform" } }] });
   });
 
   it("completes an A2A task from replyRef.taskId when msg.a2a is absent, and from remember() as a last resort", async () => {
     const ch = channel();
     await ch.send({ channel: "a2a", conversationKey: "a2a:ctx_1", text: "Free after 7.", replyRef: { taskId: "task_1", contextId: "ctx_1" } } as Parameters<typeof ch.send>[0], ctx("a2a:ctx_1"));
-    ch.remember({ id: "e", channel: "a2a", conversationKey: "a2a:ctx_1", from: "sam-instinct", text: "?", replyRef: { taskId: "task_1", contextId: "ctx_1" }, receivedAt: "2026-10-03T00:00:00Z" });
+    ch.remember({ id: "e", channel: "a2a", conversationKey: "a2a:ctx_1", from: "sam-orion", text: "?", replyRef: { taskId: "task_1", contextId: "ctx_1" }, receivedAt: "2026-10-03T00:00:00Z" });
     await ch.send({ channel: "a2a", conversationKey: "a2a:ctx_1", text: "Still free." }, ctx("a2a:ctx_1"));
-    const posts = sends("/api/v1/identities/maria-instinct/a2a/tasks/task_1/reply");
+    const posts = sends("/api/v1/identities/maria-orion/a2a/tasks/task_1/reply");
     expect(posts).toHaveLength(2);
     expect(posts[0]?.body).toEqual({ intent: "complete", parts: [{ text: "Free after 7." }] });
     expect(posts[1]?.body).toEqual({ intent: "complete", parts: [{ text: "Still free." }] });
@@ -177,7 +177,7 @@ describe("InkboxChannel routing", () => {
     let fail = true;
     fake = fakeFetch({
       ...sdkRoutes(),
-      "GET /api/v1/identities/maria-instinct": () => (fail ? { status: 500, body: { detail: "boom" } } : { body: rawIdentity() }),
+      "GET /api/v1/identities/maria-orion": () => (fail ? { status: 500, body: { detail: "boom" } } : { body: rawIdentity() }),
     });
     vi.stubGlobal("fetch", fake.fetchImpl);
     const ch = channel();
@@ -194,7 +194,7 @@ describe("InkboxChannel routing", () => {
   it("encodes mailbox attachment names as a single path segment", async () => {
     fake = fakeFetch({
       ...sdkRoutes(),
-      "GET /api/v1/mail/mailboxes/maria-instinct%40inkbox.ai/messages/mail_1/attachments/photo%20%231%2Ffinal.png": { body: { url: "https://media.example.test/signed" } },
+      "GET /api/v1/mail/mailboxes/maria-orion%40inkbox.ai/messages/mail_1/attachments/photo%20%231%2Ffinal.png": { body: { url: "https://media.example.test/signed" } },
     });
     vi.stubGlobal("fetch", fake.fetchImpl);
     expect(await channel().emailAttachment("mail_1", "photo #1/final.png")).toEqual({ url: "https://media.example.test/signed" });
@@ -241,7 +241,7 @@ describe("InkboxChannel.sendFile", () => {
     const ch = channel();
     const r = await ch.sendFile({ channel: "email", to: "sam@example.com", filename: "brief.pdf", contentType: "application/pdf", content: pdf, caption: "Here is the brief as a PDF.", subject: "Research brief" }, ctx("chat:cli"));
     expect(r).toEqual({ channel: "email" });
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toEqual({
       recipients: { to: ["sam@example.com"] },
       subject: "Research brief",
@@ -255,7 +255,7 @@ describe("InkboxChannel.sendFile", () => {
     const ch = channel();
     ch.remember({ id: "e", channel: "email", conversationKey: "email:th_9", from: "sam@example.com", text: "x", replyRef: { subject: "Plans", messageId: "<p@x>" }, receivedAt: "2026-10-03T00:00:00Z" });
     await ch.sendFile({ channel: "email", conversationKey: "email:th_9", filename: "plan.csv", contentType: "text/csv", content: Buffer.from("a,b\n") }, ctx("email:th_9"));
-    const post = sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")[0];
+    const post = sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")[0];
     expect(post?.body).toMatchObject({ recipients: { to: ["sam@example.com"] }, subject: "Re: Plans", body_text: "Attached: plan.csv", in_reply_to_message_id: "<p@x>" });
     expect((post?.body as { attachments: unknown[] }).attachments).toHaveLength(1);
   });
@@ -296,7 +296,7 @@ describe("InkboxChannel.sendFile", () => {
     const huge = Buffer.alloc(25 * 1024 * 1024 + 1);
     await expect(ch.sendFile({ channel: "email", to: "a@b.co", filename: "huge.bin", contentType: "application/octet-stream", content: huge }, ctx("chat:x"))).rejects.toThrow(/email attachments are capped/);
     expect(sends("/api/v1/imessage/media")).toHaveLength(0);
-    expect(sends("/api/v1/mail/mailboxes/maria-instinct@inkbox.ai/messages")).toHaveLength(0);
+    expect(sends("/api/v1/mail/mailboxes/maria-orion@inkbox.ai/messages")).toHaveLength(0);
   });
 });
 

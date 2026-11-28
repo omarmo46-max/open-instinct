@@ -4,7 +4,6 @@ Inkbox is the identity and communication layer Orion AI uses. It gives an agent 
 
 Analogy: Inkbox is the phone company. Orion AI is the person who answers the phone. The CLI signs the contract, and the server picks up when it rings.
 
-Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 ## Contents
 
@@ -32,22 +31,22 @@ The research notes behind this page are in [research/TECH-REFERENCE.md](research
 
 ## One identity, five addresses
 
-One Inkbox identity is one agent. When `instinct init` runs with an admin key, it creates one identity for your agent. The identity bundles:
+One Inkbox identity is one agent. When `orion init` runs with an admin key, it creates one identity for your agent. The identity bundles:
 
 | Part | Example | Created when |
 |---|---|---|
-| Handle | `maria-instinct` | always. Globally unique, lowercase |
-| Mailbox | `maria-instinct@inkboxmail.com` | always |
+| Handle | `maria-orion` | always. Globally unique, lowercase |
+| Mailbox | `maria-orion@inkboxmail.com` | always |
 | iMessage | the shared router line, or a dedicated line | when `imessage_enabled: true`. `init` turns it on |
-| Phone number | a local US number for SMS and calls | only with `instinct init --phone-number`. Subject to inventory and plan |
-| A2A endpoint | `https://inkbox.ai/a2a/maria-instinct` | automatic. Other agents call this |
-| Tunnel host | `https://maria-instinct.inkboxwire.com` | always. Used by `instinct dev --tunnel` |
+| Phone number | a local US number for SMS and calls | only with `orion init --phone-number`. Subject to inventory and plan |
+| A2A endpoint | `https://inkbox.ai/a2a/maria-orion` | automatic. Other agents call this |
+| Tunnel host | `https://maria-orion.inkboxwire.com` | always. Used by `orion dev --tunnel` |
 
-The handle is the thing people and other agents type. It appears in `connect @maria-instinct`, in A2A URLs, and in contact rules. Pick it once. If it is taken, Inkbox returns a 409 and `init` tries `maria-instinct-2`, up to `-5`.
+The handle is the thing people and other agents type. It appears in `connect @maria-orion`, in A2A URLs, and in contact rules. Pick it once. If it is taken, Inkbox returns a 409 and `init` tries `maria-orion-2`, up to `-5`.
 
 Initialization creates a new identity by default, even when another identity in the org
 already has the requested handle. To intentionally import an existing identity, use
-`instinct init --handle <handle> --use-existing`. An identity already recorded in this
+`orion init --handle <handle> --use-existing`. An identity already recorded in this
 data directory's secrets can be resumed without that flag. Gateway signup always creates
 a new identity for its user.
 
@@ -60,7 +59,7 @@ The agent is one identity. You, the owner, are not an Inkbox identity. You are a
 | Admin key | the whole org | you, in your shell, as `INKBOX_ADMIN_API_KEY` | create identities, mint identity keys, create signing keys, subscribe webhooks, write contact rules, create invitations |
 | Identity-scoped key | one identity | the agent process, as `INKBOX_API_KEY` | send and receive on that identity only. Gets 403 on contact rules, domains and billing |
 
-The split matters. The admin key can read every identity in your org. The agent runs with the narrow key, so a bug or a prompt injection in the agent cannot reach anything but its own line. `instinct init` mints the identity key for you and stores it in `<dataDir>/secrets/inkbox.json`. The admin key is never written to disk by Orion AI.
+The split matters. The admin key can read every identity in your org. The agent runs with the narrow key, so a bug or a prompt injection in the agent cannot reach anything but its own line. `orion init` mints the identity key for you and stores it in `<dataDir>/secrets/inkbox.json`. The admin key is never written to disk by Orion AI.
 
 Inkbox shows a new key once. If you lose the identity key, mint another with the admin key and update the agent's environment.
 
@@ -69,22 +68,22 @@ Inkbox shows a new key once. If you lose the identity key, mint another with the
 On the shared service, every agent in Inkbox sits behind one router phone number. A human links their iPhone to one agent by texting that number once.
 
 ```
-instinct connect
+orion connect
 ```
 
 prints:
 
 ```
 Connect your iMessage
-  1. Text connect @maria-instinct to +1 415 555 0199
-  2. A new thread from your Instinct appears. Say hi.
+  1. Text connect @maria-orion to +1 415 555 0199
+  2. A new thread from your Orion appears. Say hi.
 ```
 
-The number is fetched at runtime from `GET /imessage/triage-number`, never hardcoded. The same call returns the exact connect command, an `sms:` link that opens Messages with the text filled in, and a QR code. `instinct connect` writes the QR to `<dataDir>/connect-qr.png`. The gateway's connect page shows the same three things.
+The number is fetched at runtime from `GET /imessage/triage-number`, never hardcoded. The same call returns the exact connect command, an `sms:` link that opens Messages with the text filled in, and a QR code. `orion connect` writes the QR to `<dataDir>/connect-qr.png`. The gateway's connect page shows the same three things.
 
 What happens on Inkbox's side:
 
-1. You send `connect @maria-instinct` to the router.
+1. You send `connect @maria-orion` to the router.
 2. Inkbox creates an iMessage conversation between your phone and the identity.
 3. Every later message you send arrives as an `imessage.received` webhook with a stable `conversation_id`.
 4. The agent replies by that `conversation_id`.
@@ -190,7 +189,7 @@ Who subscribes, and to what URL:
 
 | Shape | Subscribed by | URL |
 |---|---|---|
-| Self-host | `instinct dev --tunnel`, or the server with `INSTINCT_TUNNEL=1`, when `INKBOX_ADMIN_API_KEY` is set | `https://<handle>.inkboxwire.com/webhooks/inkbox` |
+| Self-host | `orion dev --tunnel`, or the server with `ORION_TUNNEL=1`, when `INKBOX_ADMIN_API_KEY` is set | `https://<handle>.inkboxwire.com/webhooks/inkbox` |
 | Gateway (many users) | the gateway at signup | `<GATEWAY_PUBLIC_URL>/webhooks/inkbox/<userId>` |
 | By hand | you, in the console or with the API | whatever public URL reaches the server |
 
@@ -250,7 +249,7 @@ How a webhook is checked:
 
 The gateway and the server use the same `verifyInkboxSignature` function from `@orion-ai/inkbox`. Nothing reads a webhook body before the signature passes.
 
-To intentionally rotate during initialization, run `instinct init --rotate-signing-key`.
+To intentionally rotate during initialization, run `orion init --rotate-signing-key`.
 If importing an identity not recorded locally, include `--use-existing`. Coordinate the
 new key with every receiver subscribed to that identity; receivers using the old key
 will stop accepting its webhooks. The adapter also exposes explicit `{ rotate: true }`
@@ -267,9 +266,9 @@ A contact rule is `allow` or `block`, a match, and a direction.
 | Channel | Route | Match type | Example |
 |---|---|---|---|
 | iMessage and phone | `/imessage/identities/{handle}/contact-rules` | `exact_number` | allow `+14155550100`, direction `both` |
-| A2A | `/identities/{handle}/a2a/contact-rules` | `handle` | allow `sam-instinct`, direction `both` |
+| A2A | `/identities/{handle}/a2a/contact-rules` | `handle` | allow `sam-orion`, direction `both` |
 
-Writing a rule needs the admin key. Orion AI writes A2A rules in one place: `instinct invite <name> --handle <peer-handle>` calls `addContactRule(ourHandle, peerHandle, "both")`, so the peer's first task is admitted. A duplicate rule returns 409 and is treated as done.
+Writing a rule needs the admin key. Orion AI writes A2A rules in one place: `orion invite <name> --handle <peer-handle>` calls `addContactRule(ourHandle, peerHandle, "both")`, so the peer's first task is admitted. A duplicate rule returns 409 and is treated as done.
 
 Orion AI does not write iMessage contact rules. The agent's own policy handles who may ask for what, and the shared router already requires each human to connect on purpose.
 
@@ -290,7 +289,7 @@ The two gates compared:
 |---|---|---|
 | Decides | whether a message or task is delivered | what the sender may ask for |
 | Lives in | Inkbox, per identity | `policy.json` and `contacts.json` in your data directory |
-| Edited with | the admin key, the console, `instinct invite --handle` | `instinct trust`, `instinct invite`, or plain language to the agent |
+| Edited with | the admin key, the console, `orion invite --handle` | `orion trust`, `orion invite`, or plain language to the agent |
 | Granularity | allow or block | seven tiers plus scoped grants |
 
 ## A2A invitations and how our tiers sit on top
@@ -299,12 +298,12 @@ A2A is how one Orion AI talks to another. Every identity speaks A2A 1.0 JSON-RPC
 
 Orion AI persists each outgoing task's originating conversation, so a peer's answer
 returns to the person who asked. A peer's request for clarification can be continued with
-`ask_instinct` using that task's `taskId`; reusing only `contextId` groups a topic but starts
-a separate task. Worker-side `reply_instinct` takes its task from the current conversation,
+`ask_orion` using that task's `taskId`; reusing only `contextId` groups a topic but starts
+a separate task. Worker-side `reply_orion` takes its task from the current conversation,
 not a model-supplied task ID. Separate tasks are isolated, and cancellation/terminal state
 prevents further tools or delayed approvals from resuming a finished task.
 Nested delegation from an inbound A2A task is not supported: workers use
-`reply_instinct` with `ask_caller` when they need more information.
+`reply_orion` with `ask_caller` when they need more information.
 
 Two identities in different orgs may talk only when both sides allow it. There are two ways to get there:
 
@@ -315,20 +314,20 @@ Two identities in different orgs may talk only when both sides allow it. There a
 
 An invitation returns an id, a link, an `a2ai_` token and a handoff prompt the other person can paste into their own agent. The default expiry is seven days.
 
-`instinct invite` does both the Inkbox part and the Orion AI part in one command:
+`orion invite` does both the Inkbox part and the Orion AI part in one command:
 
 ```bash
-instinct invite "Sam Lee" --tier partner --email sam@example.com --handle sam-instinct
+orion invite "Sam Lee" --tier partner --email sam@example.com --handle sam-orion
 ```
 
 | Step | Where | Effect |
 |---|---|---|
-| 1. Create or update the contact | `contacts.json` | Sam Lee exists, with email and agent handle `sam-instinct` |
+| 1. Create or update the contact | `contacts.json` | Sam Lee exists, with email and agent handle `sam-orion` |
 | 2. Set the tier | `policy.json` | Sam is `partner` |
-| 3. Add the A2A contact rule | Inkbox, admin key | `@sam-instinct` may call `@maria-instinct` and vice versa |
+| 3. Add the A2A contact rule | Inkbox, admin key | `@sam-orion` may call `@maria-orion` and vice versa |
 | 4. Create the invitation | Inkbox, admin key | a link for Sam to forward to their agent |
 
-When `@sam-instinct` later calls, the server resolves the caller handle to the contact whose `agentHandle` matches and takes that contact's tier. Sam's agent gets what a partner gets: calendar details, bookings after you say yes. A handle that matches no contact is a `stranger`, whatever Inkbox let through. Inkbox opened the door. The tier decides what happens in the room.
+When `@sam-orion` later calls, the server resolves the caller handle to the contact whose `agentHandle` matches and takes that contact's tier. Sam's agent gets what a partner gets: calendar details, bookings after you say yes. A handle that matches no contact is a `stranger`, whatever Inkbox let through. Inkbox opened the door. The tier decides what happens in the room.
 
 The full tier table is in [PERMISSIONS.md](PERMISSIONS.md). The message format two agents exchange is in [PROTOCOL.md](PROTOCOL.md). The worked example of a dinner booked between two agents is in the [network README](../packages/network/README.md#worked-example-dinner-between-two-agents).
 
@@ -349,7 +348,7 @@ How the limits show up in Orion AI:
 
 | Limit | What you see |
 |---|---|
-| Identity cap reached | `instinct init` or a gateway signup fails with HTTP 402. The CLI prints `Inkbox plan limit` and the billing URL. The gateway records the error on the user |
+| Identity cap reached | `orion init` or a gateway signup fails with HTTP 402. The CLI prints `Inkbox plan limit` and the billing URL. The gateway records the error on the user |
 | Phone inventory exhausted | HTTP 429 on `--phone-number`. The provisioner retries without a number and the identity still works on iMessage |
 | Rate limits on sends | 429 with `Retry-After`. The channel retries up to two more times when the wait is 5 seconds or less. A 429 with no `Retry-After` is a quota and is reported to the model with the wait time |
 | Unique recipients | a hard cap on how many humans one org's agents can text. For a gateway deployment this bounds how many users you can serve on one plan |
@@ -366,20 +365,20 @@ Inkbox has a path for an agent to register itself with no admin key and no org. 
 
 ```
 POST https://inkbox.ai/api/v1/agent-signup/
-{ "human_email": "maria@example.com", "note_to_human": "This is Maria's Instinct asking for a line.",
-  "display_name": "Maria's Instinct", "agent_handle": "maria-instinct" }
+{ "human_email": "maria@example.com", "note_to_human": "This is Maria's Orion asking for a line.",
+  "display_name": "Maria's Orion", "agent_handle": "maria-orion" }
 ```
 
 The response carries `api_key`, `email_address`, `agent_handle` and `claim_status`. The human gets a six-digit code by email and the agent posts it to `POST /api/v1/agent-signup/verify`. After that the identity is live and the key works like any identity-scoped key.
 
-Orion AI does not automate this path yet. `instinct init` expects `INKBOX_ADMIN_API_KEY`. To use self-signup today:
+Orion AI does not automate this path yet. `orion init` expects `INKBOX_ADMIN_API_KEY`. To use self-signup today:
 
 1. Call the two routes above with curl and keep the `api_key`.
-2. Run `instinct init --name <you> --phone +1... --handle <the handle Inkbox returned> --skip-inkbox`.
-3. Export `INKBOX_API_KEY` and `INKBOX_AGENT_HANDLE` (and `INKBOX_IDENTITY_ID` if you have it) before `instinct dev --tunnel`.
+2. Run `orion init --name <you> --phone +1... --handle <the handle Inkbox returned> --skip-inkbox`.
+3. Export `INKBOX_API_KEY` and `INKBOX_AGENT_HANDLE` (and `INKBOX_IDENTITY_ID` if you have it) before `orion dev --tunnel`.
 4. Subscribe the webhook to the printed tunnel URL with the identity key. The first subscription on a keyless identity returns the `signing_key`. Put it in `INKBOX_SIGNING_KEY`.
 
-What you lose without an org: contact rules and invitations need an admin key, so `instinct invite --handle` cannot open the A2A gate from your side. Another person's org can still invite your agent, and accepting that invitation opens both directions.
+What you lose without an org: contact rules and invitations need an admin key, so `orion invite --handle` cannot open the A2A gate from your side. Another person's org can still invite your agent, and accepting that invitation opens both directions.
 
 ## Environment variables
 
@@ -387,14 +386,14 @@ Each of these is read by the server, the CLI or the gateway. Nothing else in the
 
 | Variable | Set by | Read by | Meaning |
 |---|---|---|---|
-| `INKBOX_ADMIN_API_KEY` | you | `instinct init`, `connect`, `invite`, `dev --tunnel`, the server, the gateway | org-wide key. Provisions identities, mints keys, creates signing keys, subscribes webhooks, writes contact rules, creates invitations |
+| `INKBOX_ADMIN_API_KEY` | you | `orion init`, `connect`, `invite`, `dev --tunnel`, the server, the gateway | org-wide key. Provisions identities, mints keys, creates signing keys, subscribes webhooks, writes contact rules, creates invitations |
 | `INKBOX_API_KEY` | `init` writes it to `secrets/inkbox.json`; `dev` and `deploy` load it | the server, `dev --tunnel` | the identity-scoped key the agent sends with |
 | `INKBOX_AGENT_HANDLE` | same | the server, `dev --tunnel` | the agent's handle. Needed with `INKBOX_API_KEY` for the outbox to become Inkbox |
 | `INKBOX_IDENTITY_ID` | same | the server | the identity's UUID. Saves one lookup when subscribing webhooks |
 | `INKBOX_SIGNING_KEY` | same, or by hand | the server, the gateway | webhook verification. Also read from `secrets/webhook.json` |
 | `INKBOX_BASE_URL` | you | CLI, server, gateway | Inkbox API origin used consistently for provisioning, identity, messaging, hydration and A2A. Default `https://inkbox.ai` |
-| `INSTINCT_TUNNEL` | `dev --tunnel`, or you in `deploy/.env` | the server | `1` opens the tunnel to a webhook-only listener |
-| `INKBOX_VOICE` | you | the server | a Voice AI voice id (`instinct` has no picker yet; see the console's voice list). Set at boot with the assistant instructions. Unset: the org default voice |
+| `ORION_TUNNEL` | `dev --tunnel`, or you in `deploy/.env` | the server | `1` opens the tunnel to a webhook-only listener |
+| `INKBOX_VOICE` | you | the server | a Voice AI voice id (`orion` has no picker yet; see the console's voice list). Set at boot with the assistant instructions. Unset: the org default voice |
 | `INKBOX_CALL_ORIGINATION` | you | the server | force where `phone_call` dials from: `dedicated_number`, `shared_imessage_number` or `dedicated_imessage_number`. Unset: the identity's iMessage line |
 
 Without `INKBOX_API_KEY` and `INKBOX_AGENT_HANDLE` the agent still boots. Replies go to a console outbox and are printed. That is how local development without a phone works.
@@ -405,12 +404,12 @@ The `@orion-ai/inkbox` package wraps the pieces above. The [package README](../p
 
 | Part | Inkbox feature it uses | Called from |
 |---|---|---|
-| `InkboxProvisioner` | identities, API keys, signing keys, subscriptions, router info, A2A settings, contact rules, invitations | `instinct init`, `connect`, `invite`; the gateway at signup; the server when it subscribes its own webhook |
+| `InkboxProvisioner` | identities, API keys, signing keys, subscriptions, router info, A2A settings, contact rules, invitations | `orion init`, `connect`, `invite`; the gateway at signup; the server when it subscribes its own webhook |
 | `verifyInkboxSignature` and `parseInkboxEvent` | signed webhooks, the event catalog | the server's `POST /webhooks/inkbox`; the gateway's `POST /webhooks/inkbox/:userId` |
 | `DurableInbox` | persistent local admission and retries for received events | gateway and agent webhook listeners |
 | `InkboxInboundHydrator` | conversation membership, full mail bodies, attachment retrieval | the server before runtime admission |
 | `InkboxChannel` | iMessage, SMS and email sends, typing, tapbacks, read receipts | the runtime's outbox |
-| `InkboxA2A` | A2A send and reply | the network tools `ask_instinct` and `reply_instinct` |
+| `InkboxA2A` | A2A send and reply | the network tools `ask_orion` and `reply_orion` |
 | `phone_call`, `parseCallEnded`, `handleCallEnded` | Voice AI outbound calls, transcripts, the `call.ended` event, hosted-agent config | the messaging tools; the server's webhook routes; boot (voice) |
 
 Where things end up on disk, so you know what to back up:

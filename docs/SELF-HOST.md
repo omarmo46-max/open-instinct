@@ -2,7 +2,6 @@
 
 This guide runs one Orion AI agent on a machine you control. That can be your laptop, a home server, or a VPS. Nothing here needs Maritime hosting. The agent is one Node process, one data directory, and (optionally) one Inkbox identity so you can text it on iMessage.
 
-Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 Analogy: the agent is a person who works from home. Inkbox is their phone line. The data directory is their filing cabinet. This guide sets up the home office.
 
@@ -10,8 +9,8 @@ Analogy: the agent is a person who works from home. Inkbox is their phone line. 
 
 1. [What you need](#what-you-need)
 2. [Install](#install)
-3. [Step 1: `instinct init`](#step-1-instinct-init)
-4. [Step 2: `instinct dev --tunnel`](#step-2-instinct-dev---tunnel)
+3. [Step 1: `orion init`](#step-1-orion-init)
+4. [Step 2: `orion dev --tunnel`](#step-2-orion-dev---tunnel)
 5. [How the tunnel gives you a public webhook URL](#how-the-tunnel-gives-you-a-public-webhook-url)
 6. [Step 3: connect your iPhone](#step-3-connect-your-iphone)
 7. [Docker Compose](#docker-compose)
@@ -38,26 +37,26 @@ The machine needs outbound HTTPS only. No inbound ports, no domain, no TLS certi
 ## Install
 
 ```bash
-git clone https://github.com/omarmo46-max/open-instinct && cd open-instinct
+git clone https://github.com/omarmo46-max/open-instinct && cd open-orion
 pnpm install && pnpm -r build
 ```
 
 Run the CLI from inside the repo:
 
 ```bash
-pnpm --filter @orion-ai/cli exec instinct --help
+pnpm --filter @orion-ai/cli exec orion --help
 ```
 
-Or link it so `instinct` is on your PATH:
+Or link it so `orion` is on your PATH:
 
 ```bash
 cd packages/cli && pnpm link --global && cd ../..
-instinct --help
+orion --help
 ```
 
-The rest of this guide writes `instinct ...` and assumes one of those two.
+The rest of this guide writes `orion ...` and assumes one of those two.
 
-## Step 1: `instinct init`
+## Step 1: `orion init`
 
 `init` writes `config.json` into the data directory. With `INKBOX_ADMIN_API_KEY` in the environment it also creates the agent's Inkbox identity.
 
@@ -65,8 +64,8 @@ The rest of this guide writes `instinct ...` and assumes one of those two.
 export ANTHROPIC_API_KEY=sk-ant-...
 export INKBOX_ADMIN_API_KEY=ApiKey_...
 
-instinct init --name "Maria" --phone +14155550100 --email maria@example.com \
-  --handle maria-instinct --timezone America/New_York
+orion init --name "Maria" --phone +14155550100 --email maria@example.com \
+  --handle maria-orion --timezone America/New_York
 ```
 
 What each flag does:
@@ -75,36 +74,36 @@ What each flag does:
 |---|---|
 | `--name` | your name. Required |
 | `--phone`, `--email` | how the agent knows a message is from you, the owner |
-| `--handle` | the agent's Inkbox handle. People will text `connect @maria-instinct` |
+| `--handle` | the agent's Inkbox handle. People will text `connect @maria-orion` |
 | `--timezone` | used in prompts and schedules |
 | `--model` | `provider/model-id`. Default `anthropic/claude-fable-5-1` |
 | `--skip-inkbox` | write config only, even when an admin key is set |
 
 With the admin key, `init` does five things on Inkbox:
 
-1. Creates the identity `@maria-instinct` with iMessage enabled.
+1. Creates the identity `@maria-orion` with iMessage enabled.
 2. Mints an identity-scoped API key. This is the key the agent process runs with.
 3. Creates the webhook signing key.
 4. Saves all of it to `<dataDir>/secrets/inkbox.json` with mode 0600.
 5. Prints the connect instructions.
 
-If the handle is taken, Inkbox gives you `maria-instinct-2` and `init` saves that name. If your Inkbox plan is full, `init` stops with the plan limit error and the billing URL. See [INKBOX.md](INKBOX.md#plan-limits).
+If the handle is taken, Inkbox gives you `maria-orion-2` and `init` saves that name. If your Inkbox plan is full, `init` stops with the plan limit error and the billing URL. See [INKBOX.md](INKBOX.md#plan-limits).
 
 Running `init` again updates the existing config. It does not wipe anything.
 
-## Step 2: `instinct dev --tunnel`
+## Step 2: `orion dev --tunnel`
 
 `dev` runs the agent server in the current process. No Docker. No Maritime.
 
 ```bash
-instinct dev --tunnel
+orion dev --tunnel
 ```
 
 Expected output:
 
 ```
-Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.instinct)
-  tunnel: https://maria-instinct.inkboxwire.com
+Orion AI is running on http://127.0.0.1:8080  (data: /Users/maria/.orion)
+  tunnel: https://maria-orion.inkboxwire.com
   webhook: subscription whs_8f2 (new)
 ```
 
@@ -123,8 +122,8 @@ Flags:
 Without `--tunnel` the agent still runs. You can talk to it from a second terminal:
 
 ```bash
-instinct chat "remember that I like window seats"
-instinct status
+orion chat "remember that I like window seats"
+orion status
 ```
 
 But iMessage cannot reach it. Inkbox needs a public URL to post events to. That is what the tunnel provides.
@@ -137,7 +136,7 @@ Analogy: you cannot receive mail at a desk in a coworking space. So you rent a m
 
 Step by step:
 
-1. `instinct dev --tunnel` sets `INSTINCT_TUNNEL=1`.
+1. `orion dev --tunnel` sets `ORION_TUNNEL=1`.
 2. The server starts a second listener on loopback that answers only `GET /health` and `POST /webhooks/inkbox`. Everything else on that listener is 404.
 3. The CLI opens an Inkbox tunnel with the identity key and the handle. Every identity owns the host `https://<handle>.inkboxwire.com`. The tunnel is outbound HTTP/2, so it works from inside any network that allows HTTPS out.
 4. With `INKBOX_ADMIN_API_KEY` set, the CLI subscribes the identity's webhooks to `https://<handle>.inkboxwire.com/webhooks/inkbox`. An existing subscription for the same URL is reused. The signing key is stored in `<dataDir>/secrets/webhook.json`.
@@ -151,17 +150,17 @@ Two safety points:
 ## Step 3: connect your iPhone
 
 ```bash
-instinct connect
+orion connect
 ```
 
 Output:
 
 ```
 Connect your iMessage
-  1. Text connect @maria-instinct to +1 415 555 0199
-  2. A new thread from your Instinct appears. Say hi.
+  1. Text connect @maria-orion to +1 415 555 0199
+  2. A new thread from your Orion appears. Say hi.
   Tap-to-text link: sms:...
-  QR code written to /Users/maria/.instinct/connect-qr.png
+  QR code written to /Users/maria/.orion/connect-qr.png
 ```
 
 Inkbox runs a shared iMessage router number. You text `connect @handle` to it once. From then on you have a normal iMessage thread with your agent. The first message must come from you. The agent on the shared line cannot text a stranger first. Details are in [INKBOX.md](INKBOX.md#the-shared-router-and-connect-handle).
@@ -183,24 +182,24 @@ How it maps:
 | Compose setting | Value | Meaning |
 |---|---|---|
 | `PORT` | `8080` | the port inside the container |
-| `INSTINCT_DATA_DIR` | `/data` | state, on the `agent-data` volume |
-| `INSTINCT_SKILLS_DIR` | `/app/skills` | the SKILL.md playbooks copied into the image |
+| `ORION_DATA_DIR` | `/data` | state, on the `agent-data` volume |
+| `ORION_SKILLS_DIR` | `/app/skills` | the SKILL.md playbooks copied into the image |
 | `env_file` | `deploy/.env` | every other variable |
 | `restart` | `unless-stopped` | comes back after a reboot |
 
 Notes for this path:
 
-- The container runs as the unprivileged `instinct` user. The entrypoint only uses root to make `/data` writable, then drops privileges.
+- The container runs as the unprivileged `orion` user. The entrypoint only uses root to make `/data` writable, then drops privileges.
 - Without Inkbox keys the agent still runs. Replies go to the container log (`docker compose -f deploy/docker-compose.yml logs -f agent`).
-- To receive iMessage in a container, set `INSTINCT_TUNNEL=1` in `deploy/.env` along with the `INKBOX_*` values. The server opens the tunnel itself and, with `INKBOX_ADMIN_API_KEY`, subscribes the webhook.
-- Set `INSTINCT_CHAT_TOKEN` in `deploy/.env` if anything beyond this machine should reach `/chat`. See [Keeping the owner surface private](#keeping-the-owner-surface-private).
+- To receive iMessage in a container, set `ORION_TUNNEL=1` in `deploy/.env` along with the `INKBOX_*` values. The server opens the tunnel itself and, with `INKBOX_ADMIN_API_KEY`, subscribes the webhook.
+- Set `ORION_CHAT_TOKEN` in `deploy/.env` if anything beyond this machine should reach `/chat`. See [Keeping the owner surface private](#keeping-the-owner-surface-private).
 - The `gateway` service in the same file is for the multi-user shape. It needs `--profile gateway` and is not part of a single-person self-host. See the [gateway README](../packages/gateway/README.md).
 
-To run `instinct` commands against the container's data, point them at the same directory. The simplest way is to run the CLI on the host with `--data-dir` set to a bind mount, or to keep the CLI's `.instinct` for `init` and copy `secrets/inkbox.json` values into `deploy/.env`.
+To run `orion` commands against the container's data, point them at the same directory. The simplest way is to run the CLI on the host with `--data-dir` set to a bind mount, or to keep the CLI's `.orion` for `init` and copy `secrets/inkbox.json` values into `deploy/.env`.
 
 ## Where state lives
 
-Everything is in one directory. The CLI default is `./.instinct`. The server default is `/data` when that directory exists, else `./.instinct`. `INSTINCT_DATA_DIR` or `--data-dir` overrides both.
+Everything is in one directory. The CLI default is `./.orion`. The server default is `/data` when that directory exists, else `./.orion`. `ORION_DATA_DIR` or `--data-dir` overrides both.
 
 | Path | What it holds | Written by |
 |---|---|---|
@@ -217,7 +216,7 @@ Everything is in one directory. The CLI default is `./.instinct`. The server def
 | `audit.jsonl` | append-only log of every side effect | the agent |
 | `workspace/` | files the agent makes for you | the agent |
 | `inbox/` | files you sent to the agent | the agent |
-| `maritime.json` | the deployed agent id, only after `instinct deploy` | `deploy` |
+| `maritime.json` | the deployed agent id, only after `orion deploy` | `deploy` |
 | `connect-qr.png` | the connect QR | `connect` |
 
 Two rules worth knowing:
@@ -241,7 +240,7 @@ What matters most:
 Local run:
 
 ```bash
-tar czf instinct-backup-$(date +%F).tgz -C "$(dirname "$INSTINCT_DATA_DIR")" "$(basename "$INSTINCT_DATA_DIR")"
+tar czf orion-backup-$(date +%F).tgz -C "$(dirname "$ORION_DATA_DIR")" "$(basename "$ORION_DATA_DIR")"
 ```
 
 Docker Compose keeps `/data` on a named volume. Compose names it after the project, which defaults to the directory name, so look it up first:
@@ -249,7 +248,7 @@ Docker Compose keeps `/data` on a named volume. Compose names it after the proje
 ```bash
 docker volume ls | grep agent-data
 docker run --rm -v deploy_agent-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/instinct-backup-$(date +%F).tgz -C /data .
+  tar czf /backup/orion-backup-$(date +%F).tgz -C /data .
 ```
 
 Store the archive somewhere encrypted. It contains API keys.
@@ -263,7 +262,7 @@ Local run:
 ```bash
 git pull
 pnpm install && pnpm -r build
-# restart instinct dev
+# restart orion dev
 ```
 
 Docker Compose:
@@ -273,7 +272,7 @@ git pull
 docker compose -f deploy/docker-compose.yml up --build -d
 ```
 
-State lives outside the code, so an update never touches the data directory. Run `instinct status` after a restart to confirm the agent name, model and computer kind are what you expect.
+State lives outside the code, so an update never touches the data directory. Run `orion status` after a restart to confirm the agent name, model and computer kind are what you expect.
 
 ## The computer: none, or hosted
 
@@ -281,8 +280,8 @@ Orion AI can drive a Linux desktop: open a browser, click, type, read a page. On
 
 | Mode | Set | What happens |
 |---|---|---|
-| No computer | `INSTINCT_COMPUTER=none` | the agent has no `computer` tools. It still texts, emails, reads Gmail and Calendar through Composio, runs schedules, and talks to other Instincts |
-| Hosted computer | `MARITIME_API_KEY=mk_...` and `INSTINCT_COMPUTER=auto` (the default) or `maritime` | the agent uses Maritime Computers over MCP. Maritime keeps one persistent desktop for you behind `https://mcp.maritime.sh` |
+| No computer | `ORION_COMPUTER=none` | the agent has no `computer` tools. It still texts, emails, reads Gmail and Calendar through Composio, runs schedules, and talks to other Orions |
+| Hosted computer | `MARITIME_API_KEY=mk_...` and `ORION_COMPUTER=auto` (the default) or `maritime` | the agent uses Maritime Computers over MCP. Maritime keeps one persistent desktop for you behind `https://mcp.maritime.sh` |
 
 How `auto` decides: it probes for an in-VM desktop first. On your own machine there is none. If `MARITIME_API_KEY` is set, it uses the hosted computer. Otherwise it runs with no computer. Nothing fails; the tool set is just smaller.
 
@@ -300,24 +299,24 @@ More in the [computer package README](../packages/computer/README.md).
 
 `POST /chat`, `GET /status` and `GET /schedules` run with the full owner tool set. Anyone who can reach them is you, as far as the agent is concerned. Two guards exist.
 
-1. Bind address. A bare `node packages/server/dist/main.js` with no `PORT` listens on `127.0.0.1` only. `instinct dev` also binds `127.0.0.1` unless you pass `--host 0.0.0.0`. Compose publishes `127.0.0.1:8080` on the host, so the container port is not reachable from outside.
-2. Token. Set `INSTINCT_CHAT_TOKEN` to a random string. Every call must then send `Authorization: Bearer <token>` (or `X-Instinct-Token: <token>`) or it gets 401.
+1. Bind address. A bare `node packages/server/dist/main.js` with no `PORT` listens on `127.0.0.1` only. `orion dev` also binds `127.0.0.1` unless you pass `--host 0.0.0.0`. Compose publishes `127.0.0.1:8080` on the host, so the container port is not reachable from outside.
+2. Token. Set `ORION_CHAT_TOKEN` to a random string. Every call must then send `Authorization: Bearer <token>` (or `X-Orion-Token: <token>`) or it gets 401.
 
 ```bash
-export INSTINCT_CHAT_TOKEN=$(openssl rand -hex 24)
-instinct dev --host 127.0.0.1 --tunnel
+export ORION_CHAT_TOKEN=$(openssl rand -hex 24)
+orion dev --host 127.0.0.1 --tunnel
 ```
 
-`instinct chat` and `instinct status` read `INSTINCT_CHAT_TOKEN` from the environment and send it as `Authorization: Bearer <token>`, so export the same value in the shell you run them from. Any other client sends the header itself:
+`orion chat` and `orion status` read `ORION_CHAT_TOKEN` from the environment and send it as `Authorization: Bearer <token>`, so export the same value in the shell you run them from. Any other client sends the header itself:
 
 ```bash
 curl -s http://127.0.0.1:8080/chat \
-  -H "Authorization: Bearer $INSTINCT_CHAT_TOKEN" \
+  -H "Authorization: Bearer $ORION_CHAT_TOKEN" \
   -H 'content-type: application/json' \
   -d '{"message":"hi"}'
 ```
 
-Or keep the token off and leave `instinct dev` on loopback. On a laptop that is enough. On a VPS, set the token.
+Or keep the token off and leave `orion dev` on loopback. On a laptop that is enough. On a VPS, set the token.
 
 The tunnel does not change any of this. It carries signed webhooks only and never reaches `/chat`.
 
@@ -327,40 +326,40 @@ Every variable below is read by the server or the CLI. `deploy/.env.example` lis
 
 | Variable | Read by | Meaning |
 |---|---|---|
-| `INSTINCT_DATA_DIR` | server, CLI | the data directory |
-| `INSTINCT_MODEL` | server | `provider/model`. Default `anthropic/claude-fable-5-1`. `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
+| `ORION_DATA_DIR` | server, CLI | the data directory |
+| `ORION_MODEL` | server | `provider/model`. Default `anthropic/claude-fable-5-1`. `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` | server, CLI | model access |
-| `INSTINCT_OWNER_NAME`, `INSTINCT_OWNER_PHONE`, `INSTINCT_OWNER_EMAIL`, `INSTINCT_OWNER_TIMEZONE`, `INSTINCT_AGENT_NAME` | server | seed `config.json` on first boot. `init` flags do the same job |
+| `ORION_OWNER_NAME`, `ORION_OWNER_PHONE`, `ORION_OWNER_EMAIL`, `ORION_OWNER_TIMEZONE`, `ORION_AGENT_NAME` | server | seed `config.json` on first boot. `init` flags do the same job |
 | `INKBOX_API_KEY`, `INKBOX_AGENT_HANDLE`, `INKBOX_IDENTITY_ID`, `INKBOX_SIGNING_KEY` | server, CLI | the identity-scoped Inkbox credentials. `init` saves them in `secrets/inkbox.json`; `dev` loads them |
 | `INKBOX_ADMIN_API_KEY` | CLI, server | org-wide key. Provisions the identity, subscribes webhooks, creates invitations |
 | `INKBOX_BASE_URL` | CLI, server | only for a self-hosted Inkbox |
-| `INSTINCT_TUNNEL` | server, CLI | `1` opens the Inkbox tunnel. `dev --tunnel` sets it |
-| `INSTINCT_CHAT_TOKEN` | server, CLI | bearer token for the owner surface |
-| `INSTINCT_BIND` | server | bind address override |
-| `INSTINCT_PUBLIC_URL` | server | public URL of the agent, used to build the Stripe Link callback |
-| `INSTINCT_COMPUTER` | server | `auto`, `desktopd`, `maritime`, `none` |
-| `MARITIME_API_KEY` | server, CLI | hosted computer (scope `computers`), and `instinct deploy` |
+| `ORION_TUNNEL` | server, CLI | `1` opens the Inkbox tunnel. `dev --tunnel` sets it |
+| `ORION_CHAT_TOKEN` | server, CLI | bearer token for the owner surface |
+| `ORION_BIND` | server | bind address override |
+| `ORION_PUBLIC_URL` | server | public URL of the agent, used to build the Stripe Link callback |
+| `ORION_COMPUTER` | server | `auto`, `desktopd`, `maritime`, `none` |
+| `MARITIME_API_KEY` | server, CLI | hosted computer (scope `computers`), and `orion deploy` |
 | `MARITIME_COMPUTERS_MCP_URL` | server | hosted computer endpoint. Default `https://mcp.maritime.sh` |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | server, CLI | Gmail, Calendar and other apps. The key alone turns apps on |
 | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `STRIPE_PUBLISHABLE_KEY`, `LINK_REDIRECT_URI` | server, CLI | Stripe Link agent wallet. All of the first three are needed for payment tools |
 | `BRAVE_SEARCH_API_KEY` | server, CLI | better web search. DuckDuckGo otherwise |
-| `INSTINCT_SKILLS_DIR` | server | SKILL.md folder. Default `<repo>/skills` |
-| `INSTINCT_REPLY_BUDGET_MS` | server | how long `/chat` waits before acknowledging and finishing in the background. Default 20000 |
+| `ORION_SKILLS_DIR` | server | SKILL.md folder. Default `<repo>/skills` |
+| `ORION_REPLY_BUDGET_MS` | server | how long `/chat` waits before acknowledging and finishing in the background. Default 20000 |
 | `PORT` | server | listen port. Default 8080 |
-| `NO_COLOR`, `INSTINCT_DEBUG` | CLI | plain output; stack traces |
+| `NO_COLOR`, `ORION_DEBUG` | CLI | plain output; stack traces |
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `no tunnel: iMessage webhooks need --tunnel or the gateway` | `dev` started without the flag | run `instinct dev --tunnel` |
-| `INKBOX_API_KEY and INKBOX_AGENT_HANDLE are required` | no `secrets/inkbox.json` | run `instinct init` with `INKBOX_ADMIN_API_KEY` set |
+| `no tunnel: iMessage webhooks need --tunnel or the gateway` | `dev` started without the flag | run `orion dev --tunnel` |
+| `INKBOX_API_KEY and INKBOX_AGENT_HANDLE are required` | no `secrets/inkbox.json` | run `orion init` with `INKBOX_ADMIN_API_KEY` set |
 | `webhook: subscribe Inkbox events to https://...` printed in grey | no admin key, so no auto-subscribe | set `INKBOX_ADMIN_API_KEY`, or subscribe by hand to the printed URL |
 | texts from your phone get no answer | your number is not the owner's | check `--phone` in `init` matches the iPhone you text from, in E.164 form |
 | webhook returns 401 | signing key mismatch | delete `secrets/webhook.json` and restart with the admin key, or set `INKBOX_SIGNING_KEY` to the current key |
 | webhook returns 503 | no signing key configured at all | same as above |
 | `Inkbox plan limit` on `init` | the org is at its identity cap | upgrade, or delete an unused identity |
-| `402 no_plan` on a computer action | Maritime account has no Computers plan | add the plan, or set `INSTINCT_COMPUTER=none` |
-| `COMPOSIO_API_KEY` set but no app tools | `config.json` has `apps.enabled: false` | run `instinct init --name <you> --apps` |
+| `402 no_plan` on a computer action | Maritime account has no Computers plan | add the plan, or set `ORION_COMPUTER=none` |
+| `COMPOSIO_API_KEY` set but no app tools | `config.json` has `apps.enabled: false` | run `orion init --name <you> --apps` |
 
 Related reading: [INKBOX.md](INKBOX.md) for the identity, router and webhooks; [ARCHITECTURE.md](ARCHITECTURE.md) for the message flow; [PERMISSIONS.md](PERMISSIONS.md) for who may ask the agent for what; the [CLI README](../packages/cli/README.md) for every command and flag; the [server README](../packages/server/README.md) for the HTTP routes.

@@ -27,7 +27,7 @@ function fakeApi(opts: { updates?: unknown[]; fail?: Record<string, { code: numb
     calls.push({ method, body });
     const failure = opts.fail?.[method];
     if (failure) return Response.json({ ok: false, error_code: failure.code, description: failure.description });
-    if (method === "getMe") return Response.json({ ok: true, result: { id: 1, username: "instinct_bot" } });
+    if (method === "getMe") return Response.json({ ok: true, result: { id: 1, username: "orion_bot" } });
     if (method === "getFile") return Response.json({ ok: true, result: { file_path: `photos/${body.file_id}.jpg`, file_size: 4 } });
     if (method === "getUpdates") {
       if (!handedOut && opts.updates) {
@@ -78,11 +78,11 @@ describe("TelegramChannel", () => {
     await ch.start();
     await new Promise((r) => setTimeout(r, 100));
     expect(ch.status()).toBe("open");
-    expect(ch.username()).toBe("instinct_bot");
+    expect(ch.username()).toBe("orion_bot");
     expect(api.calls.map((c) => c.method).slice(0, 3)).toEqual(["getMe", "deleteWebhook", "getUpdates"]);
     expect(got.map((m) => [m.id, m.from, m.text])).toEqual([["telegram:10", "telegram:42", "hi"]]);
     expect(JSON.parse(fs.readFileSync(path.join(dir, "secrets", "offset.json"), "utf8"))).toEqual({ offset: 12 });
-    expect(logs.join("\n")).toContain("@instinct_bot");
+    expect(logs.join("\n")).toContain("@orion_bot");
     expect(logs.join("\n")).not.toContain("SECRET");
     await ch.stop();
     expect(ch.status()).toBe("closed");

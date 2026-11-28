@@ -108,7 +108,7 @@ rather than pointing at extra files beside it.
 
 `skillsDir` is `/app/skills` in the Maritime image (copied by
 `deploy/Dockerfile.agent`), `<repo>/skills` in local dev, or
-`$INSTINCT_SKILLS_DIR`. Owner skills under `$INSTINCT_DATA_DIR/skills` are not
+`$ORION_SKILLS_DIR`. Owner skills under `$ORION_DATA_DIR/skills` are not
 loaded yet.
 
 Scheduled jobs call skills by name in their prompt ("Run the daily-brief skill

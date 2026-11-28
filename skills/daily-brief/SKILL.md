@@ -29,7 +29,7 @@ the gap unless the owner has asked for it before.
 3. Mail: unread since yesterday evening that needs a reply or decision (skill
    `email-triage`, read step only). Count the rest.
 4. Open threads: `memory_read` and yesterday's journal for things you are
-   waiting on (a reply from Sam's Instinct, a delivery, a booking hold).
+   waiting on (a reply from Sam's Orion, a delivery, a booking hold).
 5. Approvals: anything you asked the owner that is still unanswered. Repeat
    the ask in one line with the same wording.
 6. Scheduled items for today you created (check-ins, rides) so the owner knows
@@ -45,7 +45,7 @@ all is happening, send two lines.
 Agent: Morning, Maria. 61 and clear, rain after 4. Three things today: Lena
 at 10 on Zoom, dentist at 2:30 on Mass Ave, and dinner with Sam at Nopa, 7pm.
 Two emails need you, both from the bookstore about the reading date. Still
-waiting on Priya's Instinct about Saturday brunch. One thing pending: book the
+waiting on Priya's Orion about Saturday brunch. One thing pending: book the
 JetBlue flight for $412, want me to go ahead? Want me to order a car for the dentist?
 
 Agent: Morning. 48 and grey. Nothing on the calendar and nothing in mail

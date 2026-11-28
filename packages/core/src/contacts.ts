@@ -39,7 +39,7 @@ export class StaffNeedsAgentError extends Error {
   constructor(name: string) {
     super(
       `Tier "staff" is only for agents, and ${name} has no agent handle. ` +
-        `Save their agent's Inkbox handle first (instinct invite "${name}" --tier staff --handle <handle>), or pick partner or lower.`,
+        `Save their agent's Inkbox handle first (orion invite "${name}" --tier staff --handle <handle>), or pick partner or lower.`,
     );
     this.name = "StaffNeedsAgentError";
   }
@@ -99,7 +99,7 @@ export class ContactStore {
 
   constructor(state: StateDir, opts: ContactStoreOptions = {}) {
     this.state = state;
-    this.warn = opts.warn ?? ((m) => console.warn(`[instinct] ${m}`));
+    this.warn = opts.warn ?? ((m) => console.warn(`[orion] ${m}`));
   }
 
   private static stampOf(st: fs.Stats): string {

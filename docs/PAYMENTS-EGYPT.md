@@ -23,7 +23,7 @@ Vodafone Cash can create a temporary online-payment card that works for 24 hours
 
 ## Files
 
-`packages/payments/src/egp/`: `budget.ts`, `cards.ts`, `issuer.ts`, `page.ts`, `tools.ts`, `money.ts`. Server: `egpEnabled` in `payments.ts`, wiring in `boot.ts`, the `/egp/card/...` route in `http.ts`. Set `INSTINCT_PUBLIC_URL` so the private link is reachable from the owner's phone.
+`packages/payments/src/egp/`: `budget.ts`, `cards.ts`, `issuer.ts`, `page.ts`, `tools.ts`, `money.ts`. Server: `egpEnabled` in `payments.ts`, wiring in `boot.ts`, the `/egp/card/...` route in `http.ts`. Set `ORION_PUBLIC_URL` so the private link is reachable from the owner's phone.
 
 ## Plugging in a partner
 

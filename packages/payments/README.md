@@ -1,10 +1,9 @@
 # @orion-ai/payments
 
 The agent's wallet. This package connects an Orion AI agent to the owner's Stripe Link
-account through Link Agent Wallet, the same rail Instinct uses, and exposes four tools:
+account through Link Agent Wallet and exposes four tools:
 `payment_connect`, `payment_request`, `payment_status`, `payment_list`.
 
-(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## What Link Agent Wallet is
 
@@ -55,7 +54,7 @@ publishable key.
    applications every 3 to 5 days; there is no instant self-serve path. Full walkthrough in
    [docs/PAYMENTS.md](../../docs/PAYMENTS.md#registering-an-oauth-client).
 3. Redirect URIs must match exactly, including scheme, host, port and path. The server's default
-   is `<INSTINCT_PUBLIC_URL>/oauth/link/callback`. For `instinct dev` it is
+   is `<ORION_PUBLIC_URL>/oauth/link/callback`. For `orion dev` it is
    `http://127.0.0.1:<port>/oauth/link/callback`. Register every variant you will use.
 4. Stripe sends back `client_id` and `client_secret`. The publishable key (`pk_live_...` or
    `pk_test_...`) comes from your Stripe Dashboard under Developers, API keys.

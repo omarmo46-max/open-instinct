@@ -16,7 +16,7 @@
  */
 import type { ContactStore } from "./contacts.js";
 import { TIER_ORDER } from "./types.js";
-import type { Contact, InboundMessage, InstinctConfig, Principal, Tier } from "./types.js";
+import type { Contact, InboundMessage, OrionConfig, Principal, Tier } from "./types.js";
 
 /**
  * Digits only, E.164 with a leading `+`. Ten digits without a `+` are assumed to be US numbers;
@@ -97,7 +97,7 @@ export function isReservedHandle(handle: string): boolean {
   return RESERVED_HANDLES.has(normalizeHandle(handle));
 }
 
-export function ownerPrincipalOf(config: InstinctConfig): Principal {
+export function ownerPrincipalOf(config: OrionConfig): Principal {
   const p: Principal = {
     kind: "owner",
     id: "owner",
@@ -112,7 +112,7 @@ export function ownerPrincipalOf(config: InstinctConfig): Principal {
 }
 
 /** The owner's own email address: known, but email identity is unverified, so the tier is reduced. */
-function ownerByEmailPrincipal(config: InstinctConfig, email: string): Principal {
+function ownerByEmailPrincipal(config: OrionConfig, email: string): Principal {
   return {
     kind: "contact",
     id: OWNER_EMAIL_PRINCIPAL_ID,
@@ -163,7 +163,7 @@ function strangerPrincipal(msg: InboundMessage, address: string): Principal {
   return p;
 }
 
-export function resolvePrincipal(msg: InboundMessage, config: InstinctConfig, contacts: ContactStore): Principal {
+export function resolvePrincipal(msg: InboundMessage, config: OrionConfig, contacts: ContactStore): Principal {
   const p = resolveUncapped(msg, config, contacts);
   // A From header can be forged and the mail webhook carries no SPF/DKIM/DMARC result, so
   // whoever an email claims to be, it never runs above OWNER_EMAIL_TIER.
@@ -175,7 +175,7 @@ export function resolvePrincipal(msg: InboundMessage, config: InstinctConfig, co
   return p;
 }
 
-function resolveUncapped(msg: InboundMessage, config: InstinctConfig, contacts: ContactStore): Principal {
+function resolveUncapped(msg: InboundMessage, config: OrionConfig, contacts: ContactStore): Principal {
   const from = (msg.from ?? "").trim();
 
   // Dashboard chat, scheduled jobs and system events are always the owner speaking. These

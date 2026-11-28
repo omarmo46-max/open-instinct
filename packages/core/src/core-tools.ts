@@ -18,14 +18,14 @@ import type { Outbox } from "./runtime.js";
 import type { Scheduler } from "./scheduler.js";
 import { SPEND_CAPABILITIES } from "./policy.js";
 import { defineTool, textResult, type RegisteredTool, type ToolContext, type ToolResultLike } from "./tools.js";
-import type { Approval, AuditKind, InstinctConfig } from "./types.js";
+import type { Approval, AuditKind, OrionConfig } from "./types.js";
 
 export interface CoreToolDeps {
   memory: MemoryStore;
   scheduler: Scheduler;
   approvals: ApprovalStore;
   audit: AuditLog;
-  config: InstinctConfig;
+  config: OrionConfig;
   outbox: Outbox;
   fetchImpl?: typeof fetch;
   /** DNS lookup used to vet web_fetch targets; tests inject a stub. */

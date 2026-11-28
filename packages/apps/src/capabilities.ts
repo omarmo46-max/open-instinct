@@ -4,7 +4,7 @@ import type { Capability } from "@orion-ai/core";
  * Owner-only tag for the Composio meta tools and for toolkits this table does not
  * know. Core's tier table opens `apps.use` to staff, partner, family and friend (it is a
  * transport tag; the per-tool capability does the gating), so `apps.use` alone would
- * let a friend's Instinct manage the owner's OAuth connections or run any tool
+ * let a friend's Orion manage the owner's OAuth connections or run any tool
  * through COMPOSIO_MULTI_EXECUTE_TOOL. Until core grows a dedicated `apps.manage`
  * capability, `trust.manage` (owner only) stands in: connecting an app or running an
  * untagged toolkit as the owner is a trust decision only the owner may take.
@@ -14,7 +14,7 @@ export const APPS_MANAGE: readonly Capability[] = ["apps.use", "trust.manage"];
 /**
  * Owner-only tag for Google Contacts write actions. Staff holds `contacts.read` and
  * partner holds it in part, which core treats as allow, so a read tag on
- * CREATE/UPDATE/DELETE would let a teammate's or partner's Instinct rewrite the owner's
+ * CREATE/UPDATE/DELETE would let a teammate's or partner's Orion rewrite the owner's
  * address book. Until core grows
  * `contacts.write`, `memory.write` (owner only) stands in: the address book is the
  * owner's memory about people.

@@ -2,13 +2,13 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, truncateSync
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ContactStore, PolicyEngine, StateDir, defaultConfig, defaultPolicy, type InstinctConfig, type OutboundMessage, type Principal, type ToolContext } from "@orion-ai/core";
+import { ContactStore, PolicyEngine, StateDir, defaultConfig, defaultPolicy, type OrionConfig, type OutboundMessage, type Principal, type ToolContext } from "@orion-ai/core";
 import type { FileSend, InkboxChannel } from "../src/channel.js";
 import { messagingTools, phoneCallTool, resolveTarget, sendFileTool, type MessagingDeps } from "../src/tools.js";
 
 let dir: string;
 let contacts: ContactStore;
-let config: InstinctConfig;
+let config: OrionConfig;
 let sent: Array<{ msg: OutboundMessage; ctx: { principal: Principal; conversationKey: string } }>;
 let channel: InkboxChannel;
 
@@ -129,7 +129,7 @@ describe("send_message", () => {
   it("refuses to reply on chat or a2a threads without `to`, and rejects empty text", async () => {
     const t = tool("send_message");
     await expect(t.execute({ text: "x" }, ctxFor(owner, "chat:dashboard"))).rejects.toThrow(/Give `to`/);
-    await expect(t.execute({ text: "x" }, ctxFor(friend, "a2a:ctx_1"))).rejects.toThrow(/reply_instinct/);
+    await expect(t.execute({ text: "x" }, ctxFor(friend, "a2a:ctx_1"))).rejects.toThrow(/reply_orion/);
     const r = await t.execute({ text: "   " }, ctxFor(owner, "imessage:c"));
     expect(typeof r === "object" && r.isError).toBe(true);
     expect(sent).toHaveLength(0);
@@ -196,7 +196,7 @@ describe("send_file", () => {
     await t.execute({ path: "research/brief.pdf", to: "priya-patel", caption: "As promised.", subject: "Research brief" }, ctxFor(owner, "chat:cli"));
     expect(sentFiles[0]?.file).toEqual({ channel: "email", to: "priya@example.com", filename: "brief.pdf", contentType: "application/pdf", content: PDF, caption: "As promised.", subject: "Research brief" });
     await t.execute({ path: "research/brief.pdf", to: "owner", channel: "email" }, ctxFor(owner, "chat:cli"));
-    expect(sentFiles[1]?.file).toMatchObject({ channel: "email", to: "maria@example.com", subject: "brief.pdf from your Instinct" });
+    expect(sentFiles[1]?.file).toMatchObject({ channel: "email", to: "maria@example.com", subject: "brief.pdf from your Orion" });
     expect(sentFiles[1]?.file.caption).toBeUndefined();
     await t.execute({ path: "research/brief.pdf", to: "sam-lee", channel: "sms" }, ctxFor(owner, "chat:cli"));
     expect(sentFiles[2]?.file).toMatchObject({ channel: "sms", to: "+14155550100" });

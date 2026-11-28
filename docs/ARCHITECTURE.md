@@ -1,14 +1,13 @@
 # Orion AI: architecture
 
-Orion AI is an open-source personal agent you text. Like Instinct, it has its
-own computer, does real tasks for you, and can coordinate with the Instincts of
-people you trust. Unlike Instinct, you can read every line, run it yourself, pick
+Orion AI is an open-source personal agent you text. It has its
+own computer, does real tasks for you, and can coordinate with the Orions of
+people you trust. You can read every line, run it yourself, pick
 the model, and see exactly what each person in your life is allowed to ask it.
 
 This document is the build contract. Every package below implements one box in
 the diagram and nothing else.
 
-(Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.)
 
 ## Table of contents
 
@@ -31,7 +30,7 @@ the diagram and nothing else.
 ## The idea in one picture
 
 ```
-  you (iMessage / SMS / email)        a friend's Instinct
+  you (iMessage / SMS / email)        a friend's Orion
             │                                 │  A2A (JSON-RPC over Inkbox)
             ▼                                 ▼
    ┌────────────────── Inkbox ─────────────────────┐   phone number, email,
@@ -92,7 +91,7 @@ orion-ai/
     ample/     @orion-ai/ample     web app deploys through the Ample CLI: ample_deploy, ample_logs, ample_apps, ample_app_delete
     server/    @orion-ai/server    the agent process: /health, /chat, /schedules, webhook intake, Link callback, smoke test
     gateway/   @orion-ai/gateway   multi-user relay + signup: Inkbox webhooks → Maritime agent; connect page with QR
-    cli/       @orion-ai/cli       `instinct` command: init, connect, dev, chat, status, deploy, invite, trust, schedules, payments
+    cli/       @orion-ai/cli       `orion` command: init, connect, dev, chat, status, deploy, invite, trust, schedules, payments
   skills/      SKILL.md playbooks the agent loads (onboarding, scheduling, dining, travel, rides, email-triage, research, purchases, files, daily-brief, trusted-network, maritime-computer, web-apps)
   examples/    local-chat.mjs, fake-inkbox-webhook.mjs, dinner-a2a.mjs (see examples/README.md)
   deploy/      Dockerfile.agent, Dockerfile.gateway, docker-compose.yml, entrypoint.sh, .env.example
@@ -126,7 +125,7 @@ One agent process serves one person (the **owner**). Inside it:
 - **Prompt.** `persona + owner profile + principal card + capabilities + memory digest + skills index + channel etiquette`.
   Non-owner content is wrapped as untrusted data.
 - **Long work.** `/chat` must answer in under 30 seconds (Maritime budget). The server waits up to
-  `INSTINCT_REPLY_BUDGET_MS` (default 20 s), then acknowledges, keeps the Pi run going, and delivers
+  `ORION_REPLY_BUDGET_MS` (default 20 s), then acknowledges, keeps the Pi run going, and delivers
   the result through the channel (Inkbox send) when done. The owner can steer mid-task; new messages
   in the same conversation become `steer()` on the running agent.
 - **Proactive.** `schedules.json` holds cron or one-shot jobs with a prompt. The server exposes
@@ -148,25 +147,25 @@ Inbound iMessage from the owner, through the gateway:
 2. The gateway verifies HMAC-SHA256 over `{request_id}.{timestamp}.{raw_body}` with that
    identity's signing key, maps identity → user → Maritime agent id, and calls
    `POST https://api.maritime.sh/api/agents/{id}/chat` with
-   `{ message: "@@instinct-event@@" + JSON(event), conversation_id: <inkbox conversation_id> }`.
+   `{ message: "@@orion-event@@" + JSON(event), conversation_id: <inkbox conversation_id> }`.
    Maritime wakes the microVM (about 1 s) and delivers to the agent's `POST /chat`.
 3. The server unwraps the envelope, resolves the principal (owner), sends a typing
    indicator, and prompts the owner conversation.
 4. The agent works (tools, computer, apps). It replies through the Inkbox outbox on the same
    conversation. The `/chat` HTTP response is empty; the reply travels over iMessage.
 
-Self-hosted without the gateway: `instinct dev --tunnel` (or `INSTINCT_TUNNEL=1` on the server)
+Self-hosted without the gateway: `orion dev --tunnel` (or `ORION_TUNNEL=1` on the server)
 opens an Inkbox tunnel to a second, loopback-only listener that serves `GET /health` and
 `POST /webhooks/inkbox` and nothing else, and subscribes the webhooks to it when
 `INKBOX_ADMIN_API_KEY` is present. Same handler, no relay. `/chat` is never reachable through the tunnel.
 
-Plain `/chat` without the envelope (dashboard, CLI, `instinct chat`) is treated as the owner
+Plain `/chat` without the envelope (dashboard, CLI, `orion chat`) is treated as the owner
 speaking on `chat:<conversation_id>` and the reply goes back in the HTTP response. Replies the
 agent finishes after an earlier acknowledgement come back as `pending` on the next call.
 
 ## State on disk
 
-`$INSTINCT_DATA_DIR` (Maritime: `/data`; local: `./.instinct`):
+`$ORION_DATA_DIR` (Maritime: `/data`; local: `./.orion`):
 
 ```
 config.json              owner identity (phones, emails, name, timezone), model, computer mode, apps
@@ -206,8 +205,8 @@ policy engine checks. Groups:
 | files | `create_pdf` (markdown to a real PDF under `workspace/`: headings, lists, tables, code, links, page numbers, `![caption](path)` images from the workspace) | `core` | always, owner only |
 | files | `image_generate` (a PNG from a prompt, saved under `workspace/`, through an OpenAI-compatible `/images/generations` endpoint) | `core` | always, owner only; needs `IMAGE_API_KEY` or `OPENAI_API_KEY` to do anything |
 | contacts and trust | `contacts_search`, `contacts_upsert`, `trust_set_tier`, `trust_grant`, `trust_revoke`, `trust_list` | `@orion-ai/network` | always |
-| network | `ask_instinct` (one contact, or several for a group plan), `reply_instinct`, `invite_to_network` | `@orion-ai/network` | always; A2A sends need Inkbox, invitations need `INKBOX_ADMIN_API_KEY` |
-| computer (in the VM) | `computer`, `computer_batch`, `request_takeover`, `takeover_status`, `computer_read_file`, `computer_write_file` | `@orion-ai/computer` over desktopd REST | `INSTINCT_COMPUTER` is `auto` or `desktopd` and desktopd answers |
+| network | `ask_orion` (one contact, or several for a group plan), `reply_orion`, `invite_to_network` | `@orion-ai/network` | always; A2A sends need Inkbox, invitations need `INKBOX_ADMIN_API_KEY` |
+| computer (in the VM) | `computer`, `computer_batch`, `request_takeover`, `takeover_status`, `computer_read_file`, `computer_write_file` | `@orion-ai/computer` over desktopd REST | `ORION_COMPUTER` is `auto` or `desktopd` and desktopd answers |
 | computer (hosted) | the server's own names: `get_computer`, `computer`, `computer_batch`, `run_shell`, `read_file`, `write_file`, `request_takeover`, `takeover_status`, `close_computer` | `@orion-ai/computer` over MCP | `MARITIME_API_KEY` and no in-VM desktop |
 | apps | one `app_<slug>` tool per Composio tool (for example `app_googlecalendar_events_list`) | `@orion-ai/apps` over MCP | `COMPOSIO_API_KEY` is set |
 | files | `ample_deploy` (a workspace folder to a public URL), `ample_logs`, `ample_apps`, `ample_app_delete` | `@orion-ai/ample`, driving the `ample` CLI | `AMPLE_SIGNUP=1`, or `AMPLE_CLIENT_ID` and `AMPLE_CLIENT_SECRET` (or `AMPLE_TOKEN`) are set; owner only |
@@ -225,14 +224,14 @@ Anything not granted is denied. Purchases and calendar writes by non-owners defa
 "ask the owner", which sends the owner a one-line approval text.
 
 The guard is enforced twice. When the policy denies a request from anyone but the owner, the
-requester gets a polite refusal and the owner gets a text: "Sam's agent (@sam-instinct) asked to
+requester gets a polite refusal and the owner gets a text: "Sam's agent (@sam-orion) asked to
 read your calendar; I declined." One notice per conversation per hour (`owner-notices.json`), and
 the notice is itself audited. For "ask" outcomes the approval text is the notice. Full table, grant
 grammar and approval rules: [PERMISSIONS.md](PERMISSIONS.md).
 
 ## Agent to agent
 
-Two Instincts talk through Inkbox A2A (A2A 1.0, JSON-RPC at `https://inkbox.ai/a2a/{handle}`).
+Two Orions talk through Inkbox A2A (A2A 1.0, JSON-RPC at `https://inkbox.ai/a2a/{handle}`).
 Our agent is both a **worker** (Inkbox hosts the inbox; `a2a.task.created` webhooks wake us; we
 answer with `POST /api/v1/identities/{handle}/a2a/tasks/{id}/reply`) and a **caller**
 (`InkboxA2A.send(peer, text, data, { contextId })` posts `SendMessage`; the peer's progress arrives
@@ -241,15 +240,15 @@ part with a typed intent (`propose_times`, `request_freebusy`, `accept`, `declin
 `inform`, `share`, `book_request`). Admission is double-gated: Inkbox contact rules (who may call at
 all) and our tiers (what they may ask).
 
-Group plans fan out: `ask_instinct` with `contacts: [...]` sends the same intent to every person.
-Each Instinct gets its own task and answers in its own `a2a:<context_id>` conversation; people without
-an Instinct get the same request as a text or email (owner only). The model combines the answers for
+Group plans fan out: `ask_orion` with `contacts: [...]` sends the same intent to every person.
+Each Orion gets its own task and answers in its own `a2a:<context_id>` conversation; people without
+an Orion get the same request as a text or email (owner only). The model combines the answers for
 the owner. Spec: [PROTOCOL.md](PROTOCOL.md). A runnable two-agent dinner with a stubbed transport is
 in [examples/dinner-a2a.mjs](../examples/dinner-a2a.mjs).
 
 ## Payments
 
-Instinct's rail is Stripe Link. Ours is too. With the Link OAuth client configured, the owner connects
+The payment rail is Stripe Link. With the Link OAuth client configured, the owner connects
 their Link account once (`payment_connect` texts a `login.link.com` link; the callback lands on
 `GET /oauth/link/callback`, or on the gateway, which relays it as a `link.oauth_callback` envelope).
 For a purchase, the model gets the checkout to a final total and calls `payment_request` with the exact
@@ -261,17 +260,17 @@ amount. Card data never lands in `payments.json`, the audit log, the journal or 
 
 ## Deployment shapes
 
-1. **Maritime, many users (the Instinct shape).** `gateway` runs once (Railway, Fly, or as an
+1. **Maritime, many users (one agent per person).** `gateway` runs once (Railway, Fly, or as an
    always-on Maritime agent with `publicWeb`). Each signup provisions an Inkbox identity
    (`imessage_enabled: true`) and a Maritime agent from `deploy/Dockerfile.agent` with
    `framework: "custom"`, `desktop: true`, `externalId: <userId>`, env `INKBOX_*`,
    `ANTHROPIC_API_KEY`, `COMPOSIO_API_KEY`, `LINK_*`. Users text `connect @handle` to the Inkbox
    router number (or scan the QR) and are talking to their agent. Guide: [packages/gateway/README.md](../packages/gateway/README.md).
-2. **Maritime, one user.** `instinct deploy --image ...` does the same for you alone; no gateway.
+2. **Maritime, one user.** `orion deploy --image ...` does the same for you alone; no gateway.
    Inkbox webhooks reach the agent through a gateway you run yourself, or, once Maritime
    supports Inkbox's signature scheme natively, through a Maritime signed-webhook address.
    Guide: [packages/cli/README.md](../packages/cli/README.md).
-3. **Self-hosted.** `instinct dev --tunnel` runs the server on your machine, opens the Inkbox
+3. **Self-hosted.** `orion dev --tunnel` runs the server on your machine, opens the Inkbox
    tunnel for webhooks, and uses the hosted Computers MCP (or no computer).
 
 The BYO contract the image must satisfy: bind `0.0.0.0:$PORT`, `GET /health` → 200,
@@ -284,7 +283,7 @@ Only `server`, `gateway` and `cli` read `process.env`. `config.json` wins over e
 boot; env seeds it. The annotated list is [deploy/.env.example](../deploy/.env.example).
 
 What the model is told is five files, not env: `PERSONA.md` (voice), `AGENTS.md` (standing
-instructions), `skills/`, `memory/MEMORY.md` and `policy.json`. `instinct prompt --layers`
+instructions), `skills/`, `memory/MEMORY.md` and `policy.json`. `orion prompt --layers`
 shows each section of the system prompt with the file that decides it; [CUSTOMIZE.md](CUSTOMIZE.md)
 says how to change each one.
 
@@ -292,24 +291,24 @@ Server:
 
 | Variable | Meaning |
 |---|---|
-| `INSTINCT_DATA_DIR` | state directory (default `/data` if it exists, else `./.instinct`) |
-| `INSTINCT_MODEL` | `provider/model`, default `anthropic/claude-fable-5-1`; `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
+| `ORION_DATA_DIR` | state directory (default `/data` if it exists, else `./.orion`) |
+| `ORION_MODEL` | `provider/model`, default `anthropic/claude-fable-5-1`; `openai-compatible/<id>` uses `OPENAI_BASE_URL` |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, ... | model access, looked up per Pi provider |
-| `INSTINCT_OWNER_NAME`, `INSTINCT_OWNER_PHONE`, `INSTINCT_OWNER_EMAIL`, `INSTINCT_OWNER_TIMEZONE`, `INSTINCT_AGENT_NAME` | who the owner is and what the agent is called; seeded into `config.json` on first boot |
-| `INSTINCT_CLAIM_OWNER_ON_FIRST_CONTACT`, `INSTINCT_OWNER_CLAIM_CODE`, `INSTINCT_OWNER_CLAIM_EXPIRES_AT` | `1` with no owner phone: the first person who texts the agent 1:1 on iMessage or SMS a message containing the one-time claim code becomes the owner, once (`config.owner.claimOnFirstContact`, `claimCode`, `claimExpiresAt`). No code (or one under 8 letters/digits, or past the optional ISO expiry) means nobody can claim, and boot logs a warning. The front door shows the code only to the person who signed up. Case, spaces and dashes are ignored; a wrong code leaves the sender a stranger, with 10 tries per number. A claim clears the code and the flag from `config.json`, and the code is stripped from the message before the model sees it. Group threads, unresolved scopes, duplicates, email and A2A never claim |
-| `INSTINCT_PERSONA` | seeds `<data>/PERSONA.md` on first boot only; after that the file is the owner's (`instinct persona`) |
-| `INSTINCT_INSTRUCTIONS` | seeds `<data>/AGENTS.md`; a changed value replaces the file on the next boot unless the owner edited it (`AGENTS.md.seed` remembers the last seed) |
+| `ORION_OWNER_NAME`, `ORION_OWNER_PHONE`, `ORION_OWNER_EMAIL`, `ORION_OWNER_TIMEZONE`, `ORION_AGENT_NAME` | who the owner is and what the agent is called; seeded into `config.json` on first boot |
+| `ORION_CLAIM_OWNER_ON_FIRST_CONTACT`, `ORION_OWNER_CLAIM_CODE`, `ORION_OWNER_CLAIM_EXPIRES_AT` | `1` with no owner phone: the first person who texts the agent 1:1 on iMessage or SMS a message containing the one-time claim code becomes the owner, once (`config.owner.claimOnFirstContact`, `claimCode`, `claimExpiresAt`). No code (or one under 8 letters/digits, or past the optional ISO expiry) means nobody can claim, and boot logs a warning. The front door shows the code only to the person who signed up. Case, spaces and dashes are ignored; a wrong code leaves the sender a stranger, with 10 tries per number. A claim clears the code and the flag from `config.json`, and the code is stripped from the message before the model sees it. Group threads, unresolved scopes, duplicates, email and A2A never claim |
+| `ORION_PERSONA` | seeds `<data>/PERSONA.md` on first boot only; after that the file is the owner's (`orion persona`) |
+| `ORION_INSTRUCTIONS` | seeds `<data>/AGENTS.md`; a changed value replaces the file on the next boot unless the owner edited it (`AGENTS.md.seed` remembers the last seed) |
 | `INKBOX_API_KEY`, `INKBOX_AGENT_HANDLE`, `INKBOX_IDENTITY_ID` | identity-scoped Inkbox credentials; turn on the Inkbox outbox, messaging tools and A2A |
 | `INKBOX_SIGNING_KEY` | webhook signing key (also read from `secrets/webhook.json`) |
 | `INKBOX_ADMIN_API_KEY` | org-wide key: invitations, contact rules, webhook subscription with the tunnel |
-| `INSTINCT_TUNNEL` | `1` opens an Inkbox tunnel to the webhook-only listener |
-| `INSTINCT_CHAT_TOKEN` | bearer token for `/chat`, `/status`, `/schedules` |
-| `INSTINCT_BIND` | bind address; default `127.0.0.1`, or `0.0.0.0` when `PORT` or a `MARITIME_*` variable is set |
-| `INSTINCT_PUBLIC_URL` | this agent's public URL, used to build the Link callback |
-| `INSTINCT_ACK_SLOW_REPLIES` | `1` texts the owner one "on it" in their 1:1 iMessage/SMS thread when a turn is still running after `INSTINCT_REPLY_BUDGET_MS` (`config.features.ackSlowReplies`); never for a queued text, a group or a non-owner |
-| `INSTINCT_REPLY_BUDGET_MS` | how long `/chat` waits before acknowledging, and the delay before the optional slow-reply text (default 20000) |
-| `INSTINCT_SKILLS_DIR` | SKILL.md folder (default `<repo>/skills`); the owner's `<data>/skills` is read after it, every 30 s. Built-ins win a name clash, and an owner skill is private to the owner unless its frontmatter says `visibility: public` |
-| `INSTINCT_COMPUTER` | `auto` (desktopd if present, else hosted if `MARITIME_API_KEY`, else none), `desktopd`, `maritime`, `none` |
+| `ORION_TUNNEL` | `1` opens an Inkbox tunnel to the webhook-only listener |
+| `ORION_CHAT_TOKEN` | bearer token for `/chat`, `/status`, `/schedules` |
+| `ORION_BIND` | bind address; default `127.0.0.1`, or `0.0.0.0` when `PORT` or a `MARITIME_*` variable is set |
+| `ORION_PUBLIC_URL` | this agent's public URL, used to build the Link callback |
+| `ORION_ACK_SLOW_REPLIES` | `1` texts the owner one "on it" in their 1:1 iMessage/SMS thread when a turn is still running after `ORION_REPLY_BUDGET_MS` (`config.features.ackSlowReplies`); never for a queued text, a group or a non-owner |
+| `ORION_REPLY_BUDGET_MS` | how long `/chat` waits before acknowledging, and the delay before the optional slow-reply text (default 20000) |
+| `ORION_SKILLS_DIR` | SKILL.md folder (default `<repo>/skills`); the owner's `<data>/skills` is read after it, every 30 s. Built-ins win a name clash, and an owner skill is private to the owner unless its frontmatter says `visibility: public` |
+| `ORION_COMPUTER` | `auto` (desktopd if present, else hosted if `MARITIME_API_KEY`, else none), `desktopd`, `maritime`, `none` |
 | `MARITIME_API_KEY`, `MARITIME_COMPUTERS_MCP_URL` | hosted computer fallback |
 | `MARITIME_DESKTOP`, `MARITIME_AGENT_ID`, `MARITIME_BACKEND_URL`, `MARITIME_INTERNAL_TOKEN`, `PORT` | injected by Maritime inside a hosted agent |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | apps; the key alone turns them on |
@@ -318,8 +317,8 @@ Server:
 | `IMAGE_API_KEY`, `IMAGE_BASE_URL`, `IMAGE_MODEL` | `image_generate`; defaults to `OPENAI_API_KEY` / `OPENAI_BASE_URL` and `gpt-image-1` |
 
 Gateway: `GATEWAY_PUBLIC_URL`, `GATEWAY_DATA_DIR`, `GATEWAY_SIGNUP_SECRET`, `GATEWAY_ALLOW_OPEN_SIGNUP`,
-`GATEWAY_TRUST_PROXY`, `INSTINCT_AGENT_IMAGE`, `INSTINCT_IDLE_TTL_SECONDS`, `INSTINCT_USE_MARITIME_LLM`,
-`INSTINCT_MARITIME_MODEL`, `MARITIME_API_URL`, `INKBOX_BASE_URL`, plus the Maritime, Inkbox, Composio
+`GATEWAY_TRUST_PROXY`, `ORION_AGENT_IMAGE`, `ORION_IDLE_TTL_SECONDS`, `ORION_USE_MARITIME_LLM`,
+`ORION_MARITIME_MODEL`, `MARITIME_API_URL`, `INKBOX_BASE_URL`, plus the Maritime, Inkbox, Composio
 and Link keys it copies into each agent. See [packages/gateway/README.md](../packages/gateway/README.md).
 
 ## Safety rules
@@ -356,7 +355,7 @@ Nothing above touches the network or needs a key. Live Inkbox and Maritime are n
 ## Decisions and alternatives
 
 - **Pi, not OpenClaw.** OpenClaw is a product with its own gateway, channels and skills store.
-  Instinct is a different product: text-first, one agent per person, a trust network. Pi is the
+  Orion AI is a narrower product: text-first, one agent per person, a trust network. Pi is the
   framework OpenClaw was first built on, and it is still published as a standalone library, so
   we get the same loop without the rest. That OpenClaw has since moved its loop in-house does
   not change what we need from Pi.

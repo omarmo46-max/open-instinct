@@ -16,7 +16,7 @@ Once it has 40 messages over 7 days and a clear 7-hour quiet stretch, that stret
 Tool `memory_search` looks through `MEMORY.md` and the last 90 journal days.
 
 - Default: by words (BM25) with Arabic normalization (alef and ya variants, ta marbuta, "ال"). Local, free.
-- By meaning: set `INSTINCT_SEMANTIC_MEMORY=1` and an `EMBED_API_KEY` (or `OPENAI_API_KEY`). Optional `EMBED_BASE_URL`, `EMBED_MODEL` (default `text-embedding-3-small`). **Memory lines are then sent to that embeddings service**, which is why it is opt-in. Vectors are cached in `memory/embeddings.json`. If the service fails, search falls back to words and says so.
+- By meaning: set `ORION_SEMANTIC_MEMORY=1` and an `EMBED_API_KEY` (or `OPENAI_API_KEY`). Optional `EMBED_BASE_URL`, `EMBED_MODEL` (default `text-embedding-3-small`). **Memory lines are then sent to that embeddings service**, which is why it is opt-in. Vectors are cached in `memory/embeddings.json`. If the service fails, search falls back to words and says so.
 
 ## B4 Booking preferences
 
@@ -28,7 +28,7 @@ Tools `preference_note`, `booking_brief`, `preference_forget` (owner only).
 
 ## B5 Places and arrival
 
-Off unless `INSTINCT_LOCATION=1`. Tools: `place_save`, `arrival_reminder`, `where_am_i`, `place_remove`.
+Off unless `ORION_LOCATION=1`. Tools: `place_save`, `arrival_reminder`, `where_am_i`, `place_remove`.
 
 The phone reports to `POST /location` (owner token, same as `/voice`):
 

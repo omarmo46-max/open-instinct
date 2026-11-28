@@ -2,7 +2,7 @@
  * The owner's say over who the agent is. Two Markdown files in the data dir:
  *
  * - PERSONA.md: name, voice, texting style, what the agent never does. Created on
- *   first boot from DEFAULT_PERSONA (or from INSTINCT_PERSONA), then owned by the
+ *   first boot from DEFAULT_PERSONA (or from ORION_PERSONA), then owned by the
  *   person. It becomes the identity section of the system prompt.
  * - AGENTS.md: optional standing instructions, appended after the persona. Same
  *   convention Pi, OpenClaw and Claude Code use for a project's AGENTS.md.
@@ -73,7 +73,7 @@ export function resetPersona(state: StateDir): string {
 }
 
 /**
- * Create PERSONA.md when it is missing. `seed` is the INSTINCT_PERSONA text the
+ * Create PERSONA.md when it is missing. `seed` is the ORION_PERSONA text the
  * deployer may have given; it is used on first boot only and never overwrites an
  * existing file. Returns true when the file was created.
  */
@@ -86,7 +86,7 @@ export function ensurePersona(state: StateDir, seed?: string): boolean {
 
 /**
  * Create AGENTS.md when it is missing and a seed was given. `seed` is the
- * INSTINCT_INSTRUCTIONS text a deployer may set (an event brief, house rules);
+ * ORION_INSTRUCTIONS text a deployer may set (an event brief, house rules);
  * first boot only, never overwrites. Returns true when the file was created.
  */
 export function ensureInstructions(state: StateDir, seed?: string): boolean {
@@ -103,7 +103,7 @@ export const AGENTS_SEED_FILE = "AGENTS.md.seed";
 export type InstructionsSync = "created" | "updated" | "kept" | "none";
 
 /**
- * Keep AGENTS.md in step with the deployer's INSTINCT_INSTRUCTIONS across redeploys.
+ * Keep AGENTS.md in step with the deployer's ORION_INSTRUCTIONS across redeploys.
  * Missing file: write the seed. File still byte-equal to the last seed (the owner never
  * edited it) and the seed changed: overwrite. Owner-edited file: leave it alone. Nothing
  * to seed: leave everything alone.

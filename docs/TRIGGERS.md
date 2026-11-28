@@ -6,8 +6,8 @@ It does this in code. No model runs, so a scan costs no tokens and an email cann
 ## Turn it on
 
 1. Connect Gmail and Google Calendar through Composio (see `COMPOSIO.md`).
-2. Set `INSTINCT_TRIGGERS=1`, or put `"triggers": { "enabled": true }` in `config.json`.
-3. Optional: `INSTINCT_QUIET_HOURS=23:00-07:00` (owner's time zone, the default).
+2. Set `ORION_TRIGGERS=1`, or put `"triggers": { "enabled": true }` in `config.json`.
+3. Optional: `ORION_QUIET_HOURS=23:00-07:00` (owner's time zone, the default).
 
 Without a Composio session it stays off and logs why. When it is off, its schedule entry is removed.
 

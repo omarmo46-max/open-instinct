@@ -94,7 +94,7 @@ export function describeOip(m: OipMessage): string {
   if (m.subject) parts.push(`about "${m.subject}"`);
   if (m.on_behalf_of) {
     const who = m.on_behalf_of.display ? `${m.on_behalf_of.display} (@${m.on_behalf_of.handle})` : `@${m.on_behalf_of.handle}`;
-    parts.push(`sent by the Instinct of ${who}`);
+    parts.push(`sent by the Orion of ${who}`);
   }
   let text = parts.join(" ") + ".";
   text += ` Payload: ${JSON.stringify(m.payload)}.`;
@@ -128,7 +128,7 @@ function expectedReply(intent: OipIntent): string {
 }
 
 // ---------------------------------------------------------------------------
-// Friendly text for people without an Instinct
+// Friendly text for people without an Orion
 // ---------------------------------------------------------------------------
 
 const ISO_WALL_CLOCK = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/;
@@ -181,12 +181,12 @@ function factsToLines(facts: unknown): string[] {
 
 /**
  * Turn an OIP message into an iMessage, SMS or email a human can act on. Used when the other
- * person has no Instinct. `payload.text` is used as a fallback body when the typed fields are missing.
+ * person has no Orion. `payload.text` is used as a fallback body when the typed fields are missing.
  */
 export function oipToText(m: OipMessage, ownerName: string, opts: OipTextOptions = {}): string {
   const p = m.payload;
   const fallback = str(p.text) ?? (m.subject ? `${ownerName} is in touch about ${m.subject}.` : undefined);
-  const lines: string[] = [`Hi, this is ${ownerName}'s Instinct.`];
+  const lines: string[] = [`Hi, this is ${ownerName}'s Orion.`];
 
   switch (m.intent) {
     case "propose_times": {

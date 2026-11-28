@@ -1,7 +1,7 @@
 /**
  * "Enforced twice": when the policy stops a request from someone who is not the owner,
  * the requester gets a polite refusal and the owner gets a heads-up, so a partner's
- * Instinct probing the calendar never happens in silence. One notice per conversation
+ * Orion probing the calendar never happens in silence. One notice per conversation
  * per hour keeps a chatty peer from flooding the owner's phone.
  */
 import type { AuditLog } from "./audit.js";

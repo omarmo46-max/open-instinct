@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Type } from "typebox";
 import { defineTool, normalizeHandle, normalizePhone, textResult } from "@orion-ai/core";
-import type { Contact, ContactStore, FileOutbox, InstinctConfig, OutboundFile, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@orion-ai/core";
+import type { Contact, ContactStore, FileOutbox, OrionConfig, OutboundFile, OutboundMessage, RegisteredTool, ToolContext, ToolResultLike } from "@orion-ai/core";
 import type { CallOrigination, FileSend, InkboxChannel } from "./channel.js";
 import { CALL_ORIGINATIONS, parseConversationKey } from "./channel.js";
 
@@ -18,7 +18,7 @@ import { CALL_ORIGINATIONS, parseConversationKey } from "./channel.js";
 export interface SendFileDeps {
   channel?: InkboxChannel;
   contacts: ContactStore;
-  config: InstinctConfig;
+  config: OrionConfig;
   /**
    * The state directory (`/data` on Maritime). send_file reads workspace-relative paths
    * under `<dataDir>/workspace` and absolute paths anywhere under `dataDir`. Without it
@@ -249,7 +249,7 @@ export function messagingTools(deps: MessagingDeps): RegisteredTool[] {
         const deliveryKey = ctx.deliveryKey ?? ctx.conversationKey;
         const key = parseConversationKey(deliveryKey);
         if (key.channel === "a2a") {
-          throw new Error("This is an agent-to-agent conversation. Use reply_instinct to answer the other agent.");
+          throw new Error("This is an agent-to-agent conversation. Use reply_orion to answer the other agent.");
         }
         if (key.channel !== "imessage" && key.channel !== "sms" && key.channel !== "email") {
           throw new Error(`Cannot reply on "${ctx.conversationKey}". Give \`to\` to pick a recipient.`);
@@ -268,7 +268,7 @@ export function messagingTools(deps: MessagingDeps): RegisteredTool[] {
       const msg: OutboundMessage = { channel: target.channel, to: target.to, text };
       if (target.channel === "email") {
         (msg as OutboundMessage & { replyRef?: Record<string, string | undefined> }).replyRef = {
-          subject: args.subject ?? (wantsOwner && !isOwner(ctx) ? `Message from ${ctx.principal.displayName}` : "Message from your Instinct"),
+          subject: args.subject ?? (wantsOwner && !isOwner(ctx) ? `Message from ${ctx.principal.displayName}` : "Message from your Orion"),
         };
       }
       if (!isOwner(ctx) && wantsOwner) {
@@ -455,7 +455,7 @@ export function sendFileTool(deps: SendFileDeps): RegisteredTool {
       }
       const target = resolveTarget(args.to, deps, args.channel);
       const send: FileSend = { ...base(), channel: target.channel, to: target.to };
-      if (target.channel === "email") send.subject = args.subject ?? (wantsOwner && !isOwner(ctx) ? `File from ${ctx.principal.displayName}` : `${file.name} from your Instinct`);
+      if (target.channel === "email") send.subject = args.subject ?? (wantsOwner && !isOwner(ctx) ? `File from ${ctx.principal.displayName}` : `${file.name} from your Orion`);
       if (!isOwner(ctx) && wantsOwner) send.caption = `From ${ctx.principal.displayName}: ${caption ?? file.name}`;
       await wire().sendFile(send, { principal: ctx.principal, conversationKey: ctx.conversationKey });
       return textResult(`Sent ${file.name} to ${target.label} via ${target.channel}.`);

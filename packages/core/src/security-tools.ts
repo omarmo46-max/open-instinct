@@ -83,7 +83,7 @@ export function securityTools(d: SecurityToolDeps): RegisteredTool[] {
         parameters: Type.Object({}),
         meta: MEMORY,
         execute: async () => {
-          if (!vault.configured) return fail("The vault is not set up (the operator has to set INSTINCT_VAULT_KEY or INSTINCT_VAULT_PASSPHRASE).");
+          if (!vault.configured) return fail("The vault is not set up (the operator has to set ORION_VAULT_KEY or ORION_VAULT_PASSPHRASE).");
           const rows = vault.list().filter((r) => !r.label.startsWith("_"));
           return textResult(rows.length ? rows.map((r) => `- ${r.label} [${r.type}] ${r.hint}`).join("\n") : "The vault is empty.");
         },

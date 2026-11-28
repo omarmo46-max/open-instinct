@@ -3,7 +3,7 @@ import { CliError } from "./io.js";
 
 export const DEFAULT_LOCAL_URL = "http://127.0.0.1:8080";
 
-/** The server's INSTINCT_CHAT_TOKEN as a Bearer header, or nothing when no token is set. */
+/** The server's ORION_CHAT_TOKEN as a Bearer header, or nothing when no token is set. */
 export function authHeaders(token: string | undefined): Record<string, string> {
   const t = token?.trim();
   return t ? { Authorization: `Bearer ${t}` } : {};
@@ -26,9 +26,9 @@ export async function localChat(
   try {
     res = await f(url, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders(token) }, body: JSON.stringify(body) });
   } catch (err) {
-    throw new CliError(`Could not reach ${url}. Is \`instinct dev\` running? (${err instanceof Error ? err.message : String(err)})`);
+    throw new CliError(`Could not reach ${url}. Is \`orion dev\` running? (${err instanceof Error ? err.message : String(err)})`);
   }
-  if (res.status === 401) throw new CliError(`${url} wants a chat token. Set INSTINCT_CHAT_TOKEN to the server's value.`);
+  if (res.status === 401) throw new CliError(`${url} wants a chat token. Set ORION_CHAT_TOKEN to the server's value.`);
   if (!res.ok) throw new CliError(`${url} returned ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return (await res.json()) as { response: string | null; error?: string };
 }
@@ -40,9 +40,9 @@ export async function localStatus(f: typeof fetch, baseUrl: string, token?: stri
     try {
       res = await f(`${root}${p}`, { headers: { Accept: "application/json", ...authHeaders(token) } });
     } catch (err) {
-      throw new CliError(`Could not reach ${root}. Is \`instinct dev\` running? (${err instanceof Error ? err.message : String(err)})`);
+      throw new CliError(`Could not reach ${root}. Is \`orion dev\` running? (${err instanceof Error ? err.message : String(err)})`);
     }
-    if (res.status === 401) throw new CliError(`${root} wants a chat token. Set INSTINCT_CHAT_TOKEN to the server's value.`);
+    if (res.status === 401) throw new CliError(`${root} wants a chat token. Set ORION_CHAT_TOKEN to the server's value.`);
     if (!res.ok) continue;
     const text = await res.text();
     try {

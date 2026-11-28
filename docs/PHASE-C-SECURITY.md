@@ -1,6 +1,6 @@
 # Phase C: security
 
-Eight layers, all in code, none of them needs a model call. They are on by default; `INSTINCT_SECURITY=0` removes the runtime hooks (the vault, step-up and encryption tools stay usable).
+Eight layers, all in code, none of them needs a model call. They are on by default; `ORION_SECURITY=0` removes the runtime hooks (the vault, step-up and encryption tools stay usable).
 **None of this makes prompt injection impossible.** The firewall lowers the number of attacks that arrive, the action monitor limits what a successful one can do, and the owner's yes is the last gate.
 
 ## C1 Content firewall (`firewall.ts`)
@@ -27,7 +27,7 @@ A second judge between the policy and the tool. It can ask or block, never loose
 ## C3 Grounding check (`grounding.ts`)
 
 Before a reply goes out, amounts, links, emails, phone numbers, dates and booking codes in it must appear in what the user said, in a tool result this conversation, or in memory. "I sent / booked / paid / cancelled / saved it" must match a tool that ran this turn. Anything unsupported gets a plain note at the end of the reply, in the reply's language. Estimates ("about $300") are skipped.
-`INSTINCT_GROUNDING=off` turns it off.
+`ORION_GROUNDING=off` turns it off.
 Limits: it checks that a claim has a source, not that the source is true; a total the model computed itself will be flagged; replies sent through the `reply` tool in the middle of a run are not checked.
 
 ## C4 Signed tool identity and short-lived credentials (`tool-identity.ts`)
@@ -44,9 +44,9 @@ Tools: `e2ee_my_keys`, `e2ee_pin_peer`, `e2ee_encrypt_file`, `e2ee_decrypt_file`
 
 ## C6 Vault (`vault.ts`)
 
-Logins, cards, addresses, notes. AES-256-GCM at rest, file mode 0600. The key is `INSTINCT_VAULT_KEY` (32 bytes, base64 or hex) or `INSTINCT_VAULT_PASSPHRASE` (scrypt). Card security codes are refused. Card numbers must pass the Luhn check.
+Logins, cards, addresses, notes. AES-256-GCM at rest, file mode 0600. The key is `ORION_VAULT_KEY` (32 bytes, base64 or hex) or `ORION_VAULT_PASSPHRASE` (scrypt). Card security codes are refused. Card numbers must pass the Luhn check.
 
-- The model never needs a secret. It writes `{{secret:vault:Netflix.password}}` in a tool call to a tool that accepts them (`computer`, `computer_batch`, or the names in `INSTINCT_SECRET_TOOLS`). The owner approves, then the runtime fills it in and removes the value from the result.
+- The model never needs a secret. It writes `{{secret:vault:Netflix.password}}` in a tool call to a tool that accepts them (`computer`, `computer_batch`, or the names in `ORION_SECRET_TOOLS`). The owner approves, then the runtime fills it in and removes the value from the result.
 - Tools: `vault_list` (labels and hints), `vault_save`, `vault_address`, `vault_delete`, `vault_reveal` and `totp_code` (owner approval and step-up).
 - A tool whose purpose is to reveal a secret (`vault_reveal`, `totp_code`, `op_reveal`) is not scrubbed, and its result is kept out of the audit log. Everything it returns is in the conversation the model sees and in that conversation's saved history until `/new`: prefer references.
 - Values are scrubbed from other tool results and from what the grounding check keeps. A screenshot cannot be scrubbed: do not let it show a password in clear text.
@@ -59,7 +59,7 @@ The step-up secret is in `keys/stepup.json` (mode 0600), next to the vault key, 
 
 ## C8 1Password broker (`onepassword.ts`)
 
-Needs the `op` command line, `OP_SERVICE_ACCOUNT_TOKEN` and `INSTINCT_OP_VAULTS` (comma-separated; none listed means nothing can be read). The agent never holds a 1Password login: it makes one `op read` per use, only in allowed vaults, with the same approval and step-up as the vault. Use it as `{{secret:op://Personal/Netflix/password}}`. `op_list` shows item titles only; `op_reveal` shows a field.
+Needs the `op` command line, `OP_SERVICE_ACCOUNT_TOKEN` and `ORION_OP_VAULTS` (comma-separated; none listed means nothing can be read). The agent never holds a 1Password login: it makes one `op read` per use, only in allowed vaults, with the same approval and step-up as the vault. Use it as `{{secret:op://Personal/Netflix/password}}`. `op_list` shows item titles only; `op_reveal` shows a field.
 
 ## Tamper-evident activity log
 
@@ -69,11 +69,11 @@ Every entry in `audit.jsonl` carries the hash of the one before it. The owner to
 
 | Variable | Effect |
 |---|---|
-| `INSTINCT_SECURITY=0` | Remove the runtime hooks (C1 to C3 and the monitor) |
-| `INSTINCT_GROUNDING=off` | No grounding notes |
-| `INSTINCT_VAULT_KEY` or `INSTINCT_VAULT_PASSPHRASE` | Turn the vault on |
-| `INSTINCT_SECRET_TOOLS` | Extra tool names that may receive `{{secret:...}}` |
-| `OP_SERVICE_ACCOUNT_TOKEN` + `INSTINCT_OP_VAULTS` | Turn the 1Password broker on |
+| `ORION_SECURITY=0` | Remove the runtime hooks (C1 to C3 and the monitor) |
+| `ORION_GROUNDING=off` | No grounding notes |
+| `ORION_VAULT_KEY` or `ORION_VAULT_PASSPHRASE` | Turn the vault on |
+| `ORION_SECRET_TOOLS` | Extra tool names that may receive `{{secret:...}}` |
+| `OP_SERVICE_ACCOUNT_TOKEN` + `ORION_OP_VAULTS` | Turn the 1Password broker on |
 
 ## Not done
 

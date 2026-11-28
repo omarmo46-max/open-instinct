@@ -8,7 +8,6 @@ Analogy: the agent is a new assistant who sits at a desk in your house. Visitors
 to the assistant. The assistant decides what to do. The house rules decide what the
 assistant may do for each visitor. This page is the house rules, written down.
 
-Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
 ## Table of contents
 
@@ -47,7 +46,7 @@ described in the next section.
 | Trusted person | Hide an instruction inside a normal message | Untrusted wrapping; policy guard |
 | Other agent | Ask for calendar titles, memory or a purchase | Policy guard; free/busy only for friends, nothing for strangers |
 | Other agent | Claim to be the owner or a trusted agent | Inkbox contact rules plus our contact lookup by handle; `owner` is a reserved handle; `staff` is only assignable to a contact with an agent handle and only applies over A2A |
-| Stranger | Text an agent handed out without an owner phone first, to become its owner | Claiming needs the one-time `INSTINCT_OWNER_CLAIM_CODE` the front door shows only to the signer-up; no code means no claim; 10 wrong tries per number; 1:1 carrier messages only; code cleared after use |
+| Stranger | Text an agent handed out without an owner phone first, to become its owner | Claiming needs the one-time `ORION_OWNER_CLAIM_CODE` the front door shows only to the signer-up; no code means no claim; 10 wrong tries per number; 1:1 carrier messages only; code cleared after use |
 | Stranger | Flood the agent with messages | Stranger limits: 3 new conversations a day, 10 messages each, 3 relayed messages a day |
 | Stranger | Read anything about the owner | Strangers get no memory, no profile, no tools except `notify_owner` |
 | Web page | Prompt injection in page text or a screenshot | Untrusted wrapping; policy guard runs on every tool call |
@@ -171,14 +170,14 @@ server starts, so the owner's `bash` tool does not run as root.
 `/chat`, `/status` and `/schedules` are the owner's surface. A plain message there runs
 with every owner tool. Two guards sit in front:
 
-1. `INSTINCT_CHAT_TOKEN`. When set, every call needs `Authorization: Bearer <token>` or
-   `X-Instinct-Token`, compared in constant time. `instinct dev` and `instinct chat` pass
+1. `ORION_CHAT_TOKEN`. When set, every call needs `Authorization: Bearer <token>` or
+   `X-Orion-Token`, compared in constant time. `orion dev` and `orion chat` pass
    it for you.
 2. Bind address. Without a token the server listens on `127.0.0.1` unless `PORT` or a
    `MARITIME_*` variable says it is inside a container. Inside a Maritime VM only
-   Maritime's authenticated API reaches `/chat`. `INSTINCT_BIND` overrides.
+   Maritime's authenticated API reaches `/chat`. `ORION_BIND` overrides.
 
-The Inkbox tunnel (`INSTINCT_TUNNEL=1` or `instinct dev --tunnel`) exposes a second,
+The Inkbox tunnel (`ORION_TUNNEL=1` or `orion dev --tunnel`) exposes a second,
 loopback-only listener that answers `/health` and `/webhooks/inkbox` and nothing else.
 `/chat` is never public through it.
 
@@ -214,7 +213,7 @@ Be clear about these before you trust the agent with anything that matters.
 
 ## Checklist for operators
 
-- Set `INSTINCT_CHAT_TOKEN` whenever the server can be reached from another machine.
+- Set `ORION_CHAT_TOKEN` whenever the server can be reached from another machine.
 - Keep `INKBOX_ADMIN_API_KEY` out of the agent. The agent needs only its identity-scoped `INKBOX_API_KEY`.
 - Run the gateway with `GATEWAY_SIGNUP_SECRET` set. Open signup costs money per user.
 - Set `GATEWAY_TRUST_PROXY=1` only behind a proxy you control.

@@ -2,7 +2,7 @@
  * Places and arrival awareness (B5). The owner's phone reports where it is (a location fix, or a
  * Shortcut automation saying "arrived at Home"). The agent keeps only the latest fix and a short
  * event list, matches fixes to the places the owner saved, and fires "when I arrive" reminders.
- * Off unless INSTINCT_LOCATION=1. Nothing here is sent to a model or a third party.
+ * Off unless ORION_LOCATION=1. Nothing here is sent to a model or a third party.
  */
 import { randomBytes } from "node:crypto";
 import type { StateDir } from "./state.js";

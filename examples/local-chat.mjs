@@ -3,7 +3,7 @@
  * A chat loop against a running Orion AI server.
  *
  * Start the server first, in another terminal:
- *   pnpm instinct dev
+ *   pnpm orion dev
  * or
  *   node packages/server/dist/main.js
  *
@@ -12,14 +12,14 @@
  *   node examples/local-chat.mjs http://127.0.0.1:9090 # another port
  *
  * Every line you type is one POST /chat with the same conversation_id, so the
- * agent keeps context between lines. When the server set INSTINCT_CHAT_TOKEN,
+ * agent keeps context between lines. When the server set ORION_CHAT_TOKEN,
  * export the same value here and it is sent as a Bearer token.
  */
 import { createInterface } from "node:readline";
 import { randomUUID } from "node:crypto";
 
 const base = (process.argv[2] ?? "http://127.0.0.1:8080").replace(/\/+$/, "");
-const token = process.env.INSTINCT_CHAT_TOKEN?.trim();
+const token = process.env.ORION_CHAT_TOKEN?.trim();
 const conversationId = `local-${randomUUID().slice(0, 8)}`;
 
 const headers = { "content-type": "application/json" };
@@ -27,7 +27,7 @@ if (token) headers.authorization = `Bearer ${token}`;
 
 async function status() {
   const res = await fetch(`${base}/`, { headers });
-  if (res.status === 401) throw new Error("the server wants INSTINCT_CHAT_TOKEN; export the same value here");
+  if (res.status === 401) throw new Error("the server wants ORION_CHAT_TOKEN; export the same value here");
   if (!res.ok) throw new Error(`GET ${base}/ returned ${res.status}`);
   return res.json();
 }
@@ -44,7 +44,7 @@ try {
   info = await status();
 } catch (err) {
   console.error(`Cannot reach ${base}: ${err.message}`);
-  console.error("Is the server running? Try: pnpm instinct dev");
+  console.error("Is the server running? Try: pnpm orion dev");
   process.exit(1);
 }
 console.log(`${info.agent} (model ${info.model}, computer ${info.computer}) on ${base}`);

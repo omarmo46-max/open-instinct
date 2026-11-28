@@ -30,10 +30,10 @@ describe("buildSystemPrompt", () => {
 
   it("has every section for the owner", () => {
     const p = buildSystemPrompt(input());
-    for (const heading of ["# You are Instinct", "# Your owner", "# Who you are talking to", "# Channel: imessage", "# Rules", "# Memory", "# Long tasks", "# Now"]) {
+    for (const heading of ["# You are Orion", "# Your owner", "# Who you are talking to", "# Channel: imessage", "# Rules", "# Memory", "# Long tasks", "# Now"]) {
       expect(p).toContain(heading);
     }
-    expect(p).toContain("@maria-instinct");
+    expect(p).toContain("@maria-orion");
     expect(p).toContain("Allergic to shellfish");
     expect(p).toContain("+16175550100");
     expect(p).toContain("Likes early flights");
@@ -56,9 +56,9 @@ describe("buildSystemPrompt", () => {
   it("describes each principal kind differently", () => {
     expect(buildSystemPrompt(input())).toContain("your owner");
     expect(buildSystemPrompt(input({ principal: principalOf("friend") }))).toContain("a person your owner knows");
-    const agent = buildSystemPrompt(input({ principal: { kind: "agent", id: "agent:sam-instinct", tier: "partner", displayName: "Sam's Instinct", agentHandle: "sam-instinct", onBehalfOf: { displayName: "Sam" } } }));
-    expect(agent).toContain("Another Instinct");
-    expect(agent).toContain("@sam-instinct");
+    const agent = buildSystemPrompt(input({ principal: { kind: "agent", id: "agent:sam-orion", tier: "partner", displayName: "Sam's Orion", agentHandle: "sam-orion", onBehalfOf: { displayName: "Sam" } } }));
+    expect(agent).toContain("Another Orion");
+    expect(agent).toContain("@sam-orion");
     expect(agent).toContain("acting for Sam");
     const stranger = buildSystemPrompt(input({ principal: principalOf("stranger") }));
     expect(stranger).toContain("Someone you do not know");
@@ -102,7 +102,7 @@ describe("buildSystemPrompt", () => {
     expect(fromFile).toContain("Dry wit. Short sentences.");
     expect(fromFile).not.toContain("Say less. Do more.");
     // The persona sits inside the identity section, before the owner card.
-    expect(fromFile.indexOf("Dry wit")).toBeGreaterThan(fromFile.indexOf("# You are Instinct"));
+    expect(fromFile.indexOf("Dry wit")).toBeGreaterThan(fromFile.indexOf("# You are Orion"));
     expect(fromFile.indexOf("Dry wit")).toBeLessThan(fromFile.indexOf("# Your owner"));
 
     const cfg = testConfig();
@@ -119,7 +119,7 @@ describe("buildSystemPrompt", () => {
   it("appends AGENTS.md as standing instructions right after the identity", () => {
     const p = buildSystemPrompt(input({ instructions: "# House rules\nAlways confirm bookings by text." }));
     expect(p).toContain("# Standing instructions\n## House rules\nAlways confirm bookings by text.");
-    expect(p.indexOf("# Standing instructions")).toBeGreaterThan(p.indexOf("# You are Instinct"));
+    expect(p.indexOf("# Standing instructions")).toBeGreaterThan(p.indexOf("# You are Orion"));
     expect(p.indexOf("# Standing instructions")).toBeLessThan(p.indexOf("# Your owner"));
     expect(buildSystemPrompt(input({ instructions: "  " }))).not.toContain("# Standing instructions");
   });

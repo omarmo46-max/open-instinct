@@ -17,7 +17,7 @@ describe("dev tunnel boundary", () => {
     const incoming = vi.fn(async (msg) => ({ acked: true, conversationKey: msg.conversationKey, principal: { kind: "owner" as const, id: "owner", tier: "owner" as const, displayName: "Owner" } }));
     const app: HttpApp = { state: new StateDir(dir), config: defaultConfig(), scheduler: { toMaritimeSchedules: () => [] }, runtime: { handleInbound: incoming, stats: () => ({ conversations: 0, busy: 0 }) } };
     let target = "";
-    const context = makeContext({ INSTINCT_DATA_DIR: dir, INKBOX_API_KEY: "test", INKBOX_AGENT_HANDLE: "test", INKBOX_SIGNING_KEY: "whsec_test" }, {
+    const context = makeContext({ ORION_DATA_DIR: dir, INKBOX_API_KEY: "test", INKBOX_AGENT_HANDLE: "test", INKBOX_SIGNING_KEY: "whsec_test" }, {
       stdout: () => {}, stderr: () => {}, installSignalHandlers: false,
       importServer: async () => ({
         boot: async () => app as never,

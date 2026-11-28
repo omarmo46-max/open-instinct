@@ -9,7 +9,7 @@ pnpm install && pnpm build
 
 | Script | What it shows | Needs |
 |---|---|---|
-| [local-chat.mjs](local-chat.mjs) | A chat loop against a running agent over `POST /chat` | a running server (`pnpm instinct dev`) and a model key |
+| [local-chat.mjs](local-chat.mjs) | A chat loop against a running agent over `POST /chat` | a running server (`pnpm orion dev`) and a model key |
 | [fake-inkbox-webhook.mjs](fake-inkbox-webhook.mjs) | A signed `imessage.received` webhook, exactly as Inkbox would send it, and a tampered one that is refused | a running server started with `INKBOX_SIGNING_KEY` |
 | [dinner-a2a.mjs](dinner-a2a.mjs) | Two real agents planning a dinner over A2A with the model and the transport stubbed | nothing: no keys, no network |
 
@@ -19,8 +19,8 @@ Start the agent in one terminal:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-pnpm instinct init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-instinct
-pnpm instinct dev
+pnpm orion init --name "Maria" --phone +14155550100 --email maria@example.com --handle maria-orion
+pnpm orion dev
 ```
 
 In another:
@@ -30,7 +30,7 @@ node examples/local-chat.mjs
 ```
 
 ```
-Instinct (model anthropic/claude-fable-5-1, computer none) on http://127.0.0.1:8080
+Orion (model anthropic/claude-fable-5-1, computer none) on http://127.0.0.1:8080
 conversation local-3f9a1c2e. Type a message. Ctrl-D or "quit" to leave.
 
 you> remember that I like window seats
@@ -39,9 +39,9 @@ agent> Noted: window seats from now on.
 
 Every line is one `POST /chat` with the same `conversation_id`, so the agent keeps context. If a reply
 takes longer than the server's budget, the server answers with an acknowledgement and the finished text
-comes back on your next line, marked `(earlier)`. When the server was started with `INSTINCT_CHAT_TOKEN`,
+comes back on your next line, marked `(earlier)`. When the server was started with `ORION_CHAT_TOKEN`,
 export the same value before running the script; it is sent as a Bearer token. Pass another base URL as
-the first argument to talk to a server on a different port. This is the same call `pnpm instinct chat`
+the first argument to talk to a server on a different port. This is the same call `pnpm orion chat`
 makes once.
 
 ## 2. Signed fake Inkbox webhook
@@ -53,7 +53,7 @@ script builds the same signature, so you can drive the iMessage path without Ink
 Start the server with a signing key (any string works locally):
 
 ```bash
-INKBOX_SIGNING_KEY=whsec_local_test pnpm instinct dev
+INKBOX_SIGNING_KEY=whsec_local_test pnpm orion dev
 ```
 
 Without an Inkbox API key the agent still runs. Its iMessage replies go to the console outbox, so watch
@@ -63,7 +63,7 @@ the server's terminal.
 # a stranger texts the agent
 INKBOX_SIGNING_KEY=whsec_local_test node examples/fake-inkbox-webhook.mjs --text "hi, who is this?"
 
-# the owner texts (use the phone you gave to `instinct init`)
+# the owner texts (use the phone you gave to `orion init`)
 INKBOX_SIGNING_KEY=whsec_local_test node examples/fake-inkbox-webhook.mjs --from +14155550100 --text "remember I like window seats"
 
 # a body changed after signing is refused
@@ -95,17 +95,17 @@ The flow is the one in [docs/PROTOCOL.md](../docs/PROTOCOL.md):
 
 ```
 1. Maria asks her agent
-  wire  @maria-instinct -> @sam-instinct  SendMessage  task_1 in ctx_1
-  chat  Maria's Instinct -> Maria: Asked Sam's Instinct about Thursday or Friday near the Mission. I will tell you when it answers.
-  imessage @sam-instinct -> +14155550199: Maria's agent (@maria-instinct) via Sam's Instinct: Maria's Instinct asked about dinner ...
-  wire  @sam-instinct -> @maria-instinct  reply complete  task_1
-  imessage @maria-instinct -> +14155550100: Sam's agent (@sam-instinct) via Maria's Instinct: Sam is in for Thursday Oct 8 at 7 pm ...
+  wire  @maria-orion -> @sam-orion  SendMessage  task_1 in ctx_1
+  chat  Maria's Orion -> Maria: Asked Sam's Orion about Thursday or Friday near the Mission. I will tell you when it answers.
+  imessage @sam-orion -> +14155550199: Maria's agent (@maria-orion) via Sam's Orion: Maria's Orion asked about dinner ...
+  wire  @sam-orion -> @maria-orion  reply complete  task_1
+  imessage @maria-orion -> +14155550100: Sam's agent (@sam-orion) via Maria's Orion: Sam is in for Thursday Oct 8 at 7 pm ...
 2. Maria says yes; her agent confirms in the same context
-  wire  @maria-instinct -> @sam-instinct  SendMessage  task_2 in ctx_1
+  wire  @maria-orion -> @sam-orion  SendMessage  task_2 in ctx_1
   ...
 3. What each audit log says
-  ok   Sam's agent resolved the caller to agent:maria-instinct (partner)
-  ok   policy allowed only notify_owner and reply_instinct for Maria's agent
+  ok   Sam's agent resolved the caller to agent:maria-orion (partner)
+  ok   policy allowed only notify_owner and reply_orion for Maria's agent
 
 dinner planned
 ```
@@ -114,7 +114,7 @@ What to look at:
 
 - `propose_times` goes out with an OIP/1 data part; Sam's agent answers with a typed `accept`.
 - Sam's agent resolves the caller handle to Sam's contact "Maria" at tier `partner`, so the policy lets
-  it do exactly two things: tell Sam (`notify_owner`) and answer the task (`reply_instinct`).
+  it do exactly two things: tell Sam (`notify_owner`) and answer the task (`reply_orion`).
 - Each owner gets a text through their own agent, prefixed with who asked. Nobody is booked without a yes.
 - The `confirm` reuses `ctx_1`, so both audit logs hold one conversation for the whole dinner.
 
@@ -124,7 +124,7 @@ responses; swapping the faux provider for a real model is a one-line change in `
 ## Writing your own
 
 - To drive a running agent, speak to its HTTP surface: `GET /`, `POST /chat`, `GET /schedules`, with
-  `Authorization: Bearer <INSTINCT_CHAT_TOKEN>` when the server has one. Routes are listed in
+  `Authorization: Bearer <ORION_CHAT_TOKEN>` when the server has one. Routes are listed in
   [packages/server/README.md](../packages/server/README.md).
 - To embed an agent in your own process, call `boot(env, { model, streamFn, outbox, fetchImpl })` and
   feed `app.runtime.handleInbound(message)` the `InboundMessage` shape from `@orion-ai/core`.

@@ -13,7 +13,7 @@ describe("owner claim code", () => {
     const now = new Date("2026-10-15T00:00:00Z");
     expect(ownerClaimStatus(testConfig({ phones: [], claimCode: CODE }), now).enabled).toBe(false);
     expect(ownerClaimStatus(testConfig({ claimOnFirstContact: true, claimCode: CODE }), now).enabled).toBe(false);
-    expect(ownerClaimStatus(testConfig({ phones: [], claimOnFirstContact: true }), now)).toMatchObject({ enabled: false, reason: expect.stringContaining("INSTINCT_OWNER_CLAIM_CODE") });
+    expect(ownerClaimStatus(testConfig({ phones: [], claimOnFirstContact: true }), now)).toMatchObject({ enabled: false, reason: expect.stringContaining("ORION_OWNER_CLAIM_CODE") });
     expect(ownerClaimStatus(testConfig({ phones: [], claimOnFirstContact: true, claimCode: "x".repeat(MIN_CLAIM_CODE_LENGTH - 1) }), now).enabled).toBe(false);
     expect(ownerClaimStatus(testConfig({ phones: [], claimOnFirstContact: true, claimCode: "--  --" }), now).enabled).toBe(false);
     expect(ownerClaimStatus(testConfig({ phones: [], claimOnFirstContact: true, claimCode: CODE, claimExpiresAt: "soon" }), now).enabled).toBe(false);

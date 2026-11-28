@@ -1,4 +1,4 @@
-/** `instinct schedules ...`: proactive jobs, edited on the local data dir through core's Scheduler. */
+/** `orion schedules ...`: proactive jobs, edited on the local data dir through core's Scheduler. */
 import { parseCron, Scheduler } from "@orion-ai/core";
 import { parse, str, type OptionSpec } from "../args.js";
 import { table } from "../ansi.js";
@@ -33,7 +33,7 @@ export async function runSchedules(ctx: CliContext, argv: string[]): Promise<num
     case "list": {
       const entries = scheduler.list();
       if (entries.length === 0) {
-        ctx.print(c.dim('No schedules. Try: instinct schedules add "0 8 * * 1-5" "Send me a morning briefing"'));
+        ctx.print(c.dim('No schedules. Try: orion schedules add "0 8 * * 1-5" "Send me a morning briefing"'));
         return 0;
       }
       ctx.print(
@@ -59,7 +59,7 @@ export async function runSchedules(ctx: CliContext, argv: string[]): Promise<num
         prompt = [first, ...more].filter(Boolean).join(" ").trim();
         if (Number.isNaN(new Date(at).getTime())) throw new UsageError(`--at must be an ISO timestamp, got "${at}"`, "schedules");
       } else {
-        if (!first || more.length === 0) throw new UsageError('usage: instinct schedules add "<cron>" "<prompt>" [--tz Area/City]', "schedules");
+        if (!first || more.length === 0) throw new UsageError('usage: orion schedules add "<cron>" "<prompt>" [--tz Area/City]', "schedules");
         cron = first;
         validateCron(cron);
         prompt = more.join(" ").trim();
@@ -80,7 +80,7 @@ export async function runSchedules(ctx: CliContext, argv: string[]): Promise<num
     case "remove":
     case "delete": {
       const [id] = rest;
-      if (!id) throw new UsageError("usage: instinct schedules remove <id>", "schedules");
+      if (!id) throw new UsageError("usage: orion schedules remove <id>", "schedules");
       if (!scheduler.delete(id)) throw new CliError(`No schedule with id ${id}`);
       ctx.print(`${c.green("Removed")} ${id}`);
       return 0;

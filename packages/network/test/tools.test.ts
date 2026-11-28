@@ -9,7 +9,7 @@ import { agentPrincipal, config, contactPrincipal, ctx, fakeA2a, fakeAudit, fake
 
 function setup(opts: { a2a?: boolean; provisioner?: boolean; handle?: boolean; a2aStore?: A2AStore } = {}) {
   const contacts = fakeContacts([
-    { name: "Sam Lee", tier: "partner", phones: ["(617) 555-0101"], emails: ["sam@example.com"], agentHandle: "sam-instinct" },
+    { name: "Sam Lee", tier: "partner", phones: ["(617) 555-0101"], emails: ["sam@example.com"], agentHandle: "sam-orion" },
     { name: "Alex Kim", tier: "friend", phones: ["+16175550102"] },
     { name: "Priya Patel", tier: "contact", emails: ["priya@example.com"] },
     { name: "Nobody Reachable", tier: "friend" },
@@ -20,7 +20,7 @@ function setup(opts: { a2a?: boolean; provisioner?: boolean; handle?: boolean; a
   const outbox = fakeOutbox();
   const provisioner = fakeProvisioner();
   const changes: unknown[] = [];
-  const cfg = config(opts.handle === false ? { agent: { name: "Maria's Instinct" } } : {});
+  const cfg = config(opts.handle === false ? { agent: { name: "Maria's Orion" } } : {});
   const tools = networkTools({
     contacts,
     policy,
@@ -48,8 +48,8 @@ describe("networkTools registry", () => {
       trust_grant: ["trust.manage"],
       trust_revoke: ["trust.manage"],
       trust_list: ["trust.manage"],
-      ask_instinct: ["network.ask"],
-      reply_instinct: ["converse"],
+      ask_orion: ["network.ask"],
+      reply_orion: ["converse"],
       invite_to_network: ["network.invite"],
     });
     for (const t of tools) expect(t.spec.name).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
@@ -63,7 +63,7 @@ describe("contacts_search", () => {
     expect(r.isError).toBe(false);
     expect(r.text).toContain("sam-lee: Sam Lee");
     expect(r.text).toContain("+16175550101");
-    expect(r.text).toContain("@sam-instinct");
+    expect(r.text).toContain("@sam-orion");
   });
 
   it("lists everyone on an empty query", async () => {
@@ -96,11 +96,11 @@ describe("contacts_upsert", () => {
 
   it("merges new phones and handle into an existing contact", async () => {
     const { tools, contacts } = setup();
-    const r = await run(tools, "contacts_upsert", { name: "Alex Kim", phone: "617-555-0199", agentHandle: "@Alex-Instinct", notes: "climbing" }, ctx(owner));
+    const r = await run(tools, "contacts_upsert", { name: "Alex Kim", phone: "617-555-0199", agentHandle: "@Alex-Orion", notes: "climbing" }, ctx(owner));
     expect(r.text).toMatch(/^Updated/);
     const alex = contacts.get("alex-kim");
     expect(alex?.phones).toEqual(["+16175550102", "+16175550199"]);
-    expect(alex?.agentHandle).toBe("alex-instinct");
+    expect(alex?.agentHandle).toBe("alex-orion");
     expect(alex?.tier).toBe("friend");
   });
 
@@ -123,7 +123,7 @@ describe("trust_set_tier", () => {
 
   it("moves a contact found by name, phone, email or handle and audits it", async () => {
     const { tools, contacts, audit } = setup();
-    const r = await run(tools, "trust_set_tier", { contact: "@sam-instinct", tier: "family" }, ctx(owner));
+    const r = await run(tools, "trust_set_tier", { contact: "@sam-orion", tier: "family" }, ctx(owner));
     expect(r.text).toBe("Sam Lee is now family (was partner).");
     expect(contacts.get("sam-lee")?.tier).toBe("family");
     expect((await run(tools, "trust_set_tier", { contact: "617 555 0102", tier: "family" }, ctx(owner))).text).toContain("Alex Kim is now family");
@@ -170,8 +170,8 @@ describe("trust_grant / trust_revoke / trust_list", () => {
 
   it("accepts a raw principal id and rejects a half window", async () => {
     const { tools, policy } = setup();
-    expect((await run(tools, "trust_grant", { to: "agent:sam-instinct", capabilities: ["calendar.freebusy"] }, ctx(owner))).isError).toBe(false);
-    expect(policy.grants[0]?.to).toBe("agent:sam-instinct");
+    expect((await run(tools, "trust_grant", { to: "agent:sam-orion", capabilities: ["calendar.freebusy"] }, ctx(owner))).isError).toBe(false);
+    expect(policy.grants[0]?.to).toBe("agent:sam-orion");
     expect((await run(tools, "trust_grant", { to: "sam", capabilities: ["calendar.freebusy"], from: "2026-10-06" }, ctx(owner))).isError).toBe(true);
   });
 
@@ -198,40 +198,40 @@ describe("trust_grant / trust_revoke / trust_list", () => {
     policy.setTierOverride("family", "calendar.read", "yes");
     expect((await run(tools, "trust_list", {}, ctx(agentPrincipal(sam)))).isError).toBe(true);
     const r = await run(tools, "trust_list", {}, ctx(owner));
-    expect(r.text).toContain("partner: Sam Lee (@sam-instinct)");
+    expect(r.text).toContain("partner: Sam Lee (@sam-orion)");
     expect(r.text).toContain("friend: Alex Kim, Nobody Reachable");
     expect(r.text).toContain("family calendar.read = yes");
     expect(r.text).toContain("contact:sam-lee -> calendar.write | purpose dinner");
   });
 });
 
-describe("ask_instinct", () => {
+describe("ask_orion", () => {
   it("refuses nested delegation from a worker task instead of orphaning the child result", async () => {
     const { tools, a2a, sam } = setup();
-    const result = await run(tools, "ask_instinct", { contact: "sam", intent: "ask", text: "Please check" }, ctx(agentPrincipal(sam), { channel: "a2a", replyRef: { taskId: "parent-task" } }));
+    const result = await run(tools, "ask_orion", { contact: "sam", intent: "ask", text: "Please check" }, ctx(agentPrincipal(sam), { channel: "a2a", replyRef: { taskId: "parent-task" } }));
     expect(result.isError).toBe(true);
     expect(result.text).toContain("ask_caller");
     expect(a2a.calls).toHaveLength(0);
   });
 
-  it("sends text plus an OIP data part over A2A when the contact has an Instinct", async () => {
+  it("sends text plus an OIP data part over A2A when the contact has an Orion", async () => {
     const { tools, a2a, audit, outbox } = setup();
     const r = await run(
       tools,
-      "ask_instinct",
+      "ask_orion",
       { contact: "sam", intent: "propose_times", subject: "dinner", text: "Dinner this week?", payload: { slots: [{ start: "2026-10-07T19:00:00-04:00" }] }, contextId: "ctx-9" },
       ctx(owner),
     );
     expect(r.isError).toBe(false);
     expect(a2a.calls).toHaveLength(1);
     const [peer, text, data, opts] = a2a.calls[0]!.args as [string, string, Record<string, unknown>, Record<string, unknown>];
-    expect(peer).toBe("sam-instinct");
+    expect(peer).toBe("sam-orion");
     expect(text).toBe("Dinner this week?");
     expect(data).toEqual({
       oip: "1",
       intent: "propose_times",
       subject: "dinner",
-      on_behalf_of: { handle: "maria-instinct", display: "Maria" },
+      on_behalf_of: { handle: "maria-orion", display: "Maria" },
       payload: { slots: [{ start: "2026-10-07T19:00:00-04:00" }] },
     });
     expect(opts).toEqual({ contextId: "ctx-9", messageId: expect.any(String) });
@@ -240,14 +240,14 @@ describe("ask_instinct", () => {
     expect(r.details).toMatchObject({ taskId: "task-1", contextId: "ctx-1", state: "TASK_STATE_WORKING" });
     expect(outbox.sent).toHaveLength(0);
     const entry = audit.entries.find((e) => e.kind === "outbound");
-    expect(entry?.detail).toMatchObject({ channel: "a2a", to: "sam-instinct", taskId: "task-1" });
+    expect(entry?.detail).toMatchObject({ channel: "a2a", to: "sam-orion", taskId: "task-1" });
   });
 
-  it("falls back to a human text when the contact has no Instinct", async () => {
+  it("falls back to a human text when the contact has no Orion", async () => {
     const { tools, a2a, outbox } = setup();
     const r = await run(
       tools,
-      "ask_instinct",
+      "ask_orion",
       { contact: "Alex Kim", intent: "propose_times", subject: "a hike", text: "Hike this weekend?", payload: { slots: [{ start: "2026-10-10T09:00:00-04:00", end: "2026-10-10T12:00:00-04:00" }] } },
       ctx(owner),
     );
@@ -256,27 +256,27 @@ describe("ask_instinct", () => {
     const { msg, principal, conversationKey } = outbox.sent[0]!;
     expect(msg.channel).toBe("imessage");
     expect(msg.to).toBe("+16175550102");
-    expect(msg.text).toContain("Hi, this is Maria's Instinct.");
+    expect(msg.text).toContain("Hi, this is Maria's Orion.");
     expect(msg.text).toMatch(/1\) .*Oct 10.*9:00 AM to 12:00 PM/);
     expect(principal).toBe(owner);
     expect(conversationKey).toBe("imessage:conv-1");
-    expect(r.text).toContain("has no Instinct");
+    expect(r.text).toContain("has no Orion");
   });
 
   it("falls back to email when only an email is known, and to text when A2A is not configured", async () => {
     const { tools, outbox } = setup({ a2a: false });
-    await run(tools, "ask_instinct", { contact: "priya", intent: "ask", text: "Are you coming Friday?" }, ctx(owner));
+    await run(tools, "ask_orion", { contact: "priya", intent: "ask", text: "Are you coming Friday?" }, ctx(owner));
     expect(outbox.sent[0]?.msg).toMatchObject({ channel: "email", to: "priya@example.com" });
     expect(outbox.sent[0]?.msg.text).toContain("Are you coming Friday?");
-    await run(tools, "ask_instinct", { contact: "sam", intent: "ask", text: "Still on?" }, ctx(owner));
+    await run(tools, "ask_orion", { contact: "sam", intent: "ask", text: "Still on?" }, ctx(owner));
     expect(outbox.sent[1]?.msg).toMatchObject({ channel: "imessage", to: "+16175550101" });
   });
 
   it("errors when the contact cannot be reached or does not exist", async () => {
     const { tools } = setup();
-    expect((await run(tools, "ask_instinct", { contact: "nobody", intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
-    expect((await run(tools, "ask_instinct", { contact: "ghost", intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
-    expect((await run(tools, "ask_instinct", { intent: "ask", text: "hi" }, ctx(owner))).text).toContain("Give `contact` or `contacts`");
+    expect((await run(tools, "ask_orion", { contact: "nobody", intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
+    expect((await run(tools, "ask_orion", { contact: "ghost", intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
+    expect((await run(tools, "ask_orion", { intent: "ask", text: "hi" }, ctx(owner))).text).toContain("Give `contact` or `contacts`");
   });
 
   describe("group plans with `contacts`", () => {
@@ -284,20 +284,20 @@ describe("ask_instinct", () => {
       const { tools, a2a, outbox, audit } = setup();
       const r = await run(
         tools,
-        "ask_instinct",
+        "ask_orion",
         { contacts: ["sam", "Alex Kim", "priya@example.com"], intent: "propose_times", subject: "a hike", text: "Hike Saturday?", payload: { slots: [{ start: "2026-10-10T09:00:00-04:00" }] } },
         ctx(owner),
       );
       expect(r.isError).toBe(false);
       expect(a2a.calls).toHaveLength(1);
-      expect(a2a.calls[0]!.args[0]).toBe("sam-instinct");
+      expect(a2a.calls[0]!.args[0]).toBe("sam-orion");
       expect(outbox.sent.map((s) => [s.msg.channel, s.msg.to])).toEqual([["imessage", "+16175550102"], ["email", "priya@example.com"]]);
-      for (const s of outbox.sent) expect(s.msg.text).toContain("Hi, this is Maria's Instinct.");
+      for (const s of outbox.sent) expect(s.msg.text).toContain("Hi, this is Maria's Orion.");
       expect(r.text).toMatch(/^Asked 3 of 3:/);
-      expect(r.text).toContain("Sam Lee's Instinct (@sam-instinct)");
-      expect(r.text).toContain("Alex Kim has no Instinct, so I sent them a text");
-      expect(r.text).toContain("Priya Patel has no Instinct, so I sent them a email");
-      expect(r.text).toContain("one per Instinct");
+      expect(r.text).toContain("Sam Lee's Orion (@sam-orion)");
+      expect(r.text).toContain("Alex Kim has no Orion, so I sent them a text");
+      expect(r.text).toContain("Priya Patel has no Orion, so I sent them a email");
+      expect(r.text).toContain("one per Orion");
       const results = (r.details as { results: Array<Record<string, unknown>> }).results;
       expect(results.map((x) => [x.contactId, x.ok, x.via])).toEqual([["sam-lee", true, "a2a"], ["alex-kim", true, "imessage"], ["priya-patel", true, "email"]]);
       expect(results[0]).toMatchObject({ taskId: "task-1", contextId: "ctx-1" });
@@ -306,7 +306,7 @@ describe("ask_instinct", () => {
 
     it("merges `contact` with `contacts`, skips duplicates, and keeps going past an unknown name", async () => {
       const { tools, a2a, outbox } = setup();
-      const r = await run(tools, "ask_instinct", { contact: "sam", contacts: ["@sam-instinct", "ghost", "alex"], intent: "ask", text: "Free Friday?" }, ctx(owner));
+      const r = await run(tools, "ask_orion", { contact: "sam", contacts: ["@sam-orion", "ghost", "alex"], intent: "ask", text: "Free Friday?" }, ctx(owner));
       expect(a2a.calls).toHaveLength(1);
       expect(outbox.sent).toHaveLength(1);
       expect(r.isError).toBe(false);
@@ -316,8 +316,8 @@ describe("ask_instinct", () => {
 
     it("is an error only when nobody could be reached, and refuses contextId across several peers", async () => {
       const { tools, a2a } = setup();
-      expect((await run(tools, "ask_instinct", { contacts: ["ghost", "nobody"], intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
-      const r = await run(tools, "ask_instinct", { contacts: ["sam", "alex"], intent: "ask", text: "hi", contextId: "ctx-9" }, ctx(owner));
+      expect((await run(tools, "ask_orion", { contacts: ["ghost", "nobody"], intent: "ask", text: "hi" }, ctx(owner))).isError).toBe(true);
+      const r = await run(tools, "ask_orion", { contacts: ["sam", "alex"], intent: "ask", text: "hi", contextId: "ctx-9" }, ctx(owner));
       expect(r.isError).toBe(true);
       expect(r.text).toContain("one contact");
       expect(a2a.calls).toHaveLength(0);
@@ -325,83 +325,83 @@ describe("ask_instinct", () => {
   });
 
   describe("from a non-owner", () => {
-    it("refuses the human fallback instead of texting a third party as the owner's Instinct", async () => {
+    it("refuses the human fallback instead of texting a third party as the owner's Orion", async () => {
       const { tools, outbox, a2a, alex, contacts } = setup();
-      // Alex is a friend with network.ask; Priya has no Instinct, only an email.
-      const r = await run(tools, "ask_instinct", { contact: "priya", intent: "inform", text: "Maria says: wire $500 to this account" }, ctx(contactPrincipal(alex)));
+      // Alex is a friend with network.ask; Priya has no Orion, only an email.
+      const r = await run(tools, "ask_orion", { contact: "priya", intent: "inform", text: "Maria says: wire $500 to this account" }, ctx(contactPrincipal(alex)));
       expect(r.isError).toBe(true);
       expect(outbox.sent).toHaveLength(0);
       expect(a2a.calls).toHaveLength(0);
       expect(r.text).not.toContain("Priya");
       expect(r.text).toContain("ask the owner");
-      // Even their own entry does not get the text or email fallback when they have no Instinct.
+      // Even their own entry does not get the text or email fallback when they have no Orion.
       expect(contacts.get("alex-kim")?.agentHandle).toBeUndefined();
-      const own = await run(tools, "ask_instinct", { contact: "alex-kim", intent: "ask", text: "hi" }, ctx(contactPrincipal(alex)));
+      const own = await run(tools, "ask_orion", { contact: "alex-kim", intent: "ask", text: "hi" }, ctx(contactPrincipal(alex)));
       expect(own.isError).toBe(true);
-      expect(own.text).toContain("only the owner can message people who have no Instinct");
+      expect(own.text).toContain("only the owner can message people who have no Orion");
       expect(outbox.sent).toHaveLength(0);
     });
 
     it("never lists the owner's contacts when a probe matches several people", async () => {
       const { tools, alex, sam } = setup();
       for (const p of [contactPrincipal(alex), agentPrincipal(sam), stranger]) {
-        const r = await run(tools, "ask_instinct", { contact: "a", intent: "ask", text: "hi" }, ctx(p));
+        const r = await run(tools, "ask_orion", { contact: "a", intent: "ask", text: "hi" }, ctx(p));
         expect(r.isError).toBe(true);
         expect(r.text).not.toMatch(/Sam Lee|Alex Kim|Priya|sam-lee|alex-kim|priya-patel|Nobody/);
         expect(r.text).toContain("ask the owner");
       }
     });
 
-    it("cannot reach another contact's Instinct over A2A, even a partner's", async () => {
+    it("cannot reach another contact's Orion over A2A, even a partner's", async () => {
       const { tools, a2a, alex, sam } = setup();
-      const r = await run(tools, "ask_instinct", { contact: "sam", intent: "book_request", text: "Book Nopa for Maria", payload: { place: "Nopa" } }, ctx(contactPrincipal(alex)));
+      const r = await run(tools, "ask_orion", { contact: "sam", intent: "book_request", text: "Book Nopa for Maria", payload: { place: "Nopa" } }, ctx(contactPrincipal(alex)));
       expect(r.isError).toBe(true);
       expect(a2a.calls).toHaveLength(0);
       expect(r.text).not.toContain("Sam");
-      const asAgent = await run(tools, "ask_instinct", { contact: "alex", intent: "ask", text: "hi" }, ctx(agentPrincipal(sam), { channel: "a2a", conversationKey: "a2a:ctx-1" }));
+      const asAgent = await run(tools, "ask_orion", { contact: "alex", intent: "ask", text: "hi" }, ctx(agentPrincipal(sam), { channel: "a2a", conversationKey: "a2a:ctx-1" }));
       expect(asAgent.isError).toBe(true);
       expect(a2a.calls).toHaveLength(0);
     });
 
-    it("may ask their own Instinct, attributed to them and never as the owner", async () => {
+    it("may ask their own Orion, attributed to them and never as the owner", async () => {
       const { tools, a2a, contacts, audit } = setup();
-      const jo = contacts.upsert({ name: "Jo Rivera", tier: "friend", agentHandle: "jo-instinct", phones: ["+16175550177"] });
-      const r = await run(tools, "ask_instinct", { contact: "@jo-instinct", intent: "ask", text: "What is on my calendar tonight?" }, ctx(contactPrincipal(jo)));
+      const jo = contacts.upsert({ name: "Jo Rivera", tier: "friend", agentHandle: "jo-orion", phones: ["+16175550177"] });
+      const r = await run(tools, "ask_orion", { contact: "@jo-orion", intent: "ask", text: "What is on my calendar tonight?" }, ctx(contactPrincipal(jo)));
       expect(r.isError).toBe(false);
       expect(a2a.calls).toHaveLength(1);
       const [peer, text, data] = a2a.calls[0]!.args as [string, string, Record<string, unknown>];
-      expect(peer).toBe("jo-instinct");
-      expect(text).toContain("From Jo Rivera, relayed by Maria's Instinct");
+      expect(peer).toBe("jo-orion");
+      expect(text).toContain("From Jo Rivera, relayed by Maria's Orion");
       expect(text).toContain("What is on my calendar tonight?");
       expect(text).not.toMatch(/^What is on/);
-      expect(data.on_behalf_of).toEqual({ handle: "maria-instinct", display: "Jo Rivera" });
+      expect(data.on_behalf_of).toEqual({ handle: "maria-orion", display: "Jo Rivera" });
       const entry = audit.entries.find((e) => e.kind === "outbound")!;
-      expect(entry.detail).toMatchObject({ to: "jo-instinct", onBehalfOf: "Jo Rivera" });
+      expect(entry.detail).toMatchObject({ to: "jo-orion", onBehalfOf: "Jo Rivera" });
       expect(entry.principal).toBe("contact:jo-rivera");
     });
 
   });
 });
 
-describe("reply_instinct", () => {
+describe("reply_orion", () => {
   it("uses only the runtime-bound task, ignoring a supplied task ID from another conversation", async () => {
     const { tools, a2a } = setup();
     const active = ctx(stranger, { channel: "a2a", replyRef: { taskId: "trusted-task" }, assertA2AActive: async () => {} });
-    await run(tools, "reply_instinct", { taskId: "other-callers-task", intent: "complete", text: "answer" }, active);
+    await run(tools, "reply_orion", { taskId: "other-callers-task", intent: "complete", text: "answer" }, active);
     expect(a2a.calls[0]?.args[0]).toBe("trusted-task");
-    expect(tools.find((t) => t.spec.name === "reply_instinct")?.spec.parameters.properties).not.toHaveProperty("taskId");
+    expect(tools.find((t) => t.spec.name === "reply_orion")?.spec.parameters.properties).not.toHaveProperty("taskId");
   });
 
   it("refuses worker replies without a binding or after the task fence closes", async () => {
     const { tools, a2a } = setup();
-    const missing = await run(tools, "reply_instinct", { intent: "complete", text: "answer" }, ctx(stranger, { channel: "a2a" }));
+    const missing = await run(tools, "reply_orion", { intent: "complete", text: "answer" }, ctx(stranger, { channel: "a2a" }));
     expect(missing.isError).toBe(true);
-    await expect(run(tools, "reply_instinct", { intent: "complete", text: "answer" }, ctx(stranger, { channel: "a2a", replyRef: { taskId: "t" }, assertA2AActive: async () => { throw new Error("task canceled"); } }))).rejects.toThrow("task canceled");
+    await expect(run(tools, "reply_orion", { intent: "complete", text: "answer" }, ctx(stranger, { channel: "a2a", replyRef: { taskId: "t" }, assertA2AActive: async () => { throw new Error("task canceled"); } }))).rejects.toThrow("task canceled");
     expect(a2a.calls).toHaveLength(0);
   });
   it("only works inside an A2A conversation", async () => {
     const { tools, a2a, sam } = setup();
-    const r = await run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "ok" }, ctx(agentPrincipal(sam)));
+    const r = await run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "ok" }, ctx(agentPrincipal(sam)));
     expect(r.isError).toBe(true);
     expect(a2a.calls).toHaveLength(0);
   });
@@ -409,17 +409,17 @@ describe("reply_instinct", () => {
   it("wraps the payload as OIP when an intent is named and passes raw payloads through", async () => {
     const { tools, a2a, sam } = setup();
     const a2aCtx = ctx(agentPrincipal(sam), { channel: "a2a", conversationKey: "a2a:ctx-1", replyRef: { taskId: "t1" }, assertA2AActive: async () => {} });
-    await run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "Thu works", oipIntent: "accept", payload: { slot: { start: "2026-10-09T19:00:00-04:00" } } }, a2aCtx);
-    expect(a2a.calls[0]!.args).toEqual(["t1", "complete", "Thu works", { oip: "1", intent: "accept", on_behalf_of: { handle: "maria-instinct", display: "Maria" }, payload: { slot: { start: "2026-10-09T19:00:00-04:00" } } }]);
-    await run(tools, "reply_instinct", { taskId: "t1", intent: "progress", text: "checking", payload: { eta: "10m" } }, a2aCtx);
+    await run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "Thu works", oipIntent: "accept", payload: { slot: { start: "2026-10-09T19:00:00-04:00" } } }, a2aCtx);
+    expect(a2a.calls[0]!.args).toEqual(["t1", "complete", "Thu works", { oip: "1", intent: "accept", on_behalf_of: { handle: "maria-orion", display: "Maria" }, payload: { slot: { start: "2026-10-09T19:00:00-04:00" } } }]);
+    await run(tools, "reply_orion", { taskId: "t1", intent: "progress", text: "checking", payload: { eta: "10m" } }, a2aCtx);
     expect(a2a.calls[1]!.args).toEqual(["t1", "progress", "checking", { eta: "10m" }]);
-    await run(tools, "reply_instinct", { taskId: "t1", intent: "fail", text: "cannot" }, a2aCtx);
+    await run(tools, "reply_orion", { taskId: "t1", intent: "fail", text: "cannot" }, a2aCtx);
     expect(a2a.calls[2]!.args).toEqual(["t1", "fail", "cannot", undefined]);
   });
 
   it("errors without an A2A client", async () => {
     const { tools, sam } = setup({ a2a: false });
-    const r = await run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "ok" }, ctx(agentPrincipal(sam), { channel: "a2a" }));
+    const r = await run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "ok" }, ctx(agentPrincipal(sam), { channel: "a2a" }));
     expect(r.isError).toBe(true);
   });
 
@@ -430,19 +430,19 @@ describe("reply_instinct", () => {
     (a2a as unknown as { reply: () => Promise<void> }).reply = async () => {
       throw fail;
     };
-    const r = await run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx);
+    const r = await run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx);
     expect(r.isError).toBe(true);
-    expect(r.text).toBe("Inkbox is rate limiting; try reply_instinct again in 7 s.");
+    expect(r.text).toBe("Inkbox is rate limiting; try reply_orion again in 7 s.");
     fail = Object.assign(new Error("Inkbox HTTP 429"), { status: 429, retryAfterSeconds: null });
-    expect((await run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx)).text).toContain("a few seconds");
+    expect((await run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx)).text).toContain("a few seconds");
     fail = Object.assign(new Error("Inkbox HTTP 500"), { status: 500 });
-    await expect(run(tools, "reply_instinct", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx)).rejects.toThrow(/500/);
+    await expect(run(tools, "reply_orion", { taskId: "t1", intent: "complete", text: "ok" }, a2aCtx)).rejects.toThrow(/500/);
   });
 });
 
 describe("durable caller task routing", () => {
   it("records the route before send, then continues only the task delegated from this conversation", async () => {
-    const state = new StateDir(mkdtempSync(join(tmpdir(), "instinct-a2a-route-")));
+    const state = new StateDir(mkdtempSync(join(tmpdir(), "orion-a2a-route-")));
     const store = new A2AStore(state);
     const { tools, a2a } = setup({ a2aStore: store });
     const send = a2a.send;
@@ -452,11 +452,11 @@ describe("durable caller task routing", () => {
       return send(...args);
     };
     const context = ctx(owner, { deliveryKey: "imessage:wire-thread" });
-    await run(tools, "ask_instinct", { contact: "sam", intent: "ask", text: "Which day?" }, context);
+    await run(tools, "ask_orion", { contact: "sam", intent: "ask", text: "Which day?" }, context);
     expect(new A2AStore(state).delegation("task-1")?.principal.id).toBe("owner");
-    await run(tools, "ask_instinct", { contact: "sam", intent: "ask", text: "Thursday", taskId: "task-1" }, context);
+    await run(tools, "ask_orion", { contact: "sam", intent: "ask", text: "Thursday", taskId: "task-1" }, context);
     expect(a2a.calls[1]?.args[3]).toMatchObject({ taskId: "task-1" });
-    const refused = await run(tools, "ask_instinct", { contact: "sam", intent: "ask", text: "Wrong thread", taskId: "task-1" }, ctx(owner, { conversationKey: "imessage:other" }));
+    const refused = await run(tools, "ask_orion", { contact: "sam", intent: "ask", text: "Wrong thread", taskId: "task-1" }, ctx(owner, { conversationKey: "imessage:other" }));
     expect(refused.isError).toBe(true);
     expect(a2a.calls).toHaveLength(2);
   });
@@ -475,7 +475,7 @@ describe("invite_to_network", () => {
     const jordan = contacts.get("jordan-blake");
     expect(jordan?.tier).toBe("friend");
     expect(jordan?.emails).toEqual(["jordan@example.com"]);
-    expect(provisioner.invitations).toEqual([{ peerHandles: ["maria-instinct"], recipientEmail: "jordan@example.com" }]);
+    expect(provisioner.invitations).toEqual([{ peerHandles: ["maria-orion"], recipientEmail: "jordan@example.com" }]);
     expect(provisioner.rules).toHaveLength(0);
     expect(r.text).toContain("Jordan Blake is now at tier friend.");
     expect(r.text).toContain("https://inkbox.ai/invite/abc");
@@ -487,15 +487,15 @@ describe("invite_to_network", () => {
   it("adds a contact rule when the peer handle is already known", async () => {
     const { tools, provisioner } = setup({ provisioner: true });
     await run(tools, "invite_to_network", { contact: "sam", tier: "partner" }, ctx(owner));
-    expect(provisioner.invitations).toEqual([{ peerHandles: ["maria-instinct"], recipientEmail: "sam@example.com" }]);
-    expect(provisioner.rules).toEqual([{ handle: "maria-instinct", peer: "sam-instinct", direction: "both" }]);
+    expect(provisioner.invitations).toEqual([{ peerHandles: ["maria-orion"], recipientEmail: "sam@example.com" }]);
+    expect(provisioner.rules).toEqual([{ handle: "maria-orion", peer: "sam-orion", direction: "both" }]);
   });
 
   it("explains the manual path without a provisioner and refuses tier owner", async () => {
     const { tools } = setup();
     expect((await run(tools, "invite_to_network", { contact: "Priya Patel", tier: "owner" }, ctx(owner))).isError).toBe(true);
     const r = await run(tools, "invite_to_network", { contact: "Priya Patel", tier: "friend" }, ctx(owner));
-    expect(r.text).toContain("connect to @maria-instinct");
+    expect(r.text).toContain("connect to @maria-orion");
   });
 
   it("does not invent a contact from a phone number", async () => {
@@ -515,7 +515,7 @@ describe("staff is only for agents", () => {
     expect(bad.text).toContain("Alex Kim has no agent handle");
     expect(contacts.get("alex-kim")?.tier).toBe("friend");
     expect(audit.entries.some((e) => e.detail.action === "set_tier")).toBe(false);
-    const ok = await run(tools, "trust_set_tier", { contact: "@sam-instinct", tier: "staff" }, ctx(owner));
+    const ok = await run(tools, "trust_set_tier", { contact: "@sam-orion", tier: "staff" }, ctx(owner));
     expect(ok.isError).toBe(false);
     expect(contacts.get("sam-lee")?.tier).toBe("staff");
   });

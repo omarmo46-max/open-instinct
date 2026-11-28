@@ -30,17 +30,17 @@ function gate() {
 }
 
 async function serve(extraEnv: NodeJS.ProcessEnv) {
-  const dataDir = mkdtempSync(join(tmpdir(), "instinct-ack-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "orion-ack-"));
   const env: NodeJS.ProcessEnv = {
-    INSTINCT_DATA_DIR: dataDir,
-    INSTINCT_OWNER_NAME: "Ack Owner",
-    INSTINCT_OWNER_PHONE: OWNER_PHONE,
-    INSTINCT_OWNER_TIMEZONE: "America/New_York",
-    INSTINCT_AGENT_NAME: "Ack",
-    INSTINCT_MODEL: "faux/faux-1",
-    INSTINCT_COMPUTER: "none",
-    INSTINCT_SKILLS_DIR: join(dataDir, "no-skills"),
-    INSTINCT_REPLY_BUDGET_MS: "40",
+    ORION_DATA_DIR: dataDir,
+    ORION_OWNER_NAME: "Ack Owner",
+    ORION_OWNER_PHONE: OWNER_PHONE,
+    ORION_OWNER_TIMEZONE: "America/New_York",
+    ORION_AGENT_NAME: "Ack",
+    ORION_MODEL: "faux/faux-1",
+    ORION_COMPUTER: "none",
+    ORION_SKILLS_DIR: join(dataDir, "no-skills"),
+    ORION_REPLY_BUDGET_MS: "40",
     ...extraEnv,
   };
   const faux = fauxProvider({ provider: "faux", models: [{ id: "faux-1" }] });
@@ -85,7 +85,7 @@ async function serve(extraEnv: NodeJS.ProcessEnv) {
 
 describe("slow reply ack over the carrier path", () => {
   it("texts one 'on it' while the owner's turn runs past the budget, then the answer", async () => {
-    const s = await serve({ INSTINCT_ACK_SLOW_REPLIES: "1", INSTINCT_GROUNDING: "off" }) // the scripted reply quotes a price nobody gave it; the grounding check would (rightly) add a note;
+    const s = await serve({ ORION_ACK_SLOW_REPLIES: "1", ORION_GROUNDING: "off" }) // the scripted reply quotes a price nobody gave it; the grounding check would (rightly) add a note;
     s.faux.setResponses([fauxAssistantMessage("Found three flights under $400."), fauxAssistantMessage("Booked the 9am one.")]);
     await s.text("m1", "find me flights to SF");
     await vi.waitFor(() => expect(s.sent.map((m) => m.text)).toEqual([ACK]), { timeout: 3000 });
@@ -106,7 +106,7 @@ describe("slow reply ack over the carrier path", () => {
     expect(s.sent.map((m) => m.text)).toEqual([ACK, "Found three flights under $400.", "Booked the 9am one."]);
   });
 
-  it("stays quiet until the answer when INSTINCT_ACK_SLOW_REPLIES is not set", async () => {
+  it("stays quiet until the answer when ORION_ACK_SLOW_REPLIES is not set", async () => {
     const s = await serve({});
     s.faux.setResponses([fauxAssistantMessage("Here you go.")]);
     await s.text("m1", "slow question");

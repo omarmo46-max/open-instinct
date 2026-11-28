@@ -110,7 +110,7 @@ describe("alignTable", () => {
 
 describe("renderMarkdownToPdf", () => {
   it("renders the sample with a title to a real PDF with at least one page", async () => {
-    const pdf = await renderMarkdownToPdf(SAMPLE, { title: "Research brief", author: "Instinct" });
+    const pdf = await renderMarkdownToPdf(SAMPLE, { title: "Research brief", author: "Orion" });
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(pdfPageCount(pdf)).toBeGreaterThanOrEqual(1);
     expect(pdf.toString("latin1")).toContain("%%EOF");
@@ -118,7 +118,7 @@ describe("renderMarkdownToPdf", () => {
     expect(text).toMatch(/\/Title/);
     expect(text).toMatch(/\/Author/);
     expect(text).toMatch(/\/URI/);
-    for (const s of ["Research brief", "Instinct", "https://example.com/spec"]) expect(pdfHasString(text, s), s).toBe(true);
+    for (const s of ["Research brief", "Orion", "https://example.com/spec"]) expect(pdfHasString(text, s), s).toBe(true);
   });
 
   it("paginates long documents and numbers every page", async () => {

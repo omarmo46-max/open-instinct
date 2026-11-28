@@ -8,7 +8,7 @@ It works without an account. Turn it on before starting the agent:
 
 ```bash
 export KEENABLE_SEARCH=1
-pnpm instinct dev
+pnpm orion dev
 ```
 
 Setting `KEENABLE_API_KEY` also turns it on and lifts the keyless rate limits.

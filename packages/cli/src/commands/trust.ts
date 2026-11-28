@@ -1,5 +1,5 @@
 /**
- * `instinct trust ...`: edit tiers and grants on disk through core. The agent
+ * `orion trust ...`: edit tiers and grants on disk through core. The agent
  * reads the same files, so changes apply on its next message.
  */
 import {
@@ -70,7 +70,7 @@ export async function runTrust(ctx: CliContext, argv: string[]): Promise<number>
     case "list": {
       const all = contacts.all();
       ctx.print(c.bold("Contacts"));
-      if (all.length === 0) ctx.print(c.dim("  none yet. Try: instinct trust set \"Sam Lee\" partner"));
+      if (all.length === 0) ctx.print(c.dim("  none yet. Try: orion trust set \"Sam Lee\" partner"));
       else {
         ctx.print(
           table(
@@ -100,12 +100,12 @@ export async function runTrust(ctx: CliContext, argv: string[]): Promise<number>
     }
     case "set": {
       const [ref, tierText] = rest;
-      if (!ref || !tierText) throw new UsageError("usage: instinct trust set <contact> <tier>", "trust");
+      if (!ref || !tierText) throw new UsageError("usage: orion trust set <contact> <tier>", "trust");
       const tier = parseTier(tierText, "trust");
       const found = findContact(contacts, ref);
       if (tier === "staff" && !found?.agentHandle) {
         throw new UsageError(
-          `Tier "staff" is only for agents, and ${found?.name ?? ref} has no agent handle. Save it first: instinct invite "${found?.name ?? ref}" --tier staff --handle <handle>, or pick partner or lower.`,
+          `Tier "staff" is only for agents, and ${found?.name ?? ref} has no agent handle. Save it first: orion invite "${found?.name ?? ref}" --tier staff --handle <handle>, or pick partner or lower.`,
           "trust",
         );
       }
@@ -116,9 +116,9 @@ export async function runTrust(ctx: CliContext, argv: string[]): Promise<number>
     }
     case "grant": {
       const [ref, capsText] = rest;
-      if (!ref || !capsText) throw new UsageError("usage: instinct trust grant <contact> <cap,cap> [--until YYYY-MM-DD] [--max-usd N]", "trust");
+      if (!ref || !capsText) throw new UsageError("usage: orion trust grant <contact> <cap,cap> [--until YYYY-MM-DD] [--max-usd N]", "trust");
       const contact = findContact(contacts, ref);
-      if (!contact) throw new CliError(`Unknown contact "${ref}". Add them first: instinct trust set "${ref}" friend`);
+      if (!contact) throw new CliError(`Unknown contact "${ref}". Add them first: orion trust set "${ref}" friend`);
       const capabilities = parseCapabilities(capsText, "trust");
       const maxUsdText = str(values, "max-usd");
       const maxUsd = maxUsdText === undefined ? undefined : Number(maxUsdText);
@@ -140,9 +140,9 @@ export async function runTrust(ctx: CliContext, argv: string[]): Promise<number>
     }
     case "revoke": {
       const [id] = rest;
-      if (!id) throw new UsageError("usage: instinct trust revoke <grantId>", "trust");
+      if (!id) throw new UsageError("usage: orion trust revoke <grantId>", "trust");
       const ok = engine.revokeGrant(id);
-      if (!ok) throw new CliError(`No grant with id ${id}. See: instinct trust list`);
+      if (!ok) throw new CliError(`No grant with id ${id}. See: orion trust list`);
       savePolicy(state, engine.toJSON());
       ctx.print(`${c.green("Revoked")} ${id}`);
       return 0;

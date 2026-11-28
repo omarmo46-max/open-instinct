@@ -296,7 +296,7 @@ export class InkboxChannel implements Outbox {
     if (to.length === 0) throw new Error(`email send needs a recipient: no \`to\`, no replyRef.from and no remembered sender for ${msg.conversationKey ?? "a new thread"}`);
     const inThread = key.channel === "email" && key.id.length > 0;
     const subjectHint = ref.subject ?? remembered?.subject;
-    const subject = inThread ? replySubject(subjectHint) : (subjectHint ?? "Message from your Instinct");
+    const subject = inThread ? replySubject(subjectHint) : (subjectHint ?? "Message from your Orion");
     const options: Parameters<AgentIdentity["sendEmail"]>[0] = { to, subject, bodyText: msg.text };
     const inReplyTo = ref.messageId ?? remembered?.messageId;
     if (inThread && inReplyTo) options.inReplyToMessageId = inReplyTo;

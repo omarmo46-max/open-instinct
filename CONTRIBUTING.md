@@ -11,7 +11,7 @@ pnpm install
 pnpm build         # builds the packages in dependency order (core first)
 pnpm test
 pnpm smoke         # boots the agent with a scripted model and walks three flows
-pnpm instinct --help
+pnpm orion --help
 ```
 
 Packages import each other through their built `dist/`, so run `pnpm build` once after a

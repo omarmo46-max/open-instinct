@@ -53,7 +53,7 @@ export function readEnv(env: NodeJS.ProcessEnv): GatewayEnv {
   const maritimeApiKey = env["MARITIME_API_KEY"];
   if (!maritimeApiKey) throw new Error("MARITIME_API_KEY is required (the gateway forwards every message through Maritime).");
   const publicUrl = env["GATEWAY_PUBLIC_URL"] ?? `http://localhost:${port}`;
-  const idle = env["INSTINCT_IDLE_TTL_SECONDS"] ? Number(env["INSTINCT_IDLE_TTL_SECONDS"]) : undefined;
+  const idle = env["ORION_IDLE_TTL_SECONDS"] ? Number(env["ORION_IDLE_TTL_SECONDS"]) : undefined;
   const linkClientId = env["LINK_CLIENT_ID"] || undefined;
   const link: LinkPassthrough | undefined = linkClientId
     ? {
@@ -65,19 +65,19 @@ export function readEnv(env: NodeJS.ProcessEnv): GatewayEnv {
   return {
     port,
     publicUrl,
-    dataDir: env["GATEWAY_DATA_DIR"] ?? "./.instinct-gateway",
+    dataDir: env["GATEWAY_DATA_DIR"] ?? "./.orion-gateway",
     telegramBotToken: env["TELEGRAM_BOT_TOKEN"]?.trim() || undefined,
     inkboxAdminApiKey: env["INKBOX_ADMIN_API_KEY"] || undefined,
     inkboxBaseUrl: env["INKBOX_BASE_URL"] || undefined,
     maritimeApiKey,
     maritimeBaseUrl: env["MARITIME_API_URL"] || undefined,
-    agentImage: env["INSTINCT_AGENT_IMAGE"] || DEFAULT_AGENT_IMAGE,
+    agentImage: env["ORION_AGENT_IMAGE"] || DEFAULT_AGENT_IMAGE,
     signupSecret: env["GATEWAY_SIGNUP_SECRET"] || undefined,
     allowOpenSignup: truthy(env["GATEWAY_ALLOW_OPEN_SIGNUP"]) || truthy(env["GATEWAY_OPEN_SIGNUP"]),
     trustProxy: truthy(env["GATEWAY_TRUST_PROXY"]),
     anthropicApiKey: env["ANTHROPIC_API_KEY"] || undefined,
     composioApiKey: env["COMPOSIO_API_KEY"] || undefined,
-    composioToolkits: env["COMPOSIO_TOOLKITS"] || env["INSTINCT_COMPOSIO_TOOLKITS"] || undefined,
+    composioToolkits: env["COMPOSIO_TOOLKITS"] || env["ORION_COMPOSIO_TOOLKITS"] || undefined,
     composioMode: env["COMPOSIO_MODE"]?.trim() || undefined,
     contextDevApiKey: env["CONTEXT_DEV_API_KEY"] || undefined,
     keenableSearch: truthy(env["KEENABLE_SEARCH"]),
@@ -85,8 +85,8 @@ export function readEnv(env: NodeJS.ProcessEnv): GatewayEnv {
     ampleSignup: truthy(env["AMPLE_SIGNUP"]),
     ampleSharedCredential: Boolean(env["AMPLE_CLIENT_ID"] || env["AMPLE_CLIENT_SECRET"] || env["AMPLE_TOKEN"]),
     idleTtlSeconds: idle !== undefined && Number.isFinite(idle) ? idle : undefined,
-    useMaritimeLlm: truthy(env["INSTINCT_USE_MARITIME_LLM"]),
-    maritimeModel: env["INSTINCT_MARITIME_MODEL"] || undefined,
+    useMaritimeLlm: truthy(env["ORION_USE_MARITIME_LLM"]),
+    maritimeModel: env["ORION_MARITIME_MODEL"] || undefined,
     link,
   };
 }

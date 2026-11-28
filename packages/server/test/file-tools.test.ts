@@ -24,8 +24,8 @@ describe("fileTools", () => {
   let dir: string;
   let outside: string;
   beforeEach(() => {
-    dir = realpathSync(mkdtempSync(join(tmpdir(), "instinct-files-")));
-    outside = realpathSync(mkdtempSync(join(tmpdir(), "instinct-outside-")));
+    dir = realpathSync(mkdtempSync(join(tmpdir(), "orion-files-")));
+    outside = realpathSync(mkdtempSync(join(tmpdir(), "orion-outside-")));
     writeFileSync(join(outside, "secret.json"), '{"signingKey":"whsec_do_not_leak"}');
   });
   afterEach(() => {
@@ -130,13 +130,13 @@ describe("fileTools", () => {
         MARITIME_INTERNAL_TOKEN: "mt_leak",
         OPENAI_API_KEY: "sk-leak",
         DB_PASSWORD: "pw_leak",
-        INSTINCT_DATA_DIR: "/data",
+        ORION_DATA_DIR: "/data",
         HARMLESS_SETTING: "visible?",
         TZ: "America/New_York",
       };
       const tools = byName(dir, { env });
       const out = textOf(await tools.bash!.execute({ command: "env" }, ctx));
-      for (const leak of ["sk-ant-leak-me", "ibx_leak", "whsec_leak", "comp_leak", "mt_leak", "sk-leak", "pw_leak", "HARMLESS_SETTING", "INSTINCT_DATA_DIR"]) {
+      for (const leak of ["sk-ant-leak-me", "ibx_leak", "whsec_leak", "comp_leak", "mt_leak", "sk-leak", "pw_leak", "HARMLESS_SETTING", "ORION_DATA_DIR"]) {
         expect(out, leak).not.toContain(leak);
       }
       expect(out).toContain("TZ=America/New_York");

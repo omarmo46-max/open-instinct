@@ -18,11 +18,11 @@ export interface ResolveSkillsDirOptions {
   packageUrl?: string;
 }
 
-/** Explicit option, then INSTINCT_SKILLS_DIR, then `<repo>/skills` next to this package. */
+/** Explicit option, then ORION_SKILLS_DIR, then `<repo>/skills` next to this package. */
 export function resolveSkillsDir(opts: ResolveSkillsDirOptions): string | undefined {
   const candidates: string[] = [];
   if (opts.explicit) candidates.push(opts.explicit);
-  if (opts.env.INSTINCT_SKILLS_DIR) candidates.push(opts.env.INSTINCT_SKILLS_DIR);
+  if (opts.env.ORION_SKILLS_DIR) candidates.push(opts.env.ORION_SKILLS_DIR);
   if (opts.packageUrl) {
     // packages/server/{src,dist}/skills.js -> ../../../skills = <repo>/skills
     try {

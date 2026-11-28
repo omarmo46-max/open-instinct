@@ -10,7 +10,7 @@ const str = (v: unknown, max = 120): string => (typeof v === "string" ? v.slice(
 export interface ProactiveToolDeps {
   search: MemorySearch;
   prefs: PreferenceStore;
-  /** Present only when INSTINCT_LOCATION=1. */
+  /** Present only when ORION_LOCATION=1. */
   places?: PlaceStore;
 }
 

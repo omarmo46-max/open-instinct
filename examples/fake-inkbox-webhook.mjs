@@ -8,7 +8,7 @@
  * you can exercise POST /webhooks/inkbox without a phone or an Inkbox account.
  *
  * 1. Start the server with a signing key (any string works for a local test):
- *      INKBOX_SIGNING_KEY=whsec_local_test pnpm instinct dev
+ *      INKBOX_SIGNING_KEY=whsec_local_test pnpm orion dev
  *    Without an Inkbox API key the agent still runs; its replies are printed by
  *    the console outbox in the server's terminal.
  *
@@ -16,7 +16,7 @@
  *      INKBOX_SIGNING_KEY=whsec_local_test node examples/fake-inkbox-webhook.mjs --text "hi, who is this?"
  *    Expect HTTP 204. The agent answers as it would to a stranger.
  *
- * 3. Send a message from the owner's phone (the number given to `instinct init`):
+ * 3. Send a message from the owner's phone (the number given to `orion init`):
  *      INKBOX_SIGNING_KEY=whsec_local_test node examples/fake-inkbox-webhook.mjs --from +14155550100 --text "remember I like window seats"
  *
  * 4. Prove the check works. Flip one byte of the body after signing:

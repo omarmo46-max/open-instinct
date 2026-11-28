@@ -5,19 +5,19 @@ import { fakeFetch, type Recorded } from "./fake-fetch.js";
 const BASE = "https://inkbox.test";
 
 function client(fake: ReturnType<typeof fakeFetch>) {
-  return new InkboxA2A({ apiKey: "ik_identity", handle: "@maria-instinct", baseUrl: BASE, fetchImpl: fake.fetchImpl, sleep: async () => {} });
+  return new InkboxA2A({ apiKey: "ik_identity", handle: "@maria-orion", baseUrl: BASE, fetchImpl: fake.fetchImpl, sleep: async () => {} });
 }
 
 describe("InkboxA2A worker side", () => {
   it("replies to a task with text and data parts", async () => {
-    const fake = fakeFetch({ "POST /api/v1/identities/maria-instinct/a2a/tasks/task_1/reply": { body: { id: "task_1", state: "working" } } });
+    const fake = fakeFetch({ "POST /api/v1/identities/maria-orion/a2a/tasks/task_1/reply": { body: { id: "task_1", state: "working" } } });
     await client(fake).reply("task_1", "progress", "Checking with Maria.", { oip: "1", intent: "inform" });
     expect(fake.calls[0]?.body).toEqual({ intent: "progress", parts: [{ text: "Checking with Maria." }, { data: { oip: "1", intent: "inform" } }] });
     expect(fake.calls[0]?.headers["x-api-key"]).toBe("ik_identity");
   });
 
   it("lists the inbox with a state filter and unwraps items", async () => {
-    const fake = fakeFetch({ "GET /api/v1/identities/maria-instinct/a2a/tasks": { body: { items: [{ id: "t1" }, { id: "t2" }], next_cursor: null } } });
+    const fake = fakeFetch({ "GET /api/v1/identities/maria-orion/a2a/tasks": { body: { items: [{ id: "t1" }, { id: "t2" }], next_cursor: null } } });
     const tasks = await client(fake).listInbox("submitted");
     expect(tasks).toEqual([{ id: "t1" }, { id: "t2" }]);
     expect(fake.calls[0]?.query).toEqual({ state: "submitted" });
@@ -25,8 +25,8 @@ describe("InkboxA2A worker side", () => {
 
   it("falls back to sent tasks when the inbox does not know the task", async () => {
     const fake = fakeFetch({
-      "GET /api/v1/identities/maria-instinct/a2a/tasks/task_9": { status: 404 },
-      "GET /api/v1/identities/maria-instinct/a2a/sent/tasks/task_9": { body: { id: "task_9", state: "completed" } },
+      "GET /api/v1/identities/maria-orion/a2a/tasks/task_9": { status: 404 },
+      "GET /api/v1/identities/maria-orion/a2a/sent/tasks/task_9": { body: { id: "task_9", state: "completed" } },
     });
     expect(await client(fake).getTask("task_9")).toEqual({ id: "task_9", state: "completed" });
   });
@@ -35,12 +35,12 @@ describe("InkboxA2A worker side", () => {
 describe("InkboxA2A caller side", () => {
   it("sends a JSON-RPC SendMessage to the peer with the right headers and parts", async () => {
     const fake = fakeFetch({
-      "POST /a2a/sam-instinct": { body: { jsonrpc: "2.0", id: 1, result: { task: { id: "task_7", contextId: "ctx_7", status: { state: "TASK_STATE_SUBMITTED" } } } } },
+      "POST /a2a/sam-orion": { body: { jsonrpc: "2.0", id: 1, result: { task: { id: "task_7", contextId: "ctx_7", status: { state: "TASK_STATE_SUBMITTED" } } } } },
     });
-    const res = await client(fake).send("@sam-instinct", "Is Sam free Thursday?", { oip: "1", intent: "request_freebusy" }, { contextId: "ctx_7", messageId: "mid_1" });
+    const res = await client(fake).send("@sam-orion", "Is Sam free Thursday?", { oip: "1", intent: "request_freebusy" }, { contextId: "ctx_7", messageId: "mid_1" });
     expect(res).toMatchObject({ taskId: "task_7", contextId: "ctx_7", state: "TASK_STATE_SUBMITTED" });
     const call = fake.calls[0] as Recorded;
-    expect(call.url).toBe(`${BASE}/a2a/sam-instinct`);
+    expect(call.url).toBe(`${BASE}/a2a/sam-orion`);
     expect(call.headers["a2a-version"]).toBe("1.0");
     expect(call.headers["x-api-key"]).toBe("ik_identity");
     expect(call.body).toEqual({
@@ -85,9 +85,9 @@ describe("InkboxA2A caller side", () => {
   });
 
   it("fetches the peer card from the public route", async () => {
-    const fake = fakeFetch({ "GET /a2a/sam-instinct/card": { body: { name: "Sam's Instinct", supportedInterfaces: [] } } });
-    expect(await client(fake).fetchCard("sam-instinct")).toEqual({ name: "Sam's Instinct", supportedInterfaces: [] });
-    expect(fake.calls[0]?.url).toBe(`${BASE}/a2a/sam-instinct/card`);
+    const fake = fakeFetch({ "GET /a2a/sam-orion/card": { body: { name: "Sam's Orion", supportedInterfaces: [] } } });
+    expect(await client(fake).fetchCard("sam-orion")).toEqual({ name: "Sam's Orion", supportedInterfaces: [] });
+    expect(fake.calls[0]?.url).toBe(`${BASE}/a2a/sam-orion/card`);
   });
 });
 

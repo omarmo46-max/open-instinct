@@ -1,7 +1,7 @@
 # Customize your agent
 
 Everything the model is told lives in plain files under the data directory
-(`$INSTINCT_DATA_DIR`, default `./.instinct`; `/data` on Maritime). Edit a file and the
+(`$ORION_DATA_DIR`, default `./.orion`; `/data` on Maritime). Edit a file and the
 next message uses it. No rebuild, no restart, no prompt buried in code.
 
 Analogy: the system prompt is a stack of index cards the agent reads before every reply.
@@ -22,10 +22,10 @@ Each card comes from one file. You can read the stack, and you can rewrite any c
 ## 1. See what the agent is told
 
 ```bash
-instinct prompt            # the full system prompt your own thread gets right now
-instinct prompt --layers   # one row per section: what it is, how long, which file decides it
-instinct prompt --json     # the same sections as data
-instinct prompt --channel email   # as the email thread would see it (imessage, sms, email, chat, scheduled)
+orion prompt            # the full system prompt your own thread gets right now
+orion prompt --layers   # one row per section: what it is, how long, which file decides it
+orion prompt --json     # the same sections as data
+orion prompt --channel email   # as the email thread would see it (imessage, sms, email, chat, scheduled)
 ```
 
 `--layers` prints something like this:
@@ -54,11 +54,11 @@ for the person it is talking to; the text of each file is the same.
 
 | Layer | File | Change it with | What it does |
 |---|---|---|---|
-| Persona | `<data>/PERSONA.md` | `instinct persona edit` | who the agent is: voice, texting style, what it never does |
+| Persona | `<data>/PERSONA.md` | `orion persona edit` | who the agent is: voice, texting style, what it never does |
 | Standing instructions | `<data>/AGENTS.md` | any editor | house rules that apply to every conversation |
-| Skills | `skills/<name>/SKILL.md` (or `$INSTINCT_SKILLS_DIR`) | add a folder | playbooks for one kind of task, loaded when the task matches |
+| Skills | `skills/<name>/SKILL.md` (or `$ORION_SKILLS_DIR`) | add a folder | playbooks for one kind of task, loaded when the task matches |
 | Memory | `<data>/memory/MEMORY.md`, `memory/journal/` | any editor, or tell the agent | durable facts, preferences, what happened |
-| Policy | `<data>/policy.json` | `instinct trust ...` | tiers, grants, spend limits: what each person may ask |
+| Policy | `<data>/policy.json` | `orion trust ...` | tiers, grants, spend limits: what each person may ask |
 
 Order in the prompt: persona, standing instructions, owner card, who it is talking to,
 channel etiquette, rules, memory, skills, pending approvals, long tasks, the time.
@@ -69,22 +69,22 @@ The name is in `config.json` (`agent.name`). The voice is `PERSONA.md`.
 
 ```bash
 # Name. Repeating init keeps everything else in config.json.
-instinct init --name "Maria" --agent-name "Pip"
+orion init --name "Maria" --agent-name "Pip"
 
 # Voice. Opens $VISUAL or $EDITOR; without one it prints the path to edit by hand.
-instinct persona edit
+orion persona edit
 
 # Or write it in one go.
-instinct persona set "You are Pip. Dry wit, short sentences, never emojis. You confirm before you book anything."
+orion persona set "You are Pip. Dry wit, short sentences, never emojis. You confirm before you book anything."
 
 # See it, or go back to the default.
-instinct persona show
-instinct persona reset
+orion persona show
+orion persona reset
 ```
 
 The first boot writes the default `PERSONA.md` (name, voice, texting style, a "never"
 list; about thirty lines). It is yours after that: the agent never rewrites it. Setting
-`INSTINCT_PERSONA` in the environment seeds the file on first boot only, which is how a
+`ORION_PERSONA` in the environment seeds the file on first boot only, which is how a
 deployer gives a fresh agent a voice without touching its disk.
 
 `config.json` also has `agent.persona`, a one-liner. When set, it is added under the
@@ -100,8 +100,8 @@ Create `<data>/AGENTS.md`. Whatever it says is appended to the prompt right afte
 persona, under "Standing instructions", in every conversation. Same convention Pi,
 OpenClaw and Claude Code use for a project's `AGENTS.md`.
 
-A deployer can seed it with `INSTINCT_INSTRUCTIONS` in the environment (an event brief,
-house rules for every agent a gateway creates). Unlike `INSTINCT_PERSONA`, a changed value
+A deployer can seed it with `ORION_INSTRUCTIONS` in the environment (an event brief,
+house rules for every agent a gateway creates). Unlike `ORION_PERSONA`, a changed value
 is applied on the next boot as long as the file is still exactly what the last seed wrote;
 once the owner edits `AGENTS.md`, it is theirs and the seed never touches it again.
 
@@ -133,14 +133,14 @@ description: Water and feed the owner's houseplants on schedule. Use when the ow
 
 Keep a list of plants in memory under "## Plants" with the last watered date. ...
 EOF
-instinct prompt --layers    # the skills row grows; `instinct prompt | grep plants` shows the index line
+orion prompt --layers    # the skills row grows; `orion prompt | grep plants` shows the index line
 ```
 
 The agent sees one line per skill (name and description) and reads the file only when a
 task matches, so the description is what decides whether a skill is used.
 
 The folder is `<repo>/skills` in development and `/app/skills` in the Docker image. To use
-your own folder instead, set `INSTINCT_SKILLS_DIR=/path/to/skills` on the server. A second
+your own folder instead, set `ORION_SKILLS_DIR=/path/to/skills` on the server. A second
 folder, `<data>/skills`, is always read after it and re-read every 30 seconds: a skill the
 owner (or the agent, when asked) puts there, as `<data>/skills/<name>/SKILL.md`, is in the
 index within 30 seconds. Shipped skills win: an owner skill with the same name as one is
@@ -156,8 +156,8 @@ prompt (about 2,400 characters), followed by the tail of today's and yesterday's
 Short lines, one fact per line.
 
 ```bash
-$EDITOR .instinct/memory/MEMORY.md
-instinct chat "remember that I like window seats"     # the agent appends it itself
+$EDITOR .orion/memory/MEMORY.md
+orion chat "remember that I like window seats"     # the agent appends it itself
 ```
 
 A `## Preferences` heading matters: that section, and only that section, is what people in
@@ -171,12 +171,12 @@ may do, in [PERMISSIONS.md](PERMISSIONS.md). Three ways to change it:
 
 ```bash
 # Move a person between tiers.
-instinct trust set "Sam Lee" partner
+orion trust set "Sam Lee" partner
 
 # Give one person one more thing, for a while.
-instinct trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"
-instinct trust list
-instinct trust revoke g_1a2b3c4d
+orion trust grant sam-lee calendar.write,plans.commit --until 2026-10-12 --max-usd 150 --note "dinner this week"
+orion trust list
+orion trust revoke g_1a2b3c4d
 ```
 
 To change what a whole tier gets, edit `policy.json`. `tiers` holds overrides of the
@@ -206,20 +206,20 @@ any tool runs, whatever the persona says.
 
 ```bash
 # For this process. Env wins over config.json for the model, and only for the model.
-INSTINCT_MODEL=anthropic/claude-sonnet-5-5 instinct dev
+ORION_MODEL=anthropic/claude-sonnet-5-5 orion dev
 
 # For good: writes config.json.
-instinct init --name "Maria" --model anthropic/claude-sonnet-5-5
+orion init --name "Maria" --model anthropic/claude-sonnet-5-5
 
 # Another provider: its key, its usual variable.
-INSTINCT_MODEL=openai/gpt-5.4 OPENAI_API_KEY=sk-... instinct dev
-INSTINCT_MODEL=google/gemini-3-pro GEMINI_API_KEY=... instinct dev
+ORION_MODEL=openai/gpt-5.4 OPENAI_API_KEY=sk-... orion dev
+ORION_MODEL=google/gemini-3-pro GEMINI_API_KEY=... orion dev
 
 # Anything OpenAI-compatible (Ollama, vLLM, LiteLLM).
-INSTINCT_MODEL=openai-compatible/llama-4 OPENAI_BASE_URL=http://localhost:11434/v1 instinct dev
+ORION_MODEL=openai-compatible/llama-4 OPENAI_BASE_URL=http://localhost:11434/v1 orion dev
 
 # On Maritime, with no key of your own.
-instinct deploy --image ghcr.io/<you>/orion-ai-agent:latest --maritime-llm --model gpt-5.4
+orion deploy --image ghcr.io/<you>/orion-ai-agent:latest --maritime-llm --model gpt-5.4
 ```
 
 The id is `provider/model` from Pi's catalog. `config.json` also has `model.fallback` and
@@ -230,9 +230,9 @@ The id is `provider/model` from Pi's catalog. `config.json` also has `model.fall
 
 The data directory is `/data` inside the agent's microVM, and the same files apply. Ways in:
 
-- Seed before the first boot: set `INSTINCT_PERSONA` (and `INSTINCT_AGENT_NAME`,
-  `INSTINCT_MODEL`) as environment variables on the agent in the Maritime dashboard, or in
-  the gateway's env for every agent it creates. `INSTINCT_INSTRUCTIONS` seeds `AGENTS.md`
+- Seed before the first boot: set `ORION_PERSONA` (and `ORION_AGENT_NAME`,
+  `ORION_MODEL`) as environment variables on the agent in the Maritime dashboard, or in
+  the gateway's env for every agent it creates. `ORION_INSTRUCTIONS` seeds `AGENTS.md`
   the same way and, unlike the persona, follows a changed value on redeploy until the
   owner edits the file.
 - Edit later: open the agent in the Maritime dashboard and edit `/data/PERSONA.md`,
@@ -247,4 +247,4 @@ and it is live within 30 seconds. It is yours alone unless its frontmatter says
 `visibility: public` (see section 5).
 
 
-Two more layers are always present: **reach** (everything happens in this chat: connect links, files and takeover links travel through the thread) and **setup** (what is set up right now, so the agent says exactly what is missing instead of guessing). Both are built in; `instinct prompt` shows them.
+Two more layers are always present: **reach** (everything happens in this chat: connect links, files and takeover links travel through the thread) and **setup** (what is set up right now, so the agent says exactly what is missing instead of guessing). Both are built in; `orion prompt` shows them.

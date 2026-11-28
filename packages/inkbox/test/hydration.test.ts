@@ -95,7 +95,7 @@ describe("email and media hydration", () => {
   });
 
   it("downloads the full signed URL to a generated workspace filename without API credentials", async () => {
-    const mediaDir = await mkdtemp(join(tmpdir(), "instinct-media-"));
+    const mediaDir = await mkdtemp(join(tmpdir(), "orion-media-"));
     dirs.push(mediaDir);
     const url = `https://media.example.test/photo?token=${"x".repeat(650)}&signature=complete`;
     const fetchImpl = vi.fn(async () => new Response("image bytes")) as unknown as typeof fetch;
@@ -108,7 +108,7 @@ describe("email and media hydration", () => {
   });
 
   it("keeps a visible fallback when media is too large or points to a local host", async () => {
-    const mediaDir = await mkdtemp(join(tmpdir(), "instinct-media-"));
+    const mediaDir = await mkdtemp(join(tmpdir(), "orion-media-"));
     dirs.push(mediaDir);
     const fetchImpl = vi.fn(async () => new Response("too many bytes")) as unknown as typeof fetch;
     const { hydrator } = harness({ mediaDir, fetchImpl, lookup: async () => ["8.8.8.8"], maxAttachmentBytes: 2 });

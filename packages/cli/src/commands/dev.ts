@@ -1,5 +1,5 @@
 /**
- * `instinct dev`: run the agent server in this process. No Docker, no
+ * `orion dev`: run the agent server in this process. No Docker, no
  * Maritime. Secrets from init are loaded into env first. With --tunnel the
  * process also opens an Inkbox tunnel and subscribes the webhook, mirroring
  * the server's own main.ts so iMessage reaches a laptop.
@@ -91,13 +91,13 @@ export async function runDev(ctx: CliContext, argv: string[]): Promise<number> {
   const port = Number(str(values, "port") ?? ctx.env.PORT ?? "8080");
   const host = str(values, "host") ?? "127.0.0.1";
   const { c } = ctx;
-  const log = flag(values, "quiet") ? () => {} : (m: string): void => ctx.print(c.dim(`[instinct] ${m}`));
+  const log = flag(values, "quiet") ? () => {} : (m: string): void => ctx.print(c.dim(`[orion] ${m}`));
 
   // The server reads env; we hand it the same object after filling in what init saved.
   const env: NodeJS.ProcessEnv = ctx.env;
-  env.INSTINCT_DATA_DIR = ctx.dataDir;
+  env.ORION_DATA_DIR = ctx.dataDir;
   env.PORT = String(port);
-  if (flag(values, "tunnel")) env.INSTINCT_TUNNEL = "1";
+  if (flag(values, "tunnel")) env.ORION_TUNNEL = "1";
   const applied = applySecretsToEnv(env, readSecrets(ctx.dataDir));
   if (applied.length > 0) log(`loaded ${applied.join(", ")} from secrets/inkbox.json`);
   warnIfAppsOff(ctx);
@@ -115,12 +115,12 @@ export async function runDev(ctx: CliContext, argv: string[]): Promise<number> {
   });
 
   ctx.print(`${c.green("Orion AI is running")} on http://127.0.0.1:${port}  (data: ${ctx.dataDir})`);
-  ctx.print(`  chat:   instinct chat "hello" --url http://127.0.0.1:${port}`);
-  ctx.print(`  status: instinct status --url http://127.0.0.1:${port}`);
+  ctx.print(`  chat:   orion chat "hello" --url http://127.0.0.1:${port}`);
+  ctx.print(`  status: orion status --url http://127.0.0.1:${port}`);
 
   let tunnel: TunnelHandle | undefined;
   let tunnelServer: Listenable | undefined;
-  if (env.INSTINCT_TUNNEL === "1") {
+  if (env.ORION_TUNNEL === "1") {
     tunnel = await (async () => {
       if (!server.listenTunnelServer) throw new Error("The server must support a webhook-only tunnel listener");
       const listener = await server.listenTunnelServer(app, {
@@ -158,7 +158,7 @@ export async function runDev(ctx: CliContext, argv: string[]): Promise<number> {
  */
 export function appsWarning(env: NodeJS.ProcessEnv, appsEnabled: boolean): string | undefined {
   if (!env.COMPOSIO_API_KEY || appsEnabled) return undefined;
-  return "COMPOSIO_API_KEY is set but apps are off in config.json (apps.enabled=false), so no Gmail or Calendar tools will load. Run `instinct init --name <you> --apps` (add --toolkits gmail,googlecalendar to choose apps) and start again.";
+  return "COMPOSIO_API_KEY is set but apps are off in config.json (apps.enabled=false), so no Gmail or Calendar tools will load. Run `orion init --name <you> --apps` (add --toolkits gmail,googlecalendar to choose apps) and start again.";
 }
 
 function warnIfAppsOff(ctx: CliContext): void {
@@ -175,7 +175,7 @@ async function startTunnel(ctx: CliContext, server: ServerModule, app: BootLike,
   const { env } = ctx;
   const apiKey = env.INKBOX_API_KEY;
   const handle = env.INKBOX_AGENT_HANDLE;
-  if (!apiKey || !handle) throw new Error("INKBOX_API_KEY and INKBOX_AGENT_HANDLE are required (run `instinct init` with INKBOX_ADMIN_API_KEY)");
+  if (!apiKey || !handle) throw new Error("INKBOX_API_KEY and INKBOX_AGENT_HANDLE are required (run `orion init` with INKBOX_ADMIN_API_KEY)");
   const connectTunnel = ctx.io.connectTunnel ?? defaultConnectTunnel;
   const tunnel = await connectTunnel({ apiKey, handle, baseUrl: env.INKBOX_BASE_URL, forwardTo: `http://127.0.0.1:${port}`, log });
   const webhookUrl = `${tunnel.publicUrl.replace(/\/+$/, "")}/webhooks/inkbox`;

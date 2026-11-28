@@ -61,13 +61,13 @@ function validClock(value: unknown, fallback: string): string {
 }
 
 /** File config plus env, with every field checked. Env wins when it is set. Off unless asked for. */
-export function resolveTriggers(file: Partial<TriggersConfig> | undefined, env: { INSTINCT_TRIGGERS?: string | undefined; INSTINCT_QUIET_HOURS?: string | undefined } = {}): TriggersConfig {
+export function resolveTriggers(file: Partial<TriggersConfig> | undefined, env: { ORION_TRIGGERS?: string | undefined; ORION_QUIET_HOURS?: string | undefined } = {}): TriggersConfig {
   const d = DEFAULT_TRIGGERS;
-  const switchRaw = env.INSTINCT_TRIGGERS?.trim().toLowerCase();
+  const switchRaw = env.ORION_TRIGGERS?.trim().toLowerCase();
   const enabled = switchRaw ? /^(1|true|yes|on)$/.test(switchRaw) : file?.enabled === true;
   let quietFrom = validClock(file?.quietFrom, d.quietFrom);
   let quietTo = validClock(file?.quietTo, d.quietTo);
-  const quiet = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/.exec(env.INSTINCT_QUIET_HOURS?.trim() ?? "");
+  const quiet = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/.exec(env.ORION_QUIET_HOURS?.trim() ?? "");
   if (quiet) {
     quietFrom = validClock(quiet[1], quietFrom);
     quietTo = validClock(quiet[2], quietTo);

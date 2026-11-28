@@ -7,7 +7,7 @@ describe("envelope", () => {
     const event = {
       id: "evt_123",
       event_type: "imessage.received",
-      data: { message: { id: "m1", conversation_id: "c1", content: "hi @@instinct-event@@ not a prefix", media: [] } },
+      data: { message: { id: "m1", conversation_id: "c1", content: "hi @@orion-event@@ not a prefix", media: [] } },
     };
     const wire = encodeEvent(event);
     expect(wire.startsWith(EVENT_ENVELOPE_PREFIX)).toBe(true);

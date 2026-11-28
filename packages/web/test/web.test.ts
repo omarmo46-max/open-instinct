@@ -27,7 +27,7 @@ async function start(): Promise<Env> {
   const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
     const u = String(url);
     const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
-    if (u === "https://agent.example.com/status") return json(init?.headers && (init.headers as Record<string, string>)["x-instinct-token"] === "tok-123" ? 200 : 401, { agent: "T", ready: true });
+    if (u === "https://agent.example.com/status") return json(init?.headers && (init.headers as Record<string, string>)["x-orion-token"] === "tok-123" ? 200 : 401, { agent: "T", ready: true });
     const own = /^https:\/\/agent\.example\.com\/owner\/([\w/-]+)(\?.*)?$/.exec(u);
     if (own) {
       const data: Record<string, unknown> = {
@@ -199,7 +199,7 @@ describe("assistant connection", () => {
     const ok = await c.post("/app/connection", { url: "https://agent.example.com", token: "tok-123" }, csrf);
     expect(ok.status).toBe(200);
     const html = await ok.text();
-    expect(html).toContain("INSTINCT_WEB_SECRET=");
+    expect(html).toContain("ORION_WEB_SECRET=");
     const u = await env.store.userByEmail("omar@example.com");
     expect(u?.agentTokenSealed).not.toContain("tok-123");
     expect(open(KEY, u!.agentTokenSealed!)).toBe("tok-123");

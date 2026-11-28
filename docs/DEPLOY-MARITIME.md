@@ -1,17 +1,16 @@
 # Deploying Orion AI on Maritime
 
-This is the Instinct-shaped deployment. Each person gets their own agent in its own microVM, with a Linux desktop the agent can click on. The VM sleeps when nobody is talking to it and wakes when a message arrives.
+This is the one-agent-per-person deployment. Each person gets their own agent in its own microVM, with a Linux desktop the agent can click on. The VM sleeps when nobody is talking to it and wakes when a message arrives.
 
-Orion AI is unrelated to OpenInstinct, a separate project published by Merit Systems.
 
-Read [ARCHITECTURE.md](ARCHITECTURE.md) first if you are new to the project. The other deployment shapes (laptop with `instinct dev`, local Docker) are covered in [../packages/cli/README.md](../packages/cli/README.md) and [../deploy/docker-compose.yml](../deploy/docker-compose.yml).
+Read [ARCHITECTURE.md](ARCHITECTURE.md) first if you are new to the project. The other deployment shapes (laptop with `orion dev`, local Docker) are covered in [../packages/cli/README.md](../packages/cli/README.md) and [../deploy/docker-compose.yml](../deploy/docker-compose.yml).
 
 ## Contents
 
 - [What you get](#what-you-get)
 - [Prerequisites](#prerequisites)
 - [Build and publish the image](#build-and-publish-the-image)
-- [One user: `instinct deploy`](#one-user-instinct-deploy)
+- [One user: `orion deploy`](#one-user-orion-deploy)
 - [Many users: the gateway](#many-users-the-gateway)
 - [How inbound reaches a sleeping agent](#how-inbound-reaches-a-sleeping-agent)
 - [Costs and limits](#costs-and-limits)
@@ -33,8 +32,8 @@ An analogy: the VM is a desk that folds into the wall when nobody is sitting at 
 | Need | Why | Where to get it |
 |---|---|---|
 | Maritime account and an `mk_` key | Creates agents, relays chat, sets secrets | Maritime dashboard, API keys. Give the key the `provision`, `deploy` and `secrets` scopes, or `manage`. Set it as `MARITIME_API_KEY`. |
-| Inkbox org admin key | Provisions the agent's iMessage identity, mints its scoped key, subscribes webhooks | Inkbox dashboard. Set it as `INKBOX_ADMIN_API_KEY`. The gateway needs it for signup. A single user needs it once, for `instinct init`. |
-| Anthropic key | The model | Set it as `ANTHROPIC_API_KEY`. It is copied into each agent as a secret. Without a key of your own, use Maritime's metered proxy (`--maritime-llm`, or `INSTINCT_USE_MARITIME_LLM=1` on the gateway). |
+| Inkbox org admin key | Provisions the agent's iMessage identity, mints its scoped key, subscribes webhooks | Inkbox dashboard. Set it as `INKBOX_ADMIN_API_KEY`. The gateway needs it for signup. A single user needs it once, for `orion init`. |
+| Anthropic key | The model | Set it as `ANTHROPIC_API_KEY`. It is copied into each agent as a secret. Without a key of your own, use Maritime's metered proxy (`--maritime-llm`, or `ORION_USE_MARITIME_LLM=1` on the gateway). |
 | Composio key (optional) | Gmail, Calendar, Contacts | Set `COMPOSIO_API_KEY`. `COMPOSIO_TOOLKITS` picks the toolkits; default `gmail,googlecalendar,googlecontacts`. |
 | Stripe Link (optional) | A wallet the agent can pay from, one-time cards per approved amount | Set `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET` and `STRIPE_PUBLISHABLE_KEY`. All three are required for payment tools to appear. The client id and secret come from Stripe's application form, reviewed every 3 to 5 days: apply early ([PAYMENTS.md](PAYMENTS.md#registering-an-oauth-client)). |
 | A container registry | Maritime pulls the agent image from it | GitHub Container Registry (`ghcr.io`) through the included workflow. |
@@ -75,7 +74,7 @@ docker compose -f deploy/docker-compose.yml up --build
 
 The agent image sets no `PORT`. Maritime injects `PORT=18789`. Docker Compose sets `PORT=8080`. The server binds whatever it is given. Do not set `PORT=8080` inside a Maritime VM; that port is reserved there.
 
-## One user: `instinct deploy`
+## One user: `orion deploy`
 
 This creates one agent for you. No gateway. The steps mirror the example session in [../packages/cli/README.md](../packages/cli/README.md).
 
@@ -89,14 +88,14 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export MARITIME_API_KEY=mk_...
 
 # 1. Config and the iMessage identity. Secrets land in <dataDir>/secrets/inkbox.json.
-instinct init --name "Maria" --phone +14155550100 --email maria@example.com \
-  --handle maria-instinct --timezone America/New_York
+orion init --name "Maria" --phone +14155550100 --email maria@example.com \
+  --handle maria-orion --timezone America/New_York
 
 # 2. Create the Maritime agent from the published image.
-instinct deploy --image ghcr.io/<owner>/orion-ai-agent:latest
+orion deploy --image ghcr.io/<owner>/orion-ai-agent:latest
 
 # 3. Talk to it through Maritime. This wakes the VM.
-instinct chat "hello" --agent agt_...
+orion chat "hello" --agent agt_...
 ```
 
 What `deploy` sends: `framework: "custom"`, `exposedPort: 18789`, `healthCheckPath: "/health"`, `desktop: true`, `externalId: "orion-ai:<handle>"`, `idleTtlSeconds` (default 900), and the env vars the agent needs. `INKBOX_*` come from `secrets/inkbox.json`. `ANTHROPIC_API_KEY`, `COMPOSIO_*`, `BRAVE_SEARCH_API_KEY` and the `LINK_*` set come from your shell. Secrets are flagged `isSecret` so Maritime encrypts them. The agent id is saved to `<dataDir>/maritime.json`.
@@ -107,8 +106,8 @@ Flags you may want:
 |---|---|
 | `--idle <seconds>` | How long the VM stays awake with no traffic. Default 900. |
 | `--no-desktop` | No Linux desktop. Cheaper. The agent falls back to the hosted Computers MCP if `MARITIME_API_KEY` is in its env, else it has no computer. |
-| `--maritime-llm` | No model key of your own. Maritime injects its metered proxy and `INSTINCT_MODEL` becomes `openai-compatible/<model>`. |
-| `--model <id>` | The proxy model with `--maritime-llm` (default `gpt-5.4`, or `INSTINCT_MARITIME_MODEL`). |
+| `--maritime-llm` | No model key of your own. Maritime injects its metered proxy and `ORION_MODEL` becomes `openai-compatible/<model>`. |
+| `--model <id>` | The proxy model with `--maritime-llm` (default `gpt-5.4`, or `ORION_MARITIME_MODEL`). |
 | `--dry-run` | Print the request body with secrets redacted. Create nothing. |
 
 After `deploy`, iMessage does not reach the agent yet. Inkbox must be told where to post webhooks. Two options are in [How inbound reaches a sleeping agent](#how-inbound-reaches-a-sleeping-agent). The CLI prints both.
@@ -144,12 +143,12 @@ Any other host works the same way: run the gateway image, give it a persistent d
 | `GATEWAY_SIGNUP_SECRET` | yes when signup is on | Invite code. Every signup bills your Maritime wallet and Inkbox plan, so signup is closed without it. |
 | `GATEWAY_ALLOW_OPEN_SIGNUP` | no | `1` runs the form without an invite code, on purpose. |
 | `GATEWAY_TRUST_PROXY` | behind a proxy | `1` counts signups by the first `X-Forwarded-For` address. |
-| `GATEWAY_DATA_DIR` | no | Where `users.json` lives. Default `./.instinct-gateway`. Mount a volume. |
-| `INSTINCT_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/omarmo46-max/orion-ai-agent:latest`. Point it at your own. |
-| `INSTINCT_IDLE_TTL_SECONDS` | no | Idle seconds before a VM sleeps. Default 900. |
+| `GATEWAY_DATA_DIR` | no | Where `users.json` lives. Default `./.orion-gateway`. Mount a volume. |
+| `ORION_AGENT_IMAGE` | no | The image each new agent runs. Default `ghcr.io/omarmo46-max/orion-ai-agent:latest`. Point it at your own. |
+| `ORION_IDLE_TTL_SECONDS` | no | Idle seconds before a VM sleeps. Default 900. |
 | `ANTHROPIC_API_KEY` | no | Copied into each new agent as a secret. |
-| `INSTINCT_USE_MARITIME_LLM` | no | `1` uses Maritime's metered proxy instead of your key. |
-| `INSTINCT_MARITIME_MODEL` | no | Model id behind the proxy. Default `gpt-5.4`. |
+| `ORION_USE_MARITIME_LLM` | no | `1` uses Maritime's metered proxy instead of your key. |
+| `ORION_MARITIME_MODEL` | no | Model id behind the proxy. Default `gpt-5.4`. |
 | `COMPOSIO_API_KEY`, `COMPOSIO_TOOLKITS` | no | Apps for each new agent. |
 | `AMPLE_SIGNUP` | no | `1`: each new agent can put the sites it builds online, in an Ample account of its own ([AMPLE.md](AMPLE.md)). |
 | `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET`, `STRIPE_PUBLISHABLE_KEY` | no | Stripe Link wallet for each new agent. The gateway also sets each agent's `LINK_REDIRECT_URI` to its own callback. |
@@ -166,7 +165,7 @@ Signup then runs six steps, saving after each one so a crash resumes instead of 
 2. Mint an API key scoped to that identity. It goes to the agent as `INKBOX_API_KEY`.
 3. Create the webhook signing key. It stays in the gateway.
 4. Subscribe Inkbox webhooks to `<GATEWAY_PUBLIC_URL>/webhooks/inkbox/<userId>`.
-5. Create the Maritime agent from `INSTINCT_AGENT_IMAGE` with `desktop: true` and `externalId: <userId>`. An agent with that `externalId` is reused if it exists.
+5. Create the Maritime agent from `ORION_AGENT_IMAGE` with `desktop: true` and `externalId: <userId>`. An agent with that `externalId` is reused if it exists.
 6. Mark the record `ready`.
 
 A phone that already has an agent gets a neutral "Check your phone" answer. No second agent is created and nothing about the existing record is revealed.
@@ -194,12 +193,12 @@ Inkbox posts the signed webhook to the gateway. The gateway verifies the signatu
 ```
 POST https://api.maritime.sh/api/agents/{id}/chat
 Authorization: Bearer mk_...
-{"message": "@@instinct-event@@{...}", "conversation_id": "..."}
+{"message": "@@orion-event@@{...}", "conversation_id": "..."}
 ```
 
-Maritime wakes the VM and posts to the agent's `/chat`. The server sees the `@@instinct-event@@` envelope, treats it as a verified Inkbox event, and replies to the person through Inkbox. The HTTP `response` is empty. Nothing comes back through the gateway.
+Maritime wakes the VM and posts to the agent's `/chat`. The server sees the `@@orion-event@@` envelope, treats it as a verified Inkbox event, and replies to the person through Inkbox. The HTTP `response` is empty. Nothing comes back through the gateway.
 
-For a single user without the gateway, the fallback is `instinct dev --tunnel` on your own machine. That runs the server locally and skips the Maritime VM.
+For a single user without the gateway, the fallback is `orion dev --tunnel` on your own machine. That runs the server locally and skips the Maritime VM.
 
 ### 2. Zero relay: a native signed webhook (possible future platform feature)
 
@@ -210,14 +209,14 @@ If Maritime adds a scheme that verifies Inkbox's headers (`X-Inkbox-Signature` a
 1. Register the agent's webhook route with Maritime. The secret is the Inkbox signing key from `<dataDir>/secrets/inkbox.json`, the same value the agent holds as `INKBOX_SIGNING_KEY`. The key needs the `secrets` scope.
 2. Subscribe the Inkbox identity's webhooks to the returned `url` (`POST /api/v1/webhooks/subscriptions` with `url`, `event_types` and `agent_identity_id`, using the admin key).
 
-Inkbox would then post straight to Maritime. Maritime verifies, wakes, and forwards to the agent's `POST /webhooks/inkbox`, which verifies the same signature a second time. No gateway, no `users.json`, no relay process. Until then, use the gateway relay or `instinct dev --tunnel`.
+Inkbox would then post straight to Maritime. Maritime verifies, wakes, and forwards to the agent's `POST /webhooks/inkbox`, which verifies the same signature a second time. No gateway, no `users.json`, no relay process. Until then, use the gateway relay or `orion dev --tunnel`.
 
 | | Gateway relay | Signed webhook |
 |---|---|---|
 | Works today | yes | when the platform supports Inkbox's scheme |
 | Extra service to run | yes | no |
 | Who verifies the signature | gateway, then the agent trusts the envelope | Maritime, then the agent again |
-| Signup and connect pages | yes | no; use `instinct init` and `instinct connect` |
+| Signup and connect pages | yes | no; use `orion init` and `orion connect` |
 | Dedup of repeated deliveries | gateway | the agent's handler |
 
 ## Costs and limits
@@ -227,9 +226,9 @@ Inkbox would then post straight to Maritime. Maritime verifies, wakes, and forwa
 | VM size with a desktop | `desktop: true` forces 4 GiB memory and 2 vCPU | Maritime `AgentCreate` |
 | VM size without a desktop | Maritime's agent default (2 GiB) | `--no-desktop` |
 | Seat plan | A computer or desktop agent takes one slot of a paid seat plan. Confirm the plan before the first screen action; an unentitled account gets `402 no_plan`. | Maritime billing |
-| Idle TTL | 900 seconds by default. `0` means always on and always billed. | `--idle`, `INSTINCT_IDLE_TTL_SECONDS` |
+| Idle TTL | 900 seconds by default. `0` means always on and always billed. | `--idle`, `ORION_IDLE_TTL_SECONDS` |
 | Wake time | About 1 to 3 seconds from snapshot | Maritime docs |
-| Reply budget | Maritime waits 30 s for `POST /chat`. The server answers within `INSTINCT_REPLY_BUDGET_MS` (default 20 s) and finishes long work in the background, sending the final text through Inkbox. | `@orion-ai/server` |
+| Reply budget | Maritime waits 30 s for `POST /chat`. The server answers within `ORION_REPLY_BUDGET_MS` (default 20 s) and finishes long work in the background, sending the final text through Inkbox. | `@orion-ai/server` |
 | Agent creation | 30 creates per minute per key. Each create debits the Maritime wallet; a `402` shows the server's explanation. | Maritime agents API |
 | Metered LLM proxy | A per-user spend budget applies when `useMaritimeLlm` is on. Raise it with the LLM spend limit in Maritime. | Maritime LLM proxy |
 | Gateway signup caps | 5 accepted signups per client address per 10 minutes; at most 20 users provisioning or created in the last hour | gateway |
@@ -240,18 +239,18 @@ Inkbox would then post straight to Maritime. Maritime verifies, wakes, and forwa
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `instinct deploy` returns `402` | Maritime wallet is empty or the seat plan does not allow a desktop | Top up or upgrade in the Maritime dashboard. The `402` body explains which. |
-| `instinct deploy` returns `401` or `403` | The `mk_` key lacks `provision` or `deploy` | Mint a key with `provision`, `deploy`, `secrets`, or `manage`. |
+| `orion deploy` returns `402` | Maritime wallet is empty or the seat plan does not allow a desktop | Top up or upgrade in the Maritime dashboard. The `402` body explains which. |
+| `orion deploy` returns `401` or `403` | The `mk_` key lacks `provision` or `deploy` | Mint a key with `provision`, `deploy`, `secrets`, or `manage`. |
 | Agent never becomes healthy | The server bound the wrong port | Do not set `PORT` by hand in the agent env. Maritime injects `18789`. Check the agent logs in the dashboard. |
-| `/chat` through Maritime times out | A long tool run or a slow first wake | The server acks within 20 s and finishes in the background. Lower `INSTINCT_REPLY_BUDGET_MS` if replies still miss the 30 s window. |
-| iMessage reaches Inkbox but the agent is silent | No webhook subscription points at a reachable URL | Run the gateway or use `instinct dev --tunnel`. Check Inkbox's delivery log for `401` or `404`. |
+| `/chat` through Maritime times out | A long tool run or a slow first wake | The server acks within 20 s and finishes in the background. Lower `ORION_REPLY_BUDGET_MS` if replies still miss the 30 s window. |
+| iMessage reaches Inkbox but the agent is silent | No webhook subscription points at a reachable URL | Run the gateway or use `orion dev --tunnel`. Check Inkbox's delivery log for `401` or `404`. |
 | Gateway returns `401` on `/webhooks/inkbox/:userId` | Signature mismatch; the stored signing key is not the one Inkbox uses | Compare the key in `users.json` with the identity's key in Inkbox. Rotate with `InkboxProvisioner.createSigningKey` if needed. |
 | Gateway returns `404` on `/webhooks/inkbox/:userId` | Unknown user id, often after a redeploy without the volume | Mount `GATEWAY_DATA_DIR` on a persistent volume. |
 | Gateway refuses to start | `INKBOX_ADMIN_API_KEY` is set but `GATEWAY_SIGNUP_SECRET` is not | Set an invite code, or set `GATEWAY_ALLOW_OPEN_SIGNUP=1` on purpose. |
 | Every visitor hits the signup rate limit | All requests share the proxy's address | Set `GATEWAY_TRUST_PROXY=1` behind Railway or any reverse proxy. |
 | Signup stuck in "Setting up" | A provisioning step failed (Inkbox `402` plan cap, Maritime `402`, image pull) | Check gateway logs. Records left in `provisioning` resume on the next boot or on a repeat of the same signup. |
 | Two replies to one message | Two gateway replicas each forwarded the event | Keep one replica. |
-| Desktop tools missing | `INSTINCT_COMPUTER=auto` found no `desktopd` and no `MARITIME_API_KEY` | Create the agent with the desktop (drop `--no-desktop`), or give the agent a key with the `computers` scope for the hosted MCP. |
+| Desktop tools missing | `ORION_COMPUTER=auto` found no `desktopd` and no `MARITIME_API_KEY` | Create the agent with the desktop (drop `--no-desktop`), or give the agent a key with the `computers` scope for the hosted MCP. |
 | `openai-compatible` model errors with `--maritime-llm` | The proxy budget is spent | Raise the LLM spend limit in Maritime or switch to your own `ANTHROPIC_API_KEY`. |
-| Apps tools missing although `COMPOSIO_API_KEY` is set | `config.json` was seeded with `apps.enabled: false` | Run `instinct init --name <you> --apps` and redeploy, or set the key before the first boot. |
+| Apps tools missing although `COMPOSIO_API_KEY` is set | `config.json` was seeded with `apps.enabled: false` | Run `orion init --name <you> --apps` and redeploy, or set the key before the first boot. |
 | Payments tools missing | One of the three Link variables is unset | Set `LINK_CLIENT_ID`, `LINK_CLIENT_SECRET` and `STRIPE_PUBLISHABLE_KEY` together. |

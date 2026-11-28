@@ -72,7 +72,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv, io: CliIo):
       return 0;
     }
     if (command === "--version" || command === "-v") {
-      io.stdout(`instinct ${CLI_VERSION}\n`);
+      io.stdout(`orion ${CLI_VERSION}\n`);
       return 0;
     }
     const run = COMMANDS[command];
@@ -90,7 +90,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv, io: CliIo):
     const dim = c ? c.dim : (s: string) => s;
     if (err instanceof UsageError) {
       io.stderr(`${red("usage error")}: ${err.message}\n`);
-      if (err.command) io.stderr(dim(`Run: instinct ${err.command} --help\n`));
+      if (err.command) io.stderr(dim(`Run: orion ${err.command} --help\n`));
       return err.exitCode;
     }
     if (err instanceof CliError) {
@@ -99,7 +99,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv, io: CliIo):
     }
     const message = err instanceof Error ? err.message : String(err);
     io.stderr(`${red("error")}: ${message}\n`);
-    if (env.INSTINCT_DEBUG && err instanceof Error && err.stack) io.stderr(err.stack + "\n");
+    if (env.ORION_DEBUG && err instanceof Error && err.stack) io.stderr(err.stack + "\n");
     return 1;
   }
 }

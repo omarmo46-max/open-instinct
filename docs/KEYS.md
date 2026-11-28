@@ -2,7 +2,7 @@
 
 Orion AI is glue between four services and one model provider. You bring your own
 accounts. Nothing in this repository contains a key, and nothing you add should either:
-keys live in your shell environment or in `.instinct/secrets/` (mode 0600, ignored by git).
+keys live in your shell environment or in `.orion/secrets/` (mode 0600, ignored by git).
 
 Analogy: the repo is the house plan. The keys to the front door, the phone line and the
 bank are yours to hand over at move-in.
@@ -41,11 +41,11 @@ Variable: `ANTHROPIC_API_KEY`
 2. Create a key and copy it once.
 3. `export ANTHROPIC_API_KEY=sk-ant-...`
 
-The default model is `anthropic/claude-fable-5-1`. Change it with `INSTINCT_MODEL`, for
+The default model is `anthropic/claude-fable-5-1`. Change it with `ORION_MODEL`, for
 example `anthropic/claude-sonnet-5-5` for a cheaper agent, or any provider in Pi's catalog
 (`openai/gpt-...`, `google/gemini-...`, `groq/...`). Each provider reads its usual variable
 (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`). For an OpenAI-compatible proxy set
-`INSTINCT_MODEL=openai-compatible/<model>` plus `OPENAI_BASE_URL` and `OPENAI_API_KEY`.
+`ORION_MODEL=openai-compatible/<model>` plus `OPENAI_BASE_URL` and `OPENAI_API_KEY`.
 
 ## 3. Inkbox (iMessage, phone, email, agent-to-agent)
 
@@ -57,10 +57,10 @@ Variables: `INKBOX_ADMIN_API_KEY` (your org key, used once to provision), then p
 2. Pick a plan that includes iMessage. Identities, numbers and iMessage lines are plan limited.
 3. **API keys**: create an organization (admin) key. Copy it once.
 4. `export INKBOX_ADMIN_API_KEY=ApiKey_...`
-5. `pnpm instinct init --name ... --phone ... --email ... --handle <your-handle>`
+5. `pnpm orion init --name ... --phone ... --email ... --handle <your-handle>`
    creates the identity with iMessage enabled, mints an identity-scoped key, creates the
-   webhook signing key, and saves them to `.instinct/secrets/inkbox.json`.
-6. `pnpm instinct connect` prints the router number and the exact text to send
+   webhook signing key, and saves them to `.orion/secrets/inkbox.json`.
+6. `pnpm orion connect` prints the router number and the exact text to send
    (`connect @<your-handle>`).
 
 Keep the admin key on your machine or in the gateway only. Agents get identity-scoped keys,
@@ -78,7 +78,7 @@ Variable: `MARITIME_API_KEY`
    and `secrets` (add `manage` only for a key that should also delete agents and mint keys;
    add `computers` if you want the hosted desktop MCP from outside a VM).
 3. `export MARITIME_API_KEY=mk_...`
-4. `pnpm instinct deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest`
+4. `pnpm orion deploy --image ghcr.io/omarmo46-max/orion-ai-agent:latest`
 
 Creating an agent debits your Maritime wallet; a sleeping agent costs nothing. The image is
 public and needs no registry login. See [DEPLOY-MARITIME.md](DEPLOY-MARITIME.md).
@@ -132,13 +132,13 @@ the screen at checkout instead of paying.
 | `TELEGRAM_BOT_TOKEN` | A Telegram bot people can message one to one. No public URL needed; the agent polls Telegram ([packages/telegram](../packages/telegram/README.md)) | [@BotFather](https://t.me/BotFather), `/newbot` |
 | `STT_API_KEY` (or `OPENAI_API_KEY`), `STT_BASE_URL`, `STT_MODEL`, `STT_LANGUAGE` | Speech to text for voice notes and for `POST /voice`, any OpenAI-compatible `/audio/transcriptions` endpoint ([IPHONE-SHORTCUT.md](IPHONE-SHORTCUT.md)) | your STT provider |
 | `TELEGRAM_OWNER_ID` | Your numeric Telegram user id, so messages from you count as the owner. Comma separate several | message [@userinfobot](https://t.me/userinfobot) |
-| `INSTINCT_CHAT_TOKEN` | A bearer token on the owner's HTTP surface; set it whenever the port is reachable beyond your machine | you choose it |
+| `ORION_CHAT_TOKEN` | A bearer token on the owner's HTTP surface; set it whenever the port is reachable beyond your machine | you choose it |
 | `GATEWAY_SIGNUP_SECRET` | The invite code the gateway's signup form requires | you choose it |
 
 ## 8. Where keys live, and what never goes in git
 
 - Shell environment, or `deploy/.env` copied from [`deploy/.env.example`](../deploy/.env.example). `.env` is in `.gitignore`.
-- `.instinct/secrets/*.json`, written by the CLI with mode 0600. The whole `.instinct/` folder is in `.gitignore`.
+- `.orion/secrets/*.json`, written by the CLI with mode 0600. The whole `.orion/` folder is in `.gitignore`.
 - On Maritime, as encrypted agent environment variables. On the gateway, in its data directory.
 - Never in a prompt, a skill file, a log line or a test fixture. The repo runs
   [gitleaks](../.github/workflows/secret-scan.yml) on every push with rules for each key format
@@ -154,7 +154,7 @@ rewrite:
 
 | Want to replace | Implement | Example |
 |---|---|---|
-| The model | nothing; pick any Pi provider with `INSTINCT_MODEL` | `openai/gpt-5`, `google/gemini-3-pro` |
+| The model | nothing; pick any Pi provider with `ORION_MODEL` | `openai/gpt-5`, `google/gemini-3-pro` |
 | iMessage, SMS or email | `Outbox` plus a `parse<Channel>Event()` in a new package | Twilio, WhatsApp Cloud API, Signal (Telegram and WhatsApp already ship as `packages/telegram` and `packages/whatsapp`) |
 | The computer | a `ComputerBackend` (any MCP server works) | Browserbase, Kernel, a local Playwright |
 | Apps | any MCP server; map tools to capabilities like `packages/apps` does | Zapier MCP, your own servers |

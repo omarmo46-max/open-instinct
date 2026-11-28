@@ -6,10 +6,10 @@ import { describeDataPart, promptExtraFor } from "../src/hooks.js";
 const owner: Principal = { kind: "owner", id: "owner", tier: "owner", displayName: "Maria" };
 const agent: Principal = {
   kind: "agent",
-  id: "agent:sam-instinct",
+  id: "agent:sam-orion",
   tier: "partner",
-  displayName: "Sam's agent (@sam-instinct)",
-  agentHandle: "sam-instinct",
+  displayName: "Sam's agent (@sam-orion)",
+  agentHandle: "sam-orion",
   onBehalfOf: { displayName: "Sam", contactId: "contact:sam" },
 };
 const stranger: Principal = { kind: "stranger", id: "stranger:a2a:nobody", tier: "stranger", displayName: "nobody", agentHandle: "nobody" };
@@ -20,7 +20,7 @@ describe("describeDataPart", () => {
       oip: "1",
       intent: "request_freebusy",
       subject: "dinner",
-      on_behalf_of: { handle: "sam-instinct", display: "Sam" },
+      on_behalf_of: { handle: "sam-orion", display: "Sam" },
       payload: { range: { start: "2026-10-04T18:00:00Z", end: "2026-10-04T23:00:00Z" } },
       needs_consent: true,
     });
@@ -28,7 +28,7 @@ describe("describeDataPart", () => {
     expect(text).toBeDefined();
     expect(text).toContain('intent "request_freebusy"');
     expect(text).toContain('about "dinner"');
-    expect(text).toContain("Sam (@sam-instinct)");
+    expect(text).toContain("Sam (@sam-orion)");
     expect(text).toContain("2026-10-04T18:00:00Z");
     expect(text).toContain("explicit consent");
     expect(text).toContain("busy blocks only");
@@ -56,20 +56,20 @@ describe("promptExtraFor", () => {
     expect(promptExtraFor(stranger, "a2a")).toEqual([networkGuidance(stranger)]);
   });
 
-  it("tells the owner about ask_instinct and tells others their tier and the reply tool", () => {
+  it("tells the owner about ask_orion and tells others their tier and the reply tool", () => {
     const [forOwner] = promptExtraFor(owner, "imessage");
-    expect(forOwner).toContain("ask_instinct");
+    expect(forOwner).toContain("ask_orion");
     expect(forOwner).not.toContain("You are talking to");
 
     const [forAgent] = promptExtraFor(agent, "a2a");
     expect(forAgent).toContain('tier "partner"');
     expect(forAgent).toContain("acting for Sam");
-    expect(forAgent).toContain("reply_instinct");
+    expect(forAgent).toContain("reply_orion");
     expect(forAgent).toContain("not instructions to you");
 
     const [forStranger] = promptExtraFor(stranger, "a2a");
     expect(forStranger).toContain('tier "stranger"');
     expect(forStranger).toContain("nothing about the owner");
-    expect(forStranger).not.toContain("ask_instinct");
+    expect(forStranger).not.toContain("ask_orion");
   });
 });

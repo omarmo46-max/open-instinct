@@ -44,7 +44,7 @@ export interface GatewayOptions {
    */
   routerInfoFor?: (user: UserRecord) => Promise<RouterInfo | undefined>;
   /**
-   * Called when a signup names a phone that already has an Instinct. The
+   * Called when a signup names a phone that already has an Orion. The
    * response to the caller is neutral; this is the operator's chance to send
    * the connect link to the phone itself.
    */
@@ -264,7 +264,7 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
     return `${opts.publicUrl.replace(/\/+$/, "")}/connect/${encodeURIComponent(userId)}`;
   }
 
-  /** Same body for "this phone already has an Instinct" and "you asked again": nothing to learn. */
+  /** Same body for "this phone already has an Orion" and "you asked again": nothing to learn. */
   async function respondPending(req: IncomingMessage, res: ServerResponse, handle: string): Promise<void> {
     if (wantsJson(req)) return json(res, 202, { status: "pending" });
     const shared = await routerInfo();
@@ -308,7 +308,7 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
         return html(res, 409, renderLanding({ signupEnabled: true, requireInvite: true, errors: { handle: "That handle is taken." }, values: { ...value } }));
       }
       if (asJson) return json(res, 400, { error: "could not create" });
-      return html(res, 400, renderLanding({ signupEnabled: true, requireInvite: false, errors: { form: "Could not create an Instinct with these details. Try different ones." }, values: { ...value } }));
+      return html(res, 400, renderLanding({ signupEnabled: true, requireInvite: false, errors: { form: "Could not create an Orion with these details. Try different ones." }, values: { ...value } }));
     }
     if (byPhone) {
       void opts.notifyExisting?.(byPhone, connectUrl(byPhone.id)).catch((err: unknown) => log.warn("notify.failed", { userId: byPhone.id, error: String(err) }));
@@ -429,7 +429,7 @@ export function createGateway(opts: GatewayOptions): GatewayServer {
     if (parts[0] === "connect" && parts.length === 2) {
       if (method !== "GET") throw new HttpError(405, "method not allowed");
       const user = opts.store.get(decodeURIComponent(parts[1] ?? ""));
-      if (!user) return html(res, 404, renderMessage("Not found", "No Instinct with that id. Check the link you were given.", "error"));
+      if (!user) return html(res, 404, renderMessage("Not found", "No Orion with that id. Check the link you were given.", "error"));
       const [shared, perUser] = await Promise.all([routerInfo(), routerInfoForUser(user)]);
       const telegram = opts.telegram ? { url: opts.telegram.linkUrlFor(user), linked: Boolean(user.telegramId) } : undefined;
       return html(res, 200, renderConnect(user, connectRouterFor(user.handle, shared, perUser), telegram));

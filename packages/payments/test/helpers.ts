@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { AuditEntry, AuditLog, InstinctConfig, Outbox, OutboundMessage, Principal, ToolContext, ToolResultLike } from "@orion-ai/core";
+import type { AuditEntry, AuditLog, OrionConfig, Outbox, OutboundMessage, Principal, ToolContext, ToolResultLike } from "@orion-ai/core";
 import type { LinkWalletOptions } from "../src/wallet.js";
 
 /** A real directory with the StateDir methods this package uses. No runtime import from core. */
@@ -14,7 +14,7 @@ export interface TestState {
 }
 
 export function tempState(): TestState {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "instinct-payments-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "orion-payments-"));
   return {
     root,
     path: (...parts) => path.resolve(root, ...parts),
@@ -34,11 +34,11 @@ export function tempState(): TestState {
 
 export const NOW = new Date("2026-10-03T15:00:00Z");
 
-export function testConfig(overrides: Partial<InstinctConfig["owner"]> = {}): InstinctConfig {
+export function testConfig(overrides: Partial<OrionConfig["owner"]> = {}): OrionConfig {
   return {
     version: 1,
     owner: { name: "Maria", phones: ["+16175550100"], emails: ["maria@example.com"], timezone: "America/New_York", ...overrides },
-    agent: { name: "Instinct", handle: "maria-instinct" },
+    agent: { name: "Orion", handle: "maria-orion" },
     model: { primary: "anthropic/claude-fable-5-1" },
     computer: { mode: "none" },
     apps: { enabled: false, toolkits: [] },
